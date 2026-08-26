@@ -333,6 +333,7 @@
             border-radius: 4px;
             cursor: pointer;
             border: 1px solid #ddd;
+            object-fit: cover;
         }
         
         .photo-thumb:hover {
@@ -587,7 +588,7 @@
             }, 5000);
         }
         
-        // Función para parsear fecha en diferentes formatos (MEJORADA)
+        // Función para parsear fecha en diferentes formatos
         function parseDate(dateStr) {
             if (!dateStr) return null;
             
@@ -823,7 +824,6 @@
                         
                         // Si es URL de foto, mostrar como imagen en miniatura
                         if (isPhotoUrl(value)) {
-                            // Extraer el ID de la imagen de Google Drive
                             let fileId = value;
                             if (value.includes('file/d/')) {
                                 const match = value.match(/file\/d\/([^\/]+)/);
@@ -831,7 +831,6 @@
                                     fileId = match[1];
                                 }
                             }
-                            // Usar el enlace de vista previa de Google Drive
                             const previewUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h100`;
                             value = `<a href="${value}" target="_blank"><img src="${previewUrl}" alt="Foto" class="photo-thumb" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22%3E%3Crect width=%2250%22 height=%2250%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E'"></a>`;
                         }
@@ -960,7 +959,6 @@
             const photoContainer = document.getElementById('currentPhotoContainer');
             const currentPhoto = document.getElementById('currentPhoto');
             if (photoUrl && isPhotoUrl(photoUrl)) {
-                // Extraer ID para thumbnail
                 let fileId = photoUrl;
                 if (photoUrl.includes('file/d/')) {
                     const match = photoUrl.match(/file\/d\/([^\/]+)/);
@@ -1021,7 +1019,7 @@
             }
         }
         
-        // Event listener para el formulario de edición
+        // Event listener para el formulario de edición - CORREGIDO: usa la ruta con foto
         document.getElementById('editForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -1030,11 +1028,34 @@
             
             const formData = new FormData(this);
             
+            // Verificar si hay una foto seleccionada
+            const hasPhoto = formData.get('foto') && formData.get('foto').size > 0;
+            
             try {
-                const response = await fetch(`/api/update/${encodeURIComponent(sheetName)}/${rowNumber}`, {
-                    method: 'POST',
-                    body: formData
-                });
+                let response;
+                if (hasPhoto) {
+                    // Si hay foto, usar la ruta con foto
+                    response = await fetch(`/api/update_with_photo/${encodeURIComponent(sheetName)}/${rowNumber}`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    // Si no hay foto, usar la ruta normal (JSON)
+                    // Convertir FormData a JSON
+                    const jsonData = {};
+                    for (let [key, value] of formData.entries()) {
+                        if (key !== 'foto' && key !== 'sheetName' && key !== 'rowNumber') {
+                            jsonData[key] = value;
+                        }
+                    }
+                    response = await fetch(`/api/update/${encodeURIComponent(sheetName)}/${rowNumber}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(jsonData)
+                    });
+                }
                 
                 const result = await response.json();
                 
