@@ -57,7 +57,6 @@ def get_all_data(sheet_name):
         service = build('sheets', 'v4', credentials=creds)
         sheet = service.spreadsheets()
         
-        # Obtener todas las columnas disponibles (hasta la Z)
         result = sheet.values().get(
             spreadsheetId=SPREADSHEET_ID,
             range=f"'{sheet_name}'!A:Z"
@@ -93,15 +92,12 @@ def update_row(sheet_name, row_number, values):
         service = build('sheets', 'v4', credentials=creds)
         sheet = service.spreadsheets()
         
-        # Obtener headers para saber cuántas columnas hay
         data = get_all_data(sheet_name)
         num_columns = len(data.get('headers', []))
         
-        # Asegurar que values tenga el número correcto de columnas
         while len(values) < num_columns:
             values.append('')
         
-        # Obtener la letra de la última columna
         last_col = chr(64 + num_columns) if num_columns <= 26 else 'Z'
         
         body = {
@@ -128,7 +124,6 @@ def delete_row(sheet_name, row_number):
         service = build('sheets', 'v4', credentials=creds)
         sheet = service.spreadsheets()
         
-        # Obtener el ID de la hoja
         spreadsheet = service.spreadsheets().get(
             spreadsheetId=SPREADSHEET_ID
         ).execute()
@@ -173,11 +168,9 @@ def add_row_to_sheet(sheet_name, values):
         service = build('sheets', 'v4', credentials=creds)
         sheet = service.spreadsheets()
         
-        # Obtener headers para saber cuántas columnas hay
         data = get_all_data(sheet_name)
         num_columns = len(data.get('headers', []))
         
-        # Asegurar que values tenga el número correcto de columnas
         while len(values) < num_columns:
             values.append('')
         
@@ -245,16 +238,13 @@ def add_document():
     try:
         sheet_name = request.form.get('sheet_name')
         
-        # Obtener todos los campos del formulario
         form_data = {}
         for key in request.form:
             form_data[key] = request.form[key]
         
-        # Obtener headers para saber el orden de las columnas
         data = get_all_data(sheet_name)
         headers = data.get('headers', [])
         
-        # Construir los valores en el orden de las columnas
         row_values = []
         for header in headers:
             if header == 'Marca Temporal':
@@ -264,7 +254,6 @@ def add_document():
             else:
                 row_values.append('')
         
-        # Procesar foto si se subió
         if 'foto' in request.files and request.files['foto'].filename != '':
             foto = request.files['foto']
             patente = form_data.get('PATENTE', 'documento')
@@ -280,7 +269,6 @@ def add_document():
             
             if file_id:
                 drive_url = f"https://drive.google.com/file/d/{file_id}/view"
-                # Buscar la columna donde guardar el link (puede ser "Link" o "URL")
                 for i, header in enumerate(headers):
                     if header.lower() in ['link', 'url', 'foto', 'imagen']:
                         row_values[i] = drive_url
@@ -312,11 +300,9 @@ def update_document(sheet_name, row_number):
     try:
         data = request.json
         
-        # Obtener headers para saber el orden de las columnas
         sheet_data = get_all_data(sheet_name)
         headers = sheet_data.get('headers', [])
         
-        # Construir los valores en el orden de las columnas
         row_values = []
         for header in headers:
             if header == 'Marca Temporal':
