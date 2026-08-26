@@ -505,8 +505,13 @@
             ]
         };
         
-        // Columnas que deben tener formato condicional de fechas
-        const dateColumns = ['VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN'];
+        // Columnas que deben tener formato condicional de fechas por pestaña
+        const dateColumnsConfig = {
+            'Camion T1': ['VENC VTV', 'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO', 'POLIZA DE SEGUROS', 'SEGURO DE ACCIDENTES PERSONALES', 'CLAUSULA DE NO REPETICION', 'INDUCCION DE CMQ', 'CAPACITACION DE MANEJO DEFENSIVO'],
+            'Camion T2': ['VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN'],
+            'Autoelevadores': ['VENC SEGURO', 'EXTINTOR'],
+            'Choferes y Ayudantes': ['VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA']
+        };
         
         // Mapeo de filtros por pestaña
         const filterFields = {
@@ -555,7 +560,7 @@
             
             const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
             
-            // Lógica corregida:
+            // Lógica:
             // Verde: > 30 días
             // Amarillo: entre 0 y 30 días
             // Rojo: < 0 días (vencido)
@@ -569,11 +574,11 @@
         }
         
         // Función para calcular el estado general de la fila
-        function getRowStatus(row) {
+        function getRowStatus(row, sheetName) {
+            const dateColumns = dateColumnsConfig[sheetName] || [];
             let hasDate = false;
             let anyExpired = false;
             let anyWarning = false;
-            let anyOk = false;
             
             dateColumns.forEach(col => {
                 if (row[col]) {
@@ -581,7 +586,6 @@
                     const status = getDateStatus(row[col]);
                     if (status.class === 'date-danger') anyExpired = true;
                     else if (status.class === 'date-warning') anyWarning = true;
-                    else if (status.class === 'date-ok') anyOk = true;
                 }
             });
             
@@ -666,6 +670,7 @@
             
             const displayColumns = getDisplayColumns(sheetName);
             const filterField = filterFields[sheetName] || 'PATENTE';
+            const dateColumns = dateColumnsConfig[sheetName] || [];
             
             let html = `
                 <!-- Toolbar -->
@@ -716,14 +721,14 @@
                     html += `<tr>`;
                     
                     // Columna Estado
-                    const rowStatus = getRowStatus(row);
+                    const rowStatus = getRowStatus(row, sheetName);
                     html += `<td><span class="${rowStatus.class}">${rowStatus.text}</span></td>`;
                     
                     displayColumns.forEach(col => {
                         let value = row[col] || '';
                         let cellClass = '';
                         
-                        // Aplicar formato condicional a columnas de fecha específicas
+                        // Aplicar formato condicional a columnas de fecha específicas de esta pestaña
                         if (dateColumns.includes(col) && value) {
                             const dateStatus = getDateStatus(value);
                             if (dateStatus.class) {
