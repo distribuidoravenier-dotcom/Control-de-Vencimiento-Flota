@@ -57,9 +57,10 @@ def get_all_data(sheet_name):
         service = build('sheets', 'v4', credentials=creds)
         sheet = service.spreadsheets()
         
+        # Obtener todas las columnas disponibles (hasta la Z)
         result = sheet.values().get(
             spreadsheetId=SPREADSHEET_ID,
-            range=f"'{sheet_name}'!A:G"
+            range=f"'{sheet_name}'!A:Z"
         ).execute()
         
         values = result.get('values', [])
@@ -69,14 +70,14 @@ def get_all_data(sheet_name):
         headers = values[0] if values else []
         rows = []
         
-        for i, row in enumerate(values[1:], start=2):  # start=2 porque la fila 1 es header
+        for i, row in enumerate(values[1:], start=2):
             row_data = {}
             for j, header in enumerate(headers):
                 if j < len(row):
                     row_data[header] = row[j]
                 else:
                     row_data[header] = ''
-            row_data['_row_number'] = i  # Guardamos el número de fila para actualizaciones
+            row_data['_row_number'] = i
             rows.append(row_data)
         
         return {'headers': headers, 'rows': rows}
@@ -92,17 +93,24 @@ def update_row(sheet_name, row_number, values):
         service = build('sheets', 'v4', credentials=creds)
         sheet = service.spreadsheets()
         
-        # Asegurar que values tenga al menos 7 columnas
-        while len(values) < 7:
+        # Obtener headers para saber cuántas columnas hay
+        data = get_all_data(sheet_name)
+        num_columns = len(data.get('headers', []))
+        
+        # Asegurar que values tenga el número correcto de columnas
+        while len(values) < num_columns:
             values.append('')
         
+        # Obtener la letra de la última columna
+        last_col = chr(64 + num_columns) if num_columns <= 26 else 'Z'
+        
         body = {
-            'values': [values[:7]]  # Solo las primeras 7 columnas
+            'values': [values[:num_columns]]
         }
         
         result = sheet.values().update(
             spreadsheetId=SPREADSHEET_ID,
-            range=f"'{sheet_name}'!A{row_number}:G{row_number}",
+            range=f"'{sheet_name}'!A{row_number}:{last_col}{row_number}",
             valueInputOption='RAW',
             body=body
         ).execute()
@@ -120,21 +128,32 @@ def delete_row(sheet_name, row_number):
         service = build('sheets', 'v4', credentials=creds)
         sheet = service.spreadsheets()
         
-        # Crear solicitud para eliminar la fila
+        # Obtener el ID de la hoja
+        spreadsheet = service.spreadsheets().get(
+            spreadsheetId=SPREADSHEET_ID
+        ).execute()
+        
+        sheet_id = None
+        for s in spreadsheet.get('sheets', []):
+            if s['properties']['title'] == sheet_name:
+                sheet_id = s['properties']['sheetId']
+                break
+        
+        if sheet_id is None:
+            return False
+        
         requests = [{
             'deleteDimension': {
                 'range': {
-                    'sheetId': get_sheet_id(sheet_name),
+                    'sheetId': sheet_id,
                     'dimension': 'ROWS',
-                    'startIndex': row_number - 1,  # 0-indexed
+                    'startIndex': row_number - 1,
                     'endIndex': row_number
                 }
             }
         }]
         
-        body = {
-            'requests': requests
-        }
+        body = {'requests': requests}
         
         result = sheet.batchUpdate(
             spreadsheetId=SPREADSHEET_ID,
@@ -147,24 +166,6 @@ def delete_row(sheet_name, row_number):
         print(f"Error deleting row: {err}")
         return False
 
-def get_sheet_id(sheet_name):
-    """Obtiene el ID de una hoja por su nombre"""
-    try:
-        creds = get_google_creds()
-        service = build('sheets', 'v4', credentials=creds)
-        spreadsheet = service.spreadsheets().get(
-            spreadsheetId=SPREADSHEET_ID
-        ).execute()
-        
-        for sheet in spreadsheet.get('sheets', []):
-            if sheet['properties']['title'] == sheet_name:
-                return sheet['properties']['sheetId']
-        return None
-        
-    except HttpError as err:
-        print(f"Error getting sheet ID: {err}")
-        return None
-
 def add_row_to_sheet(sheet_name, values):
     """Agrega una nueva fila a Google Sheets"""
     try:
@@ -172,17 +173,21 @@ def add_row_to_sheet(sheet_name, values):
         service = build('sheets', 'v4', credentials=creds)
         sheet = service.spreadsheets()
         
-        # Asegurar que values tenga al menos 7 columnas
-        while len(values) < 7:
+        # Obtener headers para saber cuántas columnas hay
+        data = get_all_data(sheet_name)
+        num_columns = len(data.get('headers', []))
+        
+        # Asegurar que values tenga el número correcto de columnas
+        while len(values) < num_columns:
             values.append('')
         
         body = {
-            'values': [values[:7]]
+            'values': [values[:num_columns]]
         }
         
         result = sheet.values().append(
             spreadsheetId=SPREADSHEET_ID,
-            range=f"'{sheet_name}'!A:G",
+            range=f"'{sheet_name}'!A:Z",
             valueInputOption='RAW',
             insertDataOption='INSERT_ROWS',
             body=body
@@ -239,32 +244,32 @@ def add_document():
     """API para agregar un nuevo documento"""
     try:
         sheet_name = request.form.get('sheet_name')
-        patente = request.form.get('patente')
-        documento = request.form.get('documento')
-        fecha_vencimiento = request.form.get('fecha_vencimiento')
-        observaciones = request.form.get('observaciones', '')
         
-        if not all([sheet_name, patente, documento, fecha_vencimiento]):
-            return jsonify({
-                'success': False, 
-                'error': 'Todos los campos son obligatorios'
-            }), 400
+        # Obtener todos los campos del formulario
+        form_data = {}
+        for key in request.form:
+            form_data[key] = request.form[key]
         
-        try:
-            datetime.strptime(fecha_vencimiento, '%Y-%m-%d')
-        except ValueError:
-            return jsonify({
-                'success': False, 
-                'error': 'Formato de fecha inválido'
-            }), 400
+        # Obtener headers para saber el orden de las columnas
+        data = get_all_data(sheet_name)
+        headers = data.get('headers', [])
         
-        file_id = None
-        drive_url = ''
+        # Construir los valores en el orden de las columnas
+        row_values = []
+        for header in headers:
+            if header == 'Marca Temporal':
+                row_values.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            elif header in form_data:
+                row_values.append(form_data[header])
+            else:
+                row_values.append('')
         
+        # Procesar foto si se subió
         if 'foto' in request.files and request.files['foto'].filename != '':
             foto = request.files['foto']
+            patente = form_data.get('PATENTE', 'documento')
             file_extension = os.path.splitext(foto.filename)[1]
-            filename = f"{patente} - {documento}{file_extension}"
+            filename = f"{patente} - {datetime.now().strftime('%Y%m%d_%H%M%S')}{file_extension}"
             file_content = foto.read()
             
             file_id = upload_file_to_drive(
@@ -275,25 +280,18 @@ def add_document():
             
             if file_id:
                 drive_url = f"https://drive.google.com/file/d/{file_id}/view"
-        
-        row_values = [
-            patente,
-            documento,
-            fecha_vencimiento,
-            drive_url,
-            observaciones,
-            datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            ''
-        ]
+                # Buscar la columna donde guardar el link (puede ser "Link" o "URL")
+                for i, header in enumerate(headers):
+                    if header.lower() in ['link', 'url', 'foto', 'imagen']:
+                        row_values[i] = drive_url
+                        break
         
         success = add_row_to_sheet(sheet_name, row_values)
         
         if success:
             return jsonify({
                 'success': True,
-                'message': 'Documento agregado correctamente',
-                'file_id': file_id,
-                'drive_url': drive_url
+                'message': 'Documento agregado correctamente'
             })
         else:
             return jsonify({
@@ -313,31 +311,20 @@ def update_document(sheet_name, row_number):
     """Actualiza un documento existente"""
     try:
         data = request.json
-        patente = data.get('patente', '')
-        documento = data.get('documento', '')
-        fecha_vencimiento = data.get('fecha_vencimiento', '')
-        observaciones = data.get('observaciones', '')
-        drive_url = data.get('drive_url', '')
         
-        # Validar fecha si está presente
-        if fecha_vencimiento:
-            try:
-                datetime.strptime(fecha_vencimiento, '%Y-%m-%d')
-            except ValueError:
-                return jsonify({
-                    'success': False, 
-                    'error': 'Formato de fecha inválido'
-                }), 400
+        # Obtener headers para saber el orden de las columnas
+        sheet_data = get_all_data(sheet_name)
+        headers = sheet_data.get('headers', [])
         
-        row_values = [
-            patente,
-            documento,
-            fecha_vencimiento,
-            drive_url,
-            observaciones,
-            datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            ''
-        ]
+        # Construir los valores en el orden de las columnas
+        row_values = []
+        for header in headers:
+            if header == 'Marca Temporal':
+                row_values.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            elif header in data:
+                row_values.append(data[header])
+            else:
+                row_values.append('')
         
         success = update_row(sheet_name, row_number, row_values)
         
