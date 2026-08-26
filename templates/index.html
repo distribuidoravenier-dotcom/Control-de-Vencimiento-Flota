@@ -736,4 +736,228 @@
                             value = `<a href="${value}" target="_blank" class="file-link">📎 Ver archivo</a>`;
                         }
                         
-                        html += `<
+                        html += `<td${cellClass}>${value}</td>`;
+                    });
+                    
+                    html += `<td>
+                        <div class="actions">
+                            <button class="btn btn-success btn-sm" onclick="editRow('${sheetName}', ${row._row_number})">✏️ Editar</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteRow('${sheetName}', ${row._row_number})">🗑️ Eliminar</button>
+                        </div>
+                    </td>`;
+                    
+                    html += `</tr>`;
+                });
+            }
+            
+            html += `</tbody></table></div></div>`;
+            content.innerHTML = html;
+            
+            // Event listener para el formulario de agregar
+            const form = document.getElementById('addForm');
+            if (form) {
+                form.addEventListener('submit', handleAddDocument);
+            }
+        }
+        
+        // Función para mostrar/ocultar el formulario
+        function toggleForm() {
+            isFormVisible = !isFormVisible;
+            renderTable(currentSheet);
+        }
+        
+        // Función para aplicar filtro
+        function applyFilter(sheetName) {
+            const filterInput = document.getElementById('filterInput');
+            const searchTerm = filterInput.value.toLowerCase().trim();
+            const filterField = filterFields[sheetName] || 'PATENTE';
+            
+            if (!searchTerm) {
+                filteredRows = [...allRows];
+            } else {
+                filteredRows = allRows.filter(row => {
+                    const value = (row[filterField] || '').toString().toLowerCase();
+                    return value.includes(searchTerm);
+                });
+            }
+            
+            renderTable(sheetName);
+        }
+        
+        // Función para limpiar filtro
+        function clearFilter() {
+            const filterInput = document.getElementById('filterInput');
+            filterInput.value = '';
+            filteredRows = [...allRows];
+            renderTable(currentSheet);
+        }
+        
+        // Función para manejar el envío del formulario de agregar
+        async function handleAddDocument(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            const formData = new FormData(form);
+            const sheetName = formData.get('sheet_name');
+            
+            try {
+                const response = await fetch('/api/add', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('✅ Documento agregado correctamente', 'success');
+                    form.reset();
+                    isFormVisible = false;
+                    await loadSheetData(sheetName);
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error al enviar el formulario: ${error.message}`, 'error');
+            }
+        }
+        
+        // Función para editar una fila
+        function editRow(sheetName, rowNumber) {
+            const row = allRows.find(r => r._row_number === rowNumber);
+            
+            if (!row) {
+                showAlert('No se encontró el documento', 'error');
+                return;
+            }
+            
+            const displayColumns = getDisplayColumns(sheetName);
+            
+            document.getElementById('editSheetName').value = sheetName;
+            document.getElementById('editRowNumber').value = rowNumber;
+            
+            let html = '';
+            displayColumns.forEach(header => {
+                if (header === 'Marca Temporal') return;
+                
+                const value = row[header] || '';
+                const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
+                const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
+                
+                html += `<div class="form-group">`;
+                html += `<label>${header}</label>`;
+                
+                if (isTextarea) {
+                    html += `<textarea id="edit_${header}" name="${header}" rows="2">${value}</textarea>`;
+                } else if (isDate) {
+                    let dateValue = value;
+                    if (value && value.includes('/')) {
+                        const parts = value.split('/');
+                        if (parts.length === 3) {
+                            dateValue = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                        }
+                    }
+                    html += `<input type="date" id="edit_${header}" name="${header}" value="${dateValue}">`;
+                } else {
+                    html += `<input type="text" id="edit_${header}" name="${header}" value="${value}">`;
+                }
+                
+                html += `</div>`;
+            });
+            
+            document.getElementById('editFormFields').innerHTML = html;
+            document.getElementById('editModal').style.display = 'block';
+        }
+        
+        // Función para cerrar el modal
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+        
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Event listener para el formulario de edición
+        document.getElementById('editForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const sheetName = document.getElementById('editSheetName').value;
+            const rowNumber = parseInt(document.getElementById('editRowNumber').value);
+            
+            const formData = {};
+            const inputs = this.querySelectorAll('input, textarea');
+            inputs.forEach(input => {
+                if (input.name) {
+                    formData[input.name] = input.value;
+                }
+            });
+            
+            try {
+                const response = await fetch(`/api/update/${encodeURIComponent(sheetName)}/${rowNumber}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('✅ Documento actualizado correctamente', 'success');
+                    closeEditModal();
+                    await loadSheetData(sheetName);
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error al actualizar: ${error.message}`, 'error');
+            }
+        });
+        
+        // Función para eliminar una fila
+        async function deleteRow(sheetName, rowNumber) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este documento?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/delete/${encodeURIComponent(sheetName)}/${rowNumber}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('✅ Documento eliminado correctamente', 'success');
+                    await loadSheetData(sheetName);
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error al eliminar: ${error.message}`, 'error');
+            }
+        }
+        
+        // Configurar tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                const sheetName = this.dataset.sheet;
+                currentSheet = sheetName;
+                isFormVisible = false;
+                loadSheetData(sheetName);
+            });
+        });
+        
+        // Cargar datos iniciales
+        loadSheetData('Camion T1');
+    </script>
+</body>
+</html>
