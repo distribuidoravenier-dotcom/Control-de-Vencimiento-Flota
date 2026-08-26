@@ -256,9 +256,23 @@ def add_document():
         
         if 'foto' in request.files and request.files['foto'].filename != '':
             foto = request.files['foto']
-            patente = form_data.get('PATENTE', 'documento')
+            
+            # Generar nombre según la pestaña
+            if sheet_name in ['Camion T1', 'Camion T2']:
+                identificador = form_data.get('PATENTE', 'SIN_PATENTE')
+                documento = form_data.get('VENC VTV', 'DOCUMENTO')
+            elif sheet_name == 'Autoelevadores':
+                identificador = form_data.get('CODIGO DE AE', 'SIN_CODIGO')
+                documento = form_data.get('VENC SEGURO', 'DOCUMENTO')
+            elif sheet_name == 'Choferes y Ayudantes':
+                identificador = form_data.get('APELLIDO Y NOMBRE', 'SIN_NOMBRE')
+                documento = form_data.get('VENCIMIENTO REGISTRO', 'DOCUMENTO')
+            else:
+                identificador = 'DOCUMENTO'
+                documento = 'FOTO'
+            
             file_extension = os.path.splitext(foto.filename)[1]
-            filename = f"{patente} - {datetime.now().strftime('%Y%m%d_%H%M%S')}{file_extension}"
+            filename = f"{identificador} - {documento}{file_extension}"
             file_content = foto.read()
             
             file_id = upload_file_to_drive(
@@ -269,10 +283,14 @@ def add_document():
             
             if file_id:
                 drive_url = f"https://drive.google.com/file/d/{file_id}/view"
+                # Buscar columna de foto o link
+                foto_col = None
                 for i, header in enumerate(headers):
                     if header.lower() in ['link', 'url', 'foto', 'imagen']:
-                        row_values[i] = drive_url
+                        foto_col = i
                         break
+                if foto_col is not None:
+                    row_values[foto_col] = drive_url
         
         success = add_row_to_sheet(sheet_name, row_values)
         
@@ -298,17 +316,69 @@ def add_document():
 def update_document(sheet_name, row_number):
     """Actualiza un documento existente"""
     try:
-        data = request.json
+        data = request.json if request.json else {}
+        
+        # Obtener datos del formulario si es multipart
+        if request.files:
+            form_data = {}
+            for key in request.form:
+                form_data[key] = request.form[key]
+            
+            # Procesar foto si se subió
+            if 'foto' in request.files and request.files['foto'].filename != '':
+                foto = request.files['foto']
+                
+                # Generar nombre según la pestaña
+                if sheet_name in ['Camion T1', 'Camion T2']:
+                    identificador = form_data.get('PATENTE', 'SIN_PATENTE')
+                    documento = form_data.get('VENC VTV', 'DOCUMENTO')
+                elif sheet_name == 'Autoelevadores':
+                    identificador = form_data.get('CODIGO DE AE', 'SIN_CODIGO')
+                    documento = form_data.get('VENC SEGURO', 'DOCUMENTO')
+                elif sheet_name == 'Choferes y Ayudantes':
+                    identificador = form_data.get('APELLIDO Y NOMBRE', 'SIN_NOMBRE')
+                    documento = form_data.get('VENCIMIENTO REGISTRO', 'DOCUMENTO')
+                else:
+                    identificador = 'DOCUMENTO'
+                    documento = 'FOTO'
+                
+                file_extension = os.path.splitext(foto.filename)[1]
+                filename = f"{identificador} - {documento}{file_extension}"
+                file_content = foto.read()
+                
+                file_id = upload_file_to_drive(
+                    file_content, 
+                    filename, 
+                    DRIVE_FOLDER_ID
+                )
+                
+                if file_id:
+                    drive_url = f"https://drive.google.com/file/d/{file_id}/view"
+                    form_data['FOTO_URL'] = drive_url
+                    form_data['LINK'] = drive_url
+                    form_data['URL'] = drive_url
+            
+            # Fusionar datos del formulario con los datos JSON
+            data.update(form_data)
         
         sheet_data = get_all_data(sheet_name)
         headers = sheet_data.get('headers', [])
+        
+        # Obtener fila actual para preservar datos no enviados
+        current_row = None
+        for row in sheet_data.get('rows', []):
+            if row.get('_row_number') == row_number:
+                current_row = row
+                break
         
         row_values = []
         for header in headers:
             if header == 'Marca Temporal':
                 row_values.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-            elif header in data:
+            elif header in data and data[header] is not None:
                 row_values.append(data[header])
+            elif current_row and header in current_row:
+                row_values.append(current_row[header])
             else:
                 row_values.append('')
         
