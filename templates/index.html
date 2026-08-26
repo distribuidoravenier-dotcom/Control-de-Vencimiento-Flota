@@ -163,6 +163,10 @@
             font-size: 14px;
         }
         
+        .form-group input[type="file"] {
+            padding: 8px;
+        }
+        
         .form-group textarea {
             resize: vertical;
             min-height: 60px;
@@ -260,6 +264,7 @@
         td {
             padding: 8px;
             border-bottom: 1px solid #e0e0e0;
+            vertical-align: middle;
         }
         
         tr:hover {
@@ -320,6 +325,19 @@
         
         .file-link:hover {
             text-decoration: underline;
+        }
+        
+        .photo-thumb {
+            max-width: 50px;
+            max-height: 50px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+        }
+        
+        .photo-thumb:hover {
+            border-color: #667eea;
+            transform: scale(1.05);
         }
         
         .loading {
@@ -398,6 +416,22 @@
             margin-left: 10px;
         }
         
+        .current-photo {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            margin-top: 10px;
+        }
+        
+        .photo-preview {
+            max-width: 150px;
+            max-height: 150px;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+            margin-top: 10px;
+        }
+        
         @media (max-width: 768px) {
             .form-row {
                 grid-template-columns: 1fr;
@@ -436,6 +470,11 @@
             .filter-group input {
                 min-width: 100px;
             }
+            
+            .photo-thumb {
+                max-width: 35px;
+                max-height: 35px;
+            }
         }
     </style>
 </head>
@@ -463,11 +502,21 @@
         <div class="modal-content">
             <span class="modal-close" onclick="closeEditModal()">&times;</span>
             <h2>✏️ Editar Documento</h2>
-            <form id="editForm">
+            <form id="editForm" enctype="multipart/form-data">
                 <input type="hidden" id="editSheetName">
                 <input type="hidden" id="editRowNumber">
                 <div id="editFormFields">
                     <!-- Los campos se generan dinámicamente -->
+                </div>
+                <div class="form-group">
+                    <label>📎 Subir Foto (opcional - reemplaza la actual)</label>
+                    <input type="file" id="editFoto" name="foto" accept="image/*" onchange="previewEditPhoto(event)">
+                    <div id="editPhotoPreview"></div>
+                </div>
+                <div id="currentPhotoContainer" style="display:none;">
+                    <label>Foto actual:</label>
+                    <br>
+                    <img id="currentPhoto" class="current-photo" src="" alt="Foto actual">
                 </div>
                 <button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
             </form>
@@ -482,6 +531,7 @@
         let allRows = [];
         let filteredRows = [];
         let isFormVisible = false;
+        let currentEditRow = null;
         
         // Definición de columnas a mostrar por pestaña
         const columnConfig = {
@@ -521,6 +571,9 @@
             'Choferes y Ayudantes': 'APELLIDO Y NOMBRE'
         };
         
+        // Columnas que pueden contener fotos/links
+        const photoColumns = ['LINK', 'URL', 'FOTO', 'IMAGEN'];
+        
         // Función para mostrar alertas
         function showAlert(message, type = 'success') {
             const container = document.getElementById('alert-container');
@@ -538,13 +591,9 @@
         function parseDate(dateStr) {
             if (!dateStr) return null;
             
-            // Limpiar espacios
             dateStr = dateStr.trim();
-            
-            // Si está vacío después de limpiar
             if (dateStr === '') return null;
             
-            // Intentar formato DD/MM/YYYY o D/M/YYYY o D/M/YY
             if (dateStr.includes('/')) {
                 const parts = dateStr.split('/');
                 if (parts.length === 3) {
@@ -552,7 +601,6 @@
                     let month = parseInt(parts[1]) - 1;
                     let year = parseInt(parts[2]);
                     
-                    // Si el año tiene 2 dígitos, ajustar a 4
                     if (year < 100) {
                         year += 2000;
                     }
@@ -563,7 +611,6 @@
                 }
             }
             
-            // Intentar formato YYYY-MM-DD
             if (dateStr.includes('-')) {
                 const parts = dateStr.split('-');
                 if (parts.length === 3) {
@@ -576,7 +623,6 @@
                 }
             }
             
-            // Intentar formato directo (fallback)
             const date = new Date(dateStr);
             if (!isNaN(date.getTime())) {
                 return date;
@@ -598,10 +644,6 @@
             
             const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
             
-            // Lógica:
-            // Verde: > 30 días
-            // Amarillo: entre 0 y 30 días
-            // Rojo: < 0 días (vencido)
             if (diffDays < 0) {
                 return { class: 'date-danger', text: 'VENCIDO' };
             } else if (diffDays >= 0 && diffDays <= 30) {
@@ -631,9 +673,6 @@
                 return { class: 'status-ok', text: '✅ Sin fechas' };
             }
             
-            // Prioridad: si hay alguna vencida -> VENCIDO
-            // Si hay alguna entre 0 y 30 días -> Cerca de vencimiento
-            // Si todas son > 30 días -> OK
             if (anyExpired) {
                 return { class: 'status-danger', text: '🔴 VENCIDO' };
             } else if (anyWarning) {
@@ -649,22 +688,10 @@
             return [...columns, 'Marca Temporal'];
         }
         
-        // Función para cargar datos de una hoja
-        async function loadSheetData(sheetName) {
-            const content = document.getElementById('tab-content');
-            content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
-            
-            try {
-                const response = await fetch(`/api/sheet/${encodeURIComponent(sheetName)}`);
-                const data = await response.json();
-                dataCache[sheetName] = data;
-                currentHeaders = data.headers || [];
-                allRows = data.rows || [];
-                filteredRows = [...allRows];
-                renderTable(sheetName);
-            } catch (error) {
-                content.innerHTML = `<div class="alert alert-error">❌ Error al cargar datos: ${error.message}</div>`;
-            }
+        // Función para verificar si un valor es una URL de foto
+        function isPhotoUrl(value) {
+            if (!value) return false;
+            return value.startsWith('http') && (value.includes('drive') || value.includes('docs') || value.includes('google'));
         }
         
         // Función para generar campos del formulario dinámicamente
@@ -702,6 +729,24 @@
             });
             
             return html;
+        }
+        
+        // Función para cargar datos de una hoja
+        async function loadSheetData(sheetName) {
+            const content = document.getElementById('tab-content');
+            content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
+            
+            try {
+                const response = await fetch(`/api/sheet/${encodeURIComponent(sheetName)}`);
+                const data = await response.json();
+                dataCache[sheetName] = data;
+                currentHeaders = data.headers || [];
+                allRows = data.rows || [];
+                filteredRows = [...allRows];
+                renderTable(sheetName);
+            } catch (error) {
+                content.innerHTML = `<div class="alert alert-error">❌ Error al cargar datos: ${error.message}</div>`;
+            }
         }
         
         // Función para renderizar la tabla
@@ -768,7 +813,7 @@
                         let value = row[col] || '';
                         let cellClass = '';
                         
-                        // Aplicar formato condicional a columnas de fecha específicas de esta pestaña
+                        // Aplicar formato condicional a columnas de fecha específicas
                         if (dateColumns.includes(col) && value) {
                             const dateStatus = getDateStatus(value);
                             if (dateStatus.class) {
@@ -776,9 +821,19 @@
                             }
                         }
                         
-                        // Si es URL, mostrar como link
-                        if (value.startsWith('http') && (value.includes('drive') || value.includes('docs'))) {
-                            value = `<a href="${value}" target="_blank" class="file-link">📎 Ver archivo</a>`;
+                        // Si es URL de foto, mostrar como imagen en miniatura
+                        if (isPhotoUrl(value)) {
+                            // Extraer el ID de la imagen de Google Drive
+                            let fileId = value;
+                            if (value.includes('file/d/')) {
+                                const match = value.match(/file\/d\/([^\/]+)/);
+                                if (match) {
+                                    fileId = match[1];
+                                }
+                            }
+                            // Usar el enlace de vista previa de Google Drive
+                            const previewUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h100`;
+                            value = `<a href="${value}" target="_blank"><img src="${previewUrl}" alt="Foto" class="photo-thumb" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22%3E%3Crect width=%2250%22 height=%2250%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E'"></a>`;
                         }
                         
                         html += `<td${cellClass}>${value}</td>`;
@@ -837,32 +892,18 @@
             renderTable(currentSheet);
         }
         
-        // Función para manejar el envío del formulario de agregar
-        async function handleAddDocument(e) {
-            e.preventDefault();
-            
-            const form = e.target;
-            const formData = new FormData(form);
-            const sheetName = formData.get('sheet_name');
-            
-            try {
-                const response = await fetch('/api/add', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showAlert('✅ Documento agregado correctamente', 'success');
-                    form.reset();
-                    isFormVisible = false;
-                    await loadSheetData(sheetName);
-                } else {
-                    showAlert(`❌ Error: ${result.error}`, 'error');
-                }
-            } catch (error) {
-                showAlert(`❌ Error al enviar el formulario: ${error.message}`, 'error');
+        // Función para previsualizar foto en edición
+        function previewEditPhoto(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('editPhotoPreview');
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" class="photo-preview" alt="Nueva foto">`;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = '';
             }
         }
         
@@ -875,6 +916,7 @@
                 return;
             }
             
+            currentEditRow = row;
             const displayColumns = getDisplayColumns(sheetName);
             
             document.getElementById('editSheetName').value = sheetName;
@@ -912,6 +954,28 @@
             });
             
             document.getElementById('editFormFields').innerHTML = html;
+            
+            // Mostrar foto actual si existe
+            const photoUrl = row['LINK'] || row['URL'] || row['FOTO'] || row['IMAGEN'] || '';
+            const photoContainer = document.getElementById('currentPhotoContainer');
+            const currentPhoto = document.getElementById('currentPhoto');
+            if (photoUrl && isPhotoUrl(photoUrl)) {
+                // Extraer ID para thumbnail
+                let fileId = photoUrl;
+                if (photoUrl.includes('file/d/')) {
+                    const match = photoUrl.match(/file\/d\/([^\/]+)/);
+                    if (match) {
+                        fileId = match[1];
+                    }
+                }
+                currentPhoto.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w200-h200`;
+                photoContainer.style.display = 'block';
+            } else {
+                photoContainer.style.display = 'none';
+            }
+            
+            document.getElementById('editPhotoPreview').innerHTML = '';
+            document.getElementById('editFoto').value = '';
             document.getElementById('editModal').style.display = 'block';
         }
         
@@ -928,6 +992,35 @@
             }
         }
         
+        // Función para manejar el envío del formulario de agregar
+        async function handleAddDocument(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            const formData = new FormData(form);
+            const sheetName = formData.get('sheet_name');
+            
+            try {
+                const response = await fetch('/api/add', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('✅ Documento agregado correctamente', 'success');
+                    form.reset();
+                    isFormVisible = false;
+                    await loadSheetData(sheetName);
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error al enviar el formulario: ${error.message}`, 'error');
+            }
+        }
+        
         // Event listener para el formulario de edición
         document.getElementById('editForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -935,21 +1028,12 @@
             const sheetName = document.getElementById('editSheetName').value;
             const rowNumber = parseInt(document.getElementById('editRowNumber').value);
             
-            const formData = {};
-            const inputs = this.querySelectorAll('input, textarea');
-            inputs.forEach(input => {
-                if (input.name) {
-                    formData[input.name] = input.value;
-                }
-            });
+            const formData = new FormData(this);
             
             try {
                 const response = await fetch(`/api/update/${encodeURIComponent(sheetName)}/${rowNumber}`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
+                    body: formData
                 });
                 
                 const result = await response.json();
