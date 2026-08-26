@@ -534,21 +534,30 @@
             }, 5000);
         }
         
-        // Función para parsear fecha en diferentes formatos
+        // Función para parsear fecha en diferentes formatos (MEJORADA)
         function parseDate(dateStr) {
             if (!dateStr) return null;
             
             // Limpiar espacios
             dateStr = dateStr.trim();
             
-            // Intentar formato DD/MM/YYYY o D/M/YYYY
+            // Si está vacío después de limpiar
+            if (dateStr === '') return null;
+            
+            // Intentar formato DD/MM/YYYY o D/M/YYYY o D/M/YY
             if (dateStr.includes('/')) {
                 const parts = dateStr.split('/');
                 if (parts.length === 3) {
-                    const day = parseInt(parts[0]);
-                    const month = parseInt(parts[1]) - 1;
-                    const year = parseInt(parts[2]);
-                    if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                    let day = parseInt(parts[0]);
+                    let month = parseInt(parts[1]) - 1;
+                    let year = parseInt(parts[2]);
+                    
+                    // Si el año tiene 2 dígitos, ajustar a 4
+                    if (year < 100) {
+                        year += 2000;
+                    }
+                    
+                    if (!isNaN(day) && !isNaN(month) && !isNaN(year) && day > 0 && month >= 0 && day <= 31 && month <= 11) {
                         return new Date(year, month, day);
                     }
                 }
@@ -561,13 +570,13 @@
                     const year = parseInt(parts[0]);
                     const month = parseInt(parts[1]) - 1;
                     const day = parseInt(parts[2]);
-                    if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+                    if (!isNaN(year) && !isNaN(month) && !isNaN(day) && day > 0 && month >= 0 && day <= 31 && month <= 11) {
                         return new Date(year, month, day);
                     }
                 }
             }
             
-            // Intentar formato directo
+            // Intentar formato directo (fallback)
             const date = new Date(dateStr);
             if (!isNaN(date.getTime())) {
                 return date;
@@ -679,7 +688,9 @@
                     if (value && value.includes('/')) {
                         const parts = value.split('/');
                         if (parts.length === 3) {
-                            dateValue = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                            let year = parseInt(parts[2]);
+                            if (year < 100) year += 2000;
+                            dateValue = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
                         }
                     }
                     html += `<input type="date" id="field_${header}" name="${header}" value="${dateValue}">`;
@@ -887,7 +898,9 @@
                     if (value && value.includes('/')) {
                         const parts = value.split('/');
                         if (parts.length === 3) {
-                            dateValue = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                            let year = parseInt(parts[2]);
+                            if (year < 100) year += 2000;
+                            dateValue = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
                         }
                     }
                     html += `<input type="date" id="edit_${header}" name="${header}" value="${dateValue}">`;
