@@ -152,26 +152,29 @@
         .table-container {
             overflow-x: auto;
             margin-top: 20px;
+            max-height: 600px;
+            overflow-y: auto;
         }
         
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 14px;
+            font-size: 13px;
         }
         
         th {
             background: #667eea;
             color: white;
-            padding: 12px;
+            padding: 10px 8px;
             text-align: left;
             position: sticky;
             top: 0;
             z-index: 10;
+            white-space: nowrap;
         }
         
         td {
-            padding: 10px;
+            padding: 8px;
             border-bottom: 1px solid #e0e0e0;
         }
         
@@ -179,27 +182,41 @@
             background: #f8f9fa;
         }
         
+        /* Estados de vencimiento - Formato condicional */
         .status-ok {
-            color: #38a169;
+            background-color: #c6f6d5 !important;
+            color: #22543d;
             font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 3px;
+            display: inline-block;
         }
         
         .status-warning {
-            color: #dd6b20;
+            background-color: #fefcbf !important;
+            color: #744210;
             font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 3px;
+            display: inline-block;
         }
         
         .status-danger {
-            color: #e53e3e;
+            background-color: #fed7d7 !important;
+            color: #742a2a;
             font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 3px;
+            display: inline-block;
         }
         
         .status-expired {
-            color: #c53030;
+            background-color: #e53e3e !important;
+            color: white;
             font-weight: 600;
-            background: #fed7d7;
             padding: 3px 8px;
             border-radius: 3px;
+            display: inline-block;
         }
         
         .file-link {
@@ -262,8 +279,10 @@
             padding: 30px;
             border-radius: 10px;
             width: 90%;
-            max-width: 600px;
+            max-width: 700px;
             position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         
         .modal-close {
@@ -277,6 +296,13 @@
         
         .modal-close:hover {
             color: #333;
+        }
+        
+        /* Scroll en la tabla */
+        .table-wrapper {
+            position: relative;
+            overflow: auto;
+            max-height: 550px;
         }
         
         @media (max-width: 768px) {
@@ -296,6 +322,14 @@
                 margin: 10% auto;
                 padding: 20px;
                 width: 95%;
+            }
+            
+            table {
+                font-size: 11px;
+            }
+            
+            th, td {
+                padding: 5px;
             }
         }
     </style>
@@ -323,31 +357,14 @@
     <div id="editModal" class="modal">
         <div class="modal-content">
             <span class="modal-close" onclick="closeEditModal()">&times;</span>
-            <h2>Editar Documento</h2>
+            <h2>✏️ Editar Documento</h2>
             <form id="editForm">
                 <input type="hidden" id="editSheetName">
                 <input type="hidden" id="editRowNumber">
-                <div class="form-group">
-                    <label>Patente</label>
-                    <input type="text" id="editPatente" required>
+                <div id="editFormFields">
+                    <!-- Los campos se generan dinámicamente -->
                 </div>
-                <div class="form-group">
-                    <label>Documento</label>
-                    <input type="text" id="editDocumento" required>
-                </div>
-                <div class="form-group">
-                    <label>Fecha de Vencimiento</label>
-                    <input type="date" id="editFechaVencimiento" required>
-                </div>
-                <div class="form-group">
-                    <label>URL de Foto</label>
-                    <input type="text" id="editDriveUrl" placeholder="URL de Google Drive">
-                </div>
-                <div class="form-group">
-                    <label>Observaciones</label>
-                    <textarea id="editObservaciones" rows="3"></textarea>
-                </div>
-                <button type="submit" class="btn btn-success">Guardar Cambios</button>
+                <button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
             </form>
         </div>
     </div>
@@ -356,6 +373,7 @@
         // Variables globales
         let currentSheet = 'Camion T1';
         let dataCache = {};
+        let currentHeaders = [];
         
         // Función para mostrar alertas
         function showAlert(message, type = 'success') {
@@ -370,33 +388,39 @@
             }, 5000);
         }
         
-        // Función para formatear fecha
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('es-ES', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            });
-        }
-        
         // Función para calcular estado del vencimiento
         function getStatus(expirationDate) {
-            if (!expirationDate) return { class: '', text: 'Sin fecha' };
+            if (!expirationDate) return { class: 'status-ok', text: 'Sin fecha' };
+            
+            // Intentar parsear la fecha en diferentes formatos
+            let expDate = null;
+            
+            // Intentar formato DD/MM/YYYY
+            if (expirationDate.includes('/')) {
+                const parts = expirationDate.split('/');
+                if (parts.length === 3) {
+                    expDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                }
+            } else {
+                // Intentar formato YYYY-MM-DD
+                expDate = new Date(expirationDate);
+            }
+            
+            if (isNaN(expDate.getTime())) {
+                return { class: 'status-ok', text: 'Fecha inválida' };
+            }
             
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            const expDate = new Date(expirationDate);
             expDate.setHours(0, 0, 0, 0);
             
             const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
             
             if (diffDays < 0) {
                 return { class: 'status-expired', text: '⚠️ VENCIDO' };
-            } else if (diffDays <= 30) {
+            } else if (diffDays < 7) {
                 return { class: 'status-danger', text: `🔴 ${diffDays} días` };
-            } else if (diffDays <= 90) {
+            } else if (diffDays <= 30) {
                 return { class: 'status-warning', text: `🟡 ${diffDays} días` };
             } else {
                 return { class: 'status-ok', text: `✅ ${diffDays} días` };
@@ -406,88 +430,126 @@
         // Función para cargar datos de una hoja
         async function loadSheetData(sheetName) {
             const content = document.getElementById('tab-content');
-            content.innerHTML = '<div class="loading">Cargando datos...</div>';
+            content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
             
             try {
                 const response = await fetch(`/api/sheet/${encodeURIComponent(sheetName)}`);
                 const data = await response.json();
                 dataCache[sheetName] = data;
+                currentHeaders = data.headers || [];
                 renderTable(sheetName, data);
             } catch (error) {
-                content.innerHTML = `<div class="alert alert-error">Error al cargar datos: ${error.message}</div>`;
+                content.innerHTML = `<div class="alert alert-error">❌ Error al cargar datos: ${error.message}</div>`;
             }
+        }
+        
+        // Función para generar campos del formulario dinámicamente
+        function generateFormFields(headers, excludeFields = ['_row_number']) {
+            let html = '';
+            const specialFields = ['PATENTE', 'FECHA VENCIMIENTO', 'VENCIMIENTO'];
+            const fileFields = ['FOTO', 'IMAGEN', 'ARCHIVO'];
+            
+            headers.forEach(header => {
+                if (excludeFields.includes(header)) return;
+                
+                const isRequired = specialFields.some(f => header.toUpperCase().includes(f));
+                const isFile = fileFields.some(f => header.toUpperCase().includes(f));
+                const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO');
+                const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
+                
+                html += `<div class="form-group">`;
+                html += `<label>${header} ${isRequired ? '<span class="required">*</span>' : ''}</label>`;
+                
+                if (isFile) {
+                    html += `<input type="file" id="field_${header}" name="${header}" accept="image/*">`;
+                } else if (isTextarea) {
+                    html += `<textarea id="field_${header}" name="${header}" rows="2"></textarea>`;
+                } else if (isDate) {
+                    html += `<input type="date" id="field_${header}" name="${header}" ${isRequired ? 'required' : ''}>`;
+                } else {
+                    html += `<input type="text" id="field_${header}" name="${header}" ${isRequired ? 'required' : ''}>`;
+                }
+                
+                html += `</div>`;
+            });
+            
+            return html;
         }
         
         // Función para renderizar la tabla
         function renderTable(sheetName, data) {
             const content = document.getElementById('tab-content');
             
-            // Verificar que data sea un objeto con headers y rows
             const headers = data.headers || [];
             const rows = data.rows || [];
             
+            // Excluir _row_number de los headers visibles
+            const displayHeaders = headers.filter(h => h !== '_row_number');
+            
+            // Buscar columna de fecha para el estado
+            let dateColumn = displayHeaders.find(h => 
+                h.toUpperCase().includes('FECHA') || 
+                h.toUpperCase().includes('VENCIMIENTO')
+            );
+            
+            // Si no encuentra, usar la primera columna que parezca fecha
+            if (!dateColumn) {
+                dateColumn = displayHeaders.find(h => 
+                    h.includes('/') || h.includes('-')
+                );
+            }
+            
             let html = `
                 <div class="form-section">
-                    <h3>Agregar nuevo documento</h3>
-                    <form id="addForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Patente <span class="required">*</span></label>
-                                <input type="text" id="patente" placeholder="ABC123" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Documento <span class="required">*</span></label>
-                                <input type="text" id="documento" placeholder="Nombre del documento" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Fecha de Vencimiento <span class="required">*</span></label>
-                                <input type="date" id="fechaVencimiento" required>
-                            </div>
-                            <div class="form-group">
-                                <label>Foto del documento</label>
-                                <input type="file" id="foto" accept="image/*">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Observaciones</label>
-                            <textarea id="observaciones" rows="2" placeholder="Observaciones adicionales"></textarea>
+                    <h3>📄 Agregar nuevo documento</h3>
+                    <form id="addForm" enctype="multipart/form-data">
+                        <div class="form-row" id="addFormFields">
+                            ${generateFormFields(displayHeaders)}
                         </div>
                         <input type="hidden" id="sheetName" value="${sheetName}">
-                        <button type="submit" class="btn">Agregar Documento</button>
+                        <button type="submit" class="btn">➕ Agregar Documento</button>
                     </form>
                 </div>
             `;
             
-            html += `<div class="table-container"><table>`;
-            
-            // Definir columnas a mostrar
-            const columnOrder = ['Patente', 'Documento', 'Fecha Vencimiento', 'Link', 'Observaciones', 'Fecha de carga'];
-            const displayColumns = columnOrder.filter(col => headers.includes(col));
+            html += `<div class="table-wrapper"><div class="table-container"><table>`;
             
             html += `<thead><tr>`;
-            html += `<th>Estado</th>`;
-            displayColumns.forEach(col => {
+            // Columna de estado
+            html += `<th>📊 Estado</th>`;
+            displayHeaders.forEach(col => {
                 html += `<th>${col}</th>`;
             });
-            html += `<th>Acciones</th>`;
+            html += `<th>⚙️ Acciones</th>`;
             html += `</tr></thead><tbody>`;
             
             if (rows.length === 0) {
-                html += `<tr><td colspan="${displayColumns.length + 2}" style="text-align: center; padding: 20px;">No hay documentos cargados</td></tr>`;
+                html += `<tr><td colspan="${displayHeaders.length + 2}" style="text-align: center; padding: 20px;">📭 No hay documentos cargados</td></tr>`;
             } else {
                 rows.forEach((row) => {
                     html += `<tr>`;
                     
                     // Columna de estado
-                    const fechaVenc = row['Fecha Vencimiento'] || '';
+                    let fechaVenc = '';
+                    if (dateColumn && row[dateColumn]) {
+                        fechaVenc = row[dateColumn];
+                    } else {
+                        // Buscar en cualquier columna que parezca fecha
+                        for (let key in row) {
+                            if (key !== '_row_number' && row[key] && (row[key].includes('/') || row[key].includes('-'))) {
+                                fechaVenc = row[key];
+                                break;
+                            }
+                        }
+                    }
+                    
                     const status = getStatus(fechaVenc);
                     html += `<td><span class="${status.class}">${status.text}</span></td>`;
                     
-                    displayColumns.forEach(col => {
+                    displayHeaders.forEach(col => {
                         let value = row[col] || '';
-                        if (col === 'Link' && value) {
+                        // Si es URL, mostrar como link
+                        if (value.startsWith('http') && (value.includes('drive') || value.includes('docs'))) {
                             value = `<a href="${value}" target="_blank" class="file-link">📎 Ver archivo</a>`;
                         }
                         html += `<td>${value}</td>`;
@@ -505,7 +567,7 @@
                 });
             }
             
-            html += `</tbody></table></div>`;
+            html += `</tbody></table></div></div>`;
             content.innerHTML = html;
             
             // Event listener para el formulario de agregar
@@ -518,15 +580,15 @@
             
             const form = e.target;
             const formData = new FormData(form);
+            const sheetName = formData.get('sheet_name');
             
-            const patente = formData.get('patente');
-            const documento = formData.get('documento');
-            const fechaVencimiento = formData.get('fechaVencimiento');
-            const foto = formData.get('foto');
-            
-            if (!patente || !documento || !fechaVencimiento) {
-                showAlert('Patente, Documento y Fecha de Vencimiento son obligatorios', 'error');
-                return;
+            // Validar campos requeridos (los que tienen required)
+            const requiredFields = form.querySelectorAll('[required]');
+            for (let field of requiredFields) {
+                if (!field.value) {
+                    showAlert(`El campo "${field.name}" es obligatorio`, 'error');
+                    return;
+                }
             }
             
             try {
@@ -538,15 +600,14 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showAlert('Documento agregado correctamente', 'success');
+                    showAlert('✅ Documento agregado correctamente', 'success');
                     form.reset();
-                    const sheetName = formData.get('sheet_name') || document.getElementById('sheetName').value;
                     loadSheetData(sheetName);
                 } else {
-                    showAlert(`Error: ${result.error}`, 'error');
+                    showAlert(`❌ Error: ${result.error}`, 'error');
                 }
             } catch (error) {
-                showAlert(`Error al enviar el formulario: ${error.message}`, 'error');
+                showAlert(`❌ Error al enviar el formulario: ${error.message}`, 'error');
             }
         }
         
@@ -560,14 +621,42 @@
                 return;
             }
             
+            const headers = dataCache[sheetName]?.headers || [];
+            const displayHeaders = headers.filter(h => h !== '_row_number');
+            
             document.getElementById('editSheetName').value = sheetName;
             document.getElementById('editRowNumber').value = rowNumber;
-            document.getElementById('editPatente').value = row['Patente'] || '';
-            document.getElementById('editDocumento').value = row['Documento'] || '';
-            document.getElementById('editFechaVencimiento').value = row['Fecha Vencimiento'] || '';
-            document.getElementById('editDriveUrl').value = row['Link'] || '';
-            document.getElementById('editObservaciones').value = row['Observaciones'] || '';
             
+            // Generar campos del formulario de edición
+            let html = '';
+            displayHeaders.forEach(header => {
+                const value = row[header] || '';
+                const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO');
+                const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
+                
+                html += `<div class="form-group">`;
+                html += `<label>${header}</label>`;
+                
+                if (isTextarea) {
+                    html += `<textarea id="edit_${header}" name="${header}" rows="2">${value}</textarea>`;
+                } else if (isDate) {
+                    // Intentar formatear fecha para input date
+                    let dateValue = value;
+                    if (value && value.includes('/')) {
+                        const parts = value.split('/');
+                        if (parts.length === 3) {
+                            dateValue = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                        }
+                    }
+                    html += `<input type="date" id="edit_${header}" name="${header}" value="${dateValue}">`;
+                } else {
+                    html += `<input type="text" id="edit_${header}" name="${header}" value="${value}">`;
+                }
+                
+                html += `</div>`;
+            });
+            
+            document.getElementById('editFormFields').innerHTML = html;
             document.getElementById('editModal').style.display = 'block';
         }
         
@@ -591,13 +680,14 @@
             const sheetName = document.getElementById('editSheetName').value;
             const rowNumber = parseInt(document.getElementById('editRowNumber').value);
             
-            const data = {
-                patente: document.getElementById('editPatente').value,
-                documento: document.getElementById('editDocumento').value,
-                fecha_vencimiento: document.getElementById('editFechaVencimiento').value,
-                drive_url: document.getElementById('editDriveUrl').value,
-                observaciones: document.getElementById('editObservaciones').value
-            };
+            // Recopilar datos del formulario
+            const formData = {};
+            const inputs = this.querySelectorAll('input, textarea');
+            inputs.forEach(input => {
+                if (input.name) {
+                    formData[input.name] = input.value;
+                }
+            });
             
             try {
                 const response = await fetch(`/api/update/${encodeURIComponent(sheetName)}/${rowNumber}`, {
@@ -605,20 +695,20 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(formData)
                 });
                 
                 const result = await response.json();
                 
                 if (result.success) {
-                    showAlert('Documento actualizado correctamente', 'success');
+                    showAlert('✅ Documento actualizado correctamente', 'success');
                     closeEditModal();
                     loadSheetData(sheetName);
                 } else {
-                    showAlert(`Error: ${result.error}`, 'error');
+                    showAlert(`❌ Error: ${result.error}`, 'error');
                 }
             } catch (error) {
-                showAlert(`Error al actualizar: ${error.message}`, 'error');
+                showAlert(`❌ Error al actualizar: ${error.message}`, 'error');
             }
         });
         
@@ -636,13 +726,13 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showAlert('Documento eliminado correctamente', 'success');
+                    showAlert('✅ Documento eliminado correctamente', 'success');
                     loadSheetData(sheetName);
                 } else {
-                    showAlert(`Error: ${result.error}`, 'error');
+                    showAlert(`❌ Error: ${result.error}`, 'error');
                 }
             } catch (error) {
-                showAlert(`Error al eliminar: ${error.message}`, 'error');
+                showAlert(`❌ Error al eliminar: ${error.message}`, 'error');
             }
         }
         
