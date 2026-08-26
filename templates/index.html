@@ -266,40 +266,51 @@
             background: #f8f9fa;
         }
         
+        /* Estados de la columna Estado */
         .status-ok {
             background-color: #c6f6d5 !important;
             color: #22543d;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 3px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 4px;
             display: inline-block;
         }
         
         .status-warning {
             background-color: #fefcbf !important;
             color: #744210;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 3px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 4px;
             display: inline-block;
         }
         
         .status-danger {
             background-color: #fed7d7 !important;
             color: #742a2a;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 3px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 4px;
             display: inline-block;
         }
         
-        .status-expired {
-            background-color: #e53e3e !important;
-            color: white;
+        /* Formato condicional para celdas de fecha */
+        .date-ok {
+            background-color: #c6f6d5 !important;
+            color: #22543d;
             font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 3px;
-            display: inline-block;
+        }
+        
+        .date-warning {
+            background-color: #fefcbf !important;
+            color: #744210;
+            font-weight: 600;
+        }
+        
+        .date-danger {
+            background-color: #fed7d7 !important;
+            color: #742a2a;
+            font-weight: 600;
         }
         
         .file-link {
@@ -494,6 +505,9 @@
             ]
         };
         
+        // Columnas que deben tener formato condicional de fechas
+        const dateColumns = ['VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN'];
+        
         // Mapeo de filtros por pestaña
         const filterFields = {
             'Camion T1': 'PATENTE',
@@ -515,23 +529,24 @@
             }, 5000);
         }
         
-        // Función para calcular estado del vencimiento
-        function getStatus(expirationDate) {
-            if (!expirationDate) return { class: 'status-ok', text: 'Sin fecha' };
+        // Función para calcular el estado de una fecha
+        function getDateStatus(dateStr) {
+            if (!dateStr) return { class: '', text: '' };
             
             let expDate = null;
             
-            if (expirationDate.includes('/')) {
-                const parts = expirationDate.split('/');
+            // Intentar parsear fecha en formato DD/MM/YYYY
+            if (dateStr.includes('/')) {
+                const parts = dateStr.split('/');
                 if (parts.length === 3) {
                     expDate = new Date(parts[2], parts[1] - 1, parts[0]);
                 }
             } else {
-                expDate = new Date(expirationDate);
+                expDate = new Date(dateStr);
             }
             
             if (isNaN(expDate.getTime())) {
-                return { class: 'status-ok', text: 'Fecha inválida' };
+                return { class: '', text: '' };
             }
             
             const today = new Date();
@@ -541,20 +556,49 @@
             const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
             
             if (diffDays < 0) {
-                return { class: 'status-expired', text: '⚠️ VENCIDO' };
+                return { class: 'date-danger', text: 'VENCIDO' };
             } else if (diffDays < 7) {
-                return { class: 'status-danger', text: `🔴 ${diffDays} días` };
+                return { class: 'date-danger', text: `${diffDays} días` };
             } else if (diffDays <= 30) {
-                return { class: 'status-warning', text: `🟡 ${diffDays} días` };
+                return { class: 'date-warning', text: `${diffDays} días` };
             } else {
-                return { class: 'status-ok', text: `✅ ${diffDays} días` };
+                return { class: 'date-ok', text: `${diffDays} días` };
+            }
+        }
+        
+        // Función para calcular el estado general de la fila
+        function getRowStatus(row) {
+            let hasDate = false;
+            let anyExpired = false;
+            let anyWarning = false;
+            let anyOk = false;
+            
+            dateColumns.forEach(col => {
+                if (row[col]) {
+                    hasDate = true;
+                    const status = getDateStatus(row[col]);
+                    if (status.class === 'date-danger') anyExpired = true;
+                    else if (status.class === 'date-warning') anyWarning = true;
+                    else if (status.class === 'date-ok') anyOk = true;
+                }
+            });
+            
+            if (!hasDate) {
+                return { class: 'status-ok', text: '✅ Sin fechas' };
+            }
+            
+            if (anyExpired) {
+                return { class: 'status-danger', text: '🔴 VENCIDO' };
+            } else if (anyWarning) {
+                return { class: 'status-warning', text: '🟡 Cerca de vencimiento' };
+            } else {
+                return { class: 'status-ok', text: '✅ OK' };
             }
         }
         
         // Función para obtener las columnas a mostrar según la pestaña
         function getDisplayColumns(sheetName) {
             const columns = columnConfig[sheetName] || [];
-            // Siempre incluir Marca Temporal al final
             return [...columns, 'Marca Temporal'];
         }
         
@@ -666,24 +710,28 @@
                 filteredRows.forEach((row) => {
                     html += `<tr>`;
                     
-                    // Buscar columna de fecha para el estado
-                    let fechaVenc = '';
-                    for (let key in row) {
-                        if (key !== '_row_number' && row[key] && (row[key].includes('/') || row[key].includes('-'))) {
-                            fechaVenc = row[key];
-                            break;
-                        }
-                    }
-                    
-                    const status = getStatus(fechaVenc);
-                    html += `<td><span class="${status.class}">${status.text}</span></td>`;
+                    // Columna Estado
+                    const rowStatus = getRowStatus(row);
+                    html += `<td><span class="${rowStatus.class}">${rowStatus.text}</span></td>`;
                     
                     displayColumns.forEach(col => {
                         let value = row[col] || '';
+                        let cellClass = '';
+                        
+                        // Aplicar formato condicional a columnas de fecha específicas
+                        if (dateColumns.includes(col) && value) {
+                            const dateStatus = getDateStatus(value);
+                            if (dateStatus.class) {
+                                cellClass = ` class="${dateStatus.class}"`;
+                            }
+                        }
+                        
+                        // Si es URL, mostrar como link
                         if (value.startsWith('http') && (value.includes('drive') || value.includes('docs'))) {
                             value = `<a href="${value}" target="_blank" class="file-link">📎 Ver archivo</a>`;
                         }
-                        html += `<td>${value}</td>`;
+                        
+                        html += `<td${cellClass}>${value}</td>`;
                     });
                     
                     html += `<td>
