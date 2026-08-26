@@ -74,11 +74,74 @@
             display: block;
         }
         
+        .toolbar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .toolbar .btn {
+            margin: 0;
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+        
+        .filter-group label {
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+        }
+        
+        .filter-group input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .filter-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn-clear {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-clear:hover {
+            background: #c53030;
+        }
+        
         .form-section {
             background: #f8f9fa;
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
+            display: none;
+        }
+        
+        .form-section.visible {
+            display: block;
         }
         
         .form-group {
@@ -115,11 +178,12 @@
             background: #667eea;
             color: white;
             border: none;
-            padding: 12px 30px;
+            padding: 10px 25px;
             border-radius: 5px;
             cursor: pointer;
             font-weight: 600;
             transition: all 0.3s;
+            font-size: 14px;
         }
         
         .btn:hover {
@@ -149,11 +213,31 @@
             font-size: 12px;
         }
         
+        .btn-add {
+            background: #38a169;
+        }
+        
+        .btn-add:hover {
+            background: #2f855a;
+        }
+        
+        .btn-cancel {
+            background: #718096;
+        }
+        
+        .btn-cancel:hover {
+            background: #4a5568;
+        }
+        
         .table-container {
             overflow-x: auto;
-            margin-top: 20px;
-            max-height: 600px;
-            overflow-y: auto;
+            margin-top: 10px;
+        }
+        
+        .table-wrapper {
+            position: relative;
+            overflow: auto;
+            max-height: 550px;
         }
         
         table {
@@ -182,7 +266,6 @@
             background: #f8f9fa;
         }
         
-        /* Estados de vencimiento - Formato condicional */
         .status-ok {
             background-color: #c6f6d5 !important;
             color: #22543d;
@@ -298,11 +381,10 @@
             color: #333;
         }
         
-        /* Scroll en la tabla */
-        .table-wrapper {
-            position: relative;
-            overflow: auto;
-            max-height: 550px;
+        .record-count {
+            color: #666;
+            font-size: 14px;
+            margin-left: 10px;
         }
         
         @media (max-width: 768px) {
@@ -330,6 +412,18 @@
             
             th, td {
                 padding: 5px;
+            }
+            
+            .toolbar {
+                flex-direction: column;
+            }
+            
+            .filter-group {
+                width: 100%;
+            }
+            
+            .filter-group input {
+                min-width: 100px;
             }
         }
     </style>
@@ -374,6 +468,17 @@
         let currentSheet = 'Camion T1';
         let dataCache = {};
         let currentHeaders = [];
+        let allRows = [];
+        let filteredRows = [];
+        let isFormVisible = false;
+        
+        // Mapeo de filtros por pestaña
+        const filterFields = {
+            'Camion T1': 'PATENTE',
+            'Camion T2': 'PATENTE',
+            'Autoelevadores': 'CODIGO DE AE',
+            'Choferes y Ayudantes': 'APELLIDO Y NOMBRE'
+        };
         
         // Función para mostrar alertas
         function showAlert(message, type = 'success') {
@@ -392,17 +497,14 @@
         function getStatus(expirationDate) {
             if (!expirationDate) return { class: 'status-ok', text: 'Sin fecha' };
             
-            // Intentar parsear la fecha en diferentes formatos
             let expDate = null;
             
-            // Intentar formato DD/MM/YYYY
             if (expirationDate.includes('/')) {
                 const parts = expirationDate.split('/');
                 if (parts.length === 3) {
                     expDate = new Date(parts[2], parts[1] - 1, parts[0]);
                 }
             } else {
-                // Intentar formato YYYY-MM-DD
                 expDate = new Date(expirationDate);
             }
             
@@ -437,37 +539,41 @@
                 const data = await response.json();
                 dataCache[sheetName] = data;
                 currentHeaders = data.headers || [];
-                renderTable(sheetName, data);
+                allRows = data.rows || [];
+                filteredRows = [...allRows];
+                renderTable(sheetName);
             } catch (error) {
                 content.innerHTML = `<div class="alert alert-error">❌ Error al cargar datos: ${error.message}</div>`;
             }
         }
         
         // Función para generar campos del formulario dinámicamente
-        function generateFormFields(headers, excludeFields = ['_row_number']) {
+        function generateFormFields(headers, excludeFields = ['_row_number'], values = {}) {
             let html = '';
-            const specialFields = ['PATENTE', 'FECHA VENCIMIENTO', 'VENCIMIENTO'];
-            const fileFields = ['FOTO', 'IMAGEN', 'ARCHIVO'];
             
             headers.forEach(header => {
                 if (excludeFields.includes(header)) return;
                 
-                const isRequired = specialFields.some(f => header.toUpperCase().includes(f));
-                const isFile = fileFields.some(f => header.toUpperCase().includes(f));
                 const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO');
                 const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
+                const value = values[header] || '';
                 
                 html += `<div class="form-group">`;
-                html += `<label>${header} ${isRequired ? '<span class="required">*</span>' : ''}</label>`;
+                html += `<label>${header}</label>`;
                 
-                if (isFile) {
-                    html += `<input type="file" id="field_${header}" name="${header}" accept="image/*">`;
-                } else if (isTextarea) {
-                    html += `<textarea id="field_${header}" name="${header}" rows="2"></textarea>`;
+                if (isTextarea) {
+                    html += `<textarea id="field_${header}" name="${header}" rows="2">${value}</textarea>`;
                 } else if (isDate) {
-                    html += `<input type="date" id="field_${header}" name="${header}" ${isRequired ? 'required' : ''}>`;
+                    let dateValue = value;
+                    if (value && value.includes('/')) {
+                        const parts = value.split('/');
+                        if (parts.length === 3) {
+                            dateValue = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                        }
+                    }
+                    html += `<input type="date" id="field_${header}" name="${header}" value="${dateValue}">`;
                 } else {
-                    html += `<input type="text" id="field_${header}" name="${header}" ${isRequired ? 'required' : ''}>`;
+                    html += `<input type="text" id="field_${header}" name="${header}" value="${value}">`;
                 }
                 
                 html += `</div>`;
@@ -477,13 +583,10 @@
         }
         
         // Función para renderizar la tabla
-        function renderTable(sheetName, data) {
+        function renderTable(sheetName) {
             const content = document.getElementById('tab-content');
             
-            const headers = data.headers || [];
-            const rows = data.rows || [];
-            
-            // Excluir _row_number de los headers visibles
+            const headers = currentHeaders;
             const displayHeaders = headers.filter(h => h !== '_row_number');
             
             // Buscar columna de fecha para el estado
@@ -492,22 +595,43 @@
                 h.toUpperCase().includes('VENCIMIENTO')
             );
             
-            // Si no encuentra, usar la primera columna que parezca fecha
             if (!dateColumn) {
                 dateColumn = displayHeaders.find(h => 
                     h.includes('/') || h.includes('-')
                 );
             }
             
+            // Obtener el campo de filtro según la pestaña
+            const filterField = filterFields[sheetName] || 'PATENTE';
+            
             let html = `
-                <div class="form-section">
+                <!-- Toolbar -->
+                <div class="toolbar">
+                    <button class="btn btn-add" onclick="toggleForm()">
+                        ${isFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Nuevo'}
+                    </button>
+                    <div class="filter-group">
+                        <label>🔍 Filtrar por ${filterField}:</label>
+                        <input type="text" id="filterInput" placeholder="Buscar..." oninput="applyFilter('${sheetName}')">
+                        <button class="btn-clear" onclick="clearFilter()">✖ Limpiar</button>
+                    </div>
+                    <span class="record-count">📊 Total: ${filteredRows.length} registros</span>
+                </div>
+                
+                <!-- Formulario de agregar -->
+                <div class="form-section ${isFormVisible ? 'visible' : ''}" id="addFormSection">
                     <h3>📄 Agregar nuevo documento</h3>
                     <form id="addForm" enctype="multipart/form-data">
                         <div class="form-row" id="addFormFields">
                             ${generateFormFields(displayHeaders)}
                         </div>
+                        <div class="form-group">
+                            <label>📎 Subir Foto (opcional)</label>
+                            <input type="file" id="foto" name="foto" accept="image/*">
+                        </div>
                         <input type="hidden" id="sheetName" value="${sheetName}">
                         <button type="submit" class="btn">➕ Agregar Documento</button>
+                        <button type="button" class="btn btn-cancel" onclick="toggleForm()">Cancelar</button>
                     </form>
                 </div>
             `;
@@ -515,7 +639,6 @@
             html += `<div class="table-wrapper"><div class="table-container"><table>`;
             
             html += `<thead><tr>`;
-            // Columna de estado
             html += `<th>📊 Estado</th>`;
             displayHeaders.forEach(col => {
                 html += `<th>${col}</th>`;
@@ -523,18 +646,16 @@
             html += `<th>⚙️ Acciones</th>`;
             html += `</tr></thead><tbody>`;
             
-            if (rows.length === 0) {
-                html += `<tr><td colspan="${displayHeaders.length + 2}" style="text-align: center; padding: 20px;">📭 No hay documentos cargados</td></tr>`;
+            if (filteredRows.length === 0) {
+                html += `<tr><td colspan="${displayHeaders.length + 2}" style="text-align: center; padding: 20px;">📭 No hay documentos</td></tr>`;
             } else {
-                rows.forEach((row) => {
+                filteredRows.forEach((row) => {
                     html += `<tr>`;
                     
-                    // Columna de estado
                     let fechaVenc = '';
                     if (dateColumn && row[dateColumn]) {
                         fechaVenc = row[dateColumn];
                     } else {
-                        // Buscar en cualquier columna que parezca fecha
                         for (let key in row) {
                             if (key !== '_row_number' && row[key] && (row[key].includes('/') || row[key].includes('-'))) {
                                 fechaVenc = row[key];
@@ -548,14 +669,12 @@
                     
                     displayHeaders.forEach(col => {
                         let value = row[col] || '';
-                        // Si es URL, mostrar como link
                         if (value.startsWith('http') && (value.includes('drive') || value.includes('docs'))) {
                             value = `<a href="${value}" target="_blank" class="file-link">📎 Ver archivo</a>`;
                         }
                         html += `<td>${value}</td>`;
                     });
                     
-                    // Acciones
                     html += `<td>
                         <div class="actions">
                             <button class="btn btn-success btn-sm" onclick="editRow('${sheetName}', ${row._row_number})">✏️ Editar</button>
@@ -571,7 +690,42 @@
             content.innerHTML = html;
             
             // Event listener para el formulario de agregar
-            document.getElementById('addForm').addEventListener('submit', handleAddDocument);
+            const form = document.getElementById('addForm');
+            if (form) {
+                form.addEventListener('submit', handleAddDocument);
+            }
+        }
+        
+        // Función para mostrar/ocultar el formulario
+        function toggleForm() {
+            isFormVisible = !isFormVisible;
+            renderTable(currentSheet);
+        }
+        
+        // Función para aplicar filtro
+        function applyFilter(sheetName) {
+            const filterInput = document.getElementById('filterInput');
+            const searchTerm = filterInput.value.toLowerCase().trim();
+            const filterField = filterFields[sheetName] || 'PATENTE';
+            
+            if (!searchTerm) {
+                filteredRows = [...allRows];
+            } else {
+                filteredRows = allRows.filter(row => {
+                    const value = (row[filterField] || '').toString().toLowerCase();
+                    return value.includes(searchTerm);
+                });
+            }
+            
+            renderTable(sheetName);
+        }
+        
+        // Función para limpiar filtro
+        function clearFilter() {
+            const filterInput = document.getElementById('filterInput');
+            filterInput.value = '';
+            filteredRows = [...allRows];
+            renderTable(currentSheet);
         }
         
         // Función para manejar el envío del formulario de agregar
@@ -581,15 +735,6 @@
             const form = e.target;
             const formData = new FormData(form);
             const sheetName = formData.get('sheet_name');
-            
-            // Validar campos requeridos (los que tienen required)
-            const requiredFields = form.querySelectorAll('[required]');
-            for (let field of requiredFields) {
-                if (!field.value) {
-                    showAlert(`El campo "${field.name}" es obligatorio`, 'error');
-                    return;
-                }
-            }
             
             try {
                 const response = await fetch('/api/add', {
@@ -602,7 +747,8 @@
                 if (result.success) {
                     showAlert('✅ Documento agregado correctamente', 'success');
                     form.reset();
-                    loadSheetData(sheetName);
+                    isFormVisible = false;
+                    await loadSheetData(sheetName);
                 } else {
                     showAlert(`❌ Error: ${result.error}`, 'error');
                 }
@@ -613,21 +759,19 @@
         
         // Función para editar una fila
         function editRow(sheetName, rowNumber) {
-            const rows = dataCache[sheetName]?.rows || [];
-            const row = rows.find(r => r._row_number === rowNumber);
+            const row = allRows.find(r => r._row_number === rowNumber);
             
             if (!row) {
                 showAlert('No se encontró el documento', 'error');
                 return;
             }
             
-            const headers = dataCache[sheetName]?.headers || [];
+            const headers = currentHeaders;
             const displayHeaders = headers.filter(h => h !== '_row_number');
             
             document.getElementById('editSheetName').value = sheetName;
             document.getElementById('editRowNumber').value = rowNumber;
             
-            // Generar campos del formulario de edición
             let html = '';
             displayHeaders.forEach(header => {
                 const value = row[header] || '';
@@ -640,7 +784,6 @@
                 if (isTextarea) {
                     html += `<textarea id="edit_${header}" name="${header}" rows="2">${value}</textarea>`;
                 } else if (isDate) {
-                    // Intentar formatear fecha para input date
                     let dateValue = value;
                     if (value && value.includes('/')) {
                         const parts = value.split('/');
@@ -680,7 +823,6 @@
             const sheetName = document.getElementById('editSheetName').value;
             const rowNumber = parseInt(document.getElementById('editRowNumber').value);
             
-            // Recopilar datos del formulario
             const formData = {};
             const inputs = this.querySelectorAll('input, textarea');
             inputs.forEach(input => {
@@ -703,7 +845,7 @@
                 if (result.success) {
                     showAlert('✅ Documento actualizado correctamente', 'success');
                     closeEditModal();
-                    loadSheetData(sheetName);
+                    await loadSheetData(sheetName);
                 } else {
                     showAlert(`❌ Error: ${result.error}`, 'error');
                 }
@@ -727,7 +869,7 @@
                 
                 if (result.success) {
                     showAlert('✅ Documento eliminado correctamente', 'success');
-                    loadSheetData(sheetName);
+                    await loadSheetData(sheetName);
                 } else {
                     showAlert(`❌ Error: ${result.error}`, 'error');
                 }
@@ -744,6 +886,7 @@
                 
                 const sheetName = this.dataset.sheet;
                 currentSheet = sheetName;
+                isFormVisible = false;
                 loadSheetData(sheetName);
             });
         });
