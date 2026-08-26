@@ -19,7 +19,7 @@
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             background: white;
             border-radius: 10px;
@@ -92,12 +92,17 @@
             color: #333;
         }
         
-        .form-group input, .form-group select {
+        .form-group input, .form-group select, .form-group textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 14px;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px;
         }
         
         .form-row {
@@ -131,6 +136,19 @@
             background: #c53030;
         }
         
+        .btn-success {
+            background: #38a169;
+        }
+        
+        .btn-success:hover {
+            background: #2f855a;
+        }
+        
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        
         .table-container {
             overflow-x: auto;
             margin-top: 20px;
@@ -147,6 +165,9 @@
             color: white;
             padding: 12px;
             text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         
         td {
@@ -218,6 +239,46 @@
             color: #e53e3e;
         }
         
+        .actions {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+        }
+        
+        .modal-close {
+            position: absolute;
+            right: 20px;
+            top: 10px;
+            font-size: 30px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .modal-close:hover {
+            color: #333;
+        }
+        
         @media (max-width: 768px) {
             .form-row {
                 grid-template-columns: 1fr;
@@ -229,6 +290,12 @@
             
             .tab {
                 width: 100%;
+            }
+            
+            .modal-content {
+                margin: 10% auto;
+                padding: 20px;
+                width: 95%;
             }
         }
     </style>
@@ -249,6 +316,39 @@
         
         <div id="tab-content">
             <!-- El contenido de las tabs se carga dinámicamente -->
+        </div>
+    </div>
+    
+    <!-- Modal para editar -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeEditModal()">&times;</span>
+            <h2>Editar Documento</h2>
+            <form id="editForm">
+                <input type="hidden" id="editSheetName">
+                <input type="hidden" id="editRowNumber">
+                <div class="form-group">
+                    <label>Patente</label>
+                    <input type="text" id="editPatente" required>
+                </div>
+                <div class="form-group">
+                    <label>Documento</label>
+                    <input type="text" id="editDocumento" required>
+                </div>
+                <div class="form-group">
+                    <label>Fecha de Vencimiento</label>
+                    <input type="date" id="editFechaVencimiento" required>
+                </div>
+                <div class="form-group">
+                    <label>URL de Foto</label>
+                    <input type="text" id="editDriveUrl" placeholder="URL de Google Drive">
+                </div>
+                <div class="form-group">
+                    <label>Observaciones</label>
+                    <textarea id="editObservaciones" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-success">Guardar Cambios</button>
+            </form>
         </div>
     </div>
     
@@ -322,13 +422,9 @@
         function renderTable(sheetName, data) {
             const content = document.getElementById('tab-content');
             
-            // Verificar que data sea un array
-            if (!Array.isArray(data)) {
-                data = [];
-            }
-            
-            // Encontrar el índice de la columna "Fecha de carga" si existe
-            const headers = data.length > 0 ? Object.keys(data[0]) : [];
+            // Verificar que data sea un objeto con headers y rows
+            const headers = data.headers || [];
+            const rows = data.rows || [];
             
             let html = `
                 <div class="form-section">
@@ -350,9 +446,13 @@
                                 <input type="date" id="fechaVencimiento" required>
                             </div>
                             <div class="form-group">
-                                <label>Foto del documento <span class="required">*</span></label>
-                                <input type="file" id="foto" accept="image/*" required>
+                                <label>Foto del documento</label>
+                                <input type="file" id="foto" accept="image/*">
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Observaciones</label>
+                            <textarea id="observaciones" rows="2" placeholder="Observaciones adicionales"></textarea>
                         </div>
                         <input type="hidden" id="sheetName" value="${sheetName}">
                         <button type="submit" class="btn">Agregar Documento</button>
@@ -362,48 +462,45 @@
             
             html += `<div class="table-container"><table>`;
             
-            if (data.length === 0) {
-                html += `<tr><td colspan="6" style="text-align: center; padding: 20px;">No hay documentos cargados</td></tr>`;
+            // Definir columnas a mostrar
+            const columnOrder = ['Patente', 'Documento', 'Fecha Vencimiento', 'Link', 'Observaciones', 'Fecha de carga'];
+            const displayColumns = columnOrder.filter(col => headers.includes(col));
+            
+            html += `<thead><tr>`;
+            html += `<th>Estado</th>`;
+            displayColumns.forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            html += `<th>Acciones</th>`;
+            html += `</tr></thead><tbody>`;
+            
+            if (rows.length === 0) {
+                html += `<tr><td colspan="${displayColumns.length + 2}" style="text-align: center; padding: 20px;">No hay documentos cargados</td></tr>`;
             } else {
-                // Mostrar todas las columnas disponibles
-                const allColumns = Object.keys(data[0]);
-                
-                // Definir columnas a mostrar (todas las disponibles)
-                const columnsToShow = allColumns.filter(col => col !== 'Fecha de carga');
-                
-                html += `<thead><tr>`;
-                // Siempre mostrar Patente, Documento, Fecha Vencimiento, Link, Estado
-                const columnOrder = ['Patente', 'Documento', 'Fecha Vencimiento', 'Link'];
-                const displayColumns = columnOrder.filter(col => allColumns.includes(col));
-                // Agregar columnas adicionales que no están en el orden definido
-                const extraColumns = allColumns.filter(col => !columnOrder.includes(col) && col !== 'Fecha de carga');
-                const finalColumns = [...displayColumns, ...extraColumns];
-                
-                // Agregar columna de Estado
-                html += `<th>Estado</th>`;
-                
-                // Agregar headers para las columnas finales
-                finalColumns.forEach(col => {
-                    html += `<th>${col}</th>`;
-                });
-                html += `</tr></thead><tbody>`;
-                
-                // Mostrar datos
-                data.forEach((row, index) => {
+                rows.forEach((row) => {
                     html += `<tr>`;
                     
                     // Columna de estado
-                    const fechaVenc = row['Fecha Vencimiento'] || row['FechaVencimiento'] || '';
+                    const fechaVenc = row['Fecha Vencimiento'] || '';
                     const status = getStatus(fechaVenc);
                     html += `<td><span class="${status.class}">${status.text}</span></td>`;
                     
-                    finalColumns.forEach(col => {
+                    displayColumns.forEach(col => {
                         let value = row[col] || '';
                         if (col === 'Link' && value) {
                             value = `<a href="${value}" target="_blank" class="file-link">📎 Ver archivo</a>`;
                         }
                         html += `<td>${value}</td>`;
                     });
+                    
+                    // Acciones
+                    html += `<td>
+                        <div class="actions">
+                            <button class="btn btn-success btn-sm" onclick="editRow('${sheetName}', ${row._row_number})">✏️ Editar</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteRow('${sheetName}', ${row._row_number})">🗑️ Eliminar</button>
+                        </div>
+                    </td>`;
+                    
                     html += `</tr>`;
                 });
             }
@@ -411,25 +508,24 @@
             html += `</tbody></table></div>`;
             content.innerHTML = html;
             
-            // Event listener para el formulario
+            // Event listener para el formulario de agregar
             document.getElementById('addForm').addEventListener('submit', handleAddDocument);
         }
         
-        // Función para manejar el envío del formulario
+        // Función para manejar el envío del formulario de agregar
         async function handleAddDocument(e) {
             e.preventDefault();
             
             const form = e.target;
             const formData = new FormData(form);
             
-            // Validar campos obligatorios
             const patente = formData.get('patente');
             const documento = formData.get('documento');
             const fechaVencimiento = formData.get('fechaVencimiento');
             const foto = formData.get('foto');
             
-            if (!patente || !documento || !fechaVencimiento || !foto || foto.size === 0) {
-                showAlert('Todos los campos son obligatorios incluyendo la foto', 'error');
+            if (!patente || !documento || !fechaVencimiento) {
+                showAlert('Patente, Documento y Fecha de Vencimiento son obligatorios', 'error');
                 return;
             }
             
@@ -444,7 +540,6 @@
                 if (result.success) {
                     showAlert('Documento agregado correctamente', 'success');
                     form.reset();
-                    // Recargar los datos
                     const sheetName = formData.get('sheet_name') || document.getElementById('sheetName').value;
                     loadSheetData(sheetName);
                 } else {
@@ -455,14 +550,108 @@
             }
         }
         
+        // Función para editar una fila
+        function editRow(sheetName, rowNumber) {
+            const rows = dataCache[sheetName]?.rows || [];
+            const row = rows.find(r => r._row_number === rowNumber);
+            
+            if (!row) {
+                showAlert('No se encontró el documento', 'error');
+                return;
+            }
+            
+            document.getElementById('editSheetName').value = sheetName;
+            document.getElementById('editRowNumber').value = rowNumber;
+            document.getElementById('editPatente').value = row['Patente'] || '';
+            document.getElementById('editDocumento').value = row['Documento'] || '';
+            document.getElementById('editFechaVencimiento').value = row['Fecha Vencimiento'] || '';
+            document.getElementById('editDriveUrl').value = row['Link'] || '';
+            document.getElementById('editObservaciones').value = row['Observaciones'] || '';
+            
+            document.getElementById('editModal').style.display = 'block';
+        }
+        
+        // Función para cerrar el modal
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+        
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Event listener para el formulario de edición
+        document.getElementById('editForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const sheetName = document.getElementById('editSheetName').value;
+            const rowNumber = parseInt(document.getElementById('editRowNumber').value);
+            
+            const data = {
+                patente: document.getElementById('editPatente').value,
+                documento: document.getElementById('editDocumento').value,
+                fecha_vencimiento: document.getElementById('editFechaVencimiento').value,
+                drive_url: document.getElementById('editDriveUrl').value,
+                observaciones: document.getElementById('editObservaciones').value
+            };
+            
+            try {
+                const response = await fetch(`/api/update/${encodeURIComponent(sheetName)}/${rowNumber}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('Documento actualizado correctamente', 'success');
+                    closeEditModal();
+                    loadSheetData(sheetName);
+                } else {
+                    showAlert(`Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`Error al actualizar: ${error.message}`, 'error');
+            }
+        });
+        
+        // Función para eliminar una fila
+        async function deleteRow(sheetName, rowNumber) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este documento?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/delete/${encodeURIComponent(sheetName)}/${rowNumber}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('Documento eliminado correctamente', 'success');
+                    loadSheetData(sheetName);
+                } else {
+                    showAlert(`Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`Error al eliminar: ${error.message}`, 'error');
+            }
+        }
+        
         // Configurar tabs
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', function() {
-                // Actualizar tab activa
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
                 
-                // Cargar datos de la hoja seleccionada
                 const sheetName = this.dataset.sheet;
                 currentSheet = sheetName;
                 loadSheetData(sheetName);
