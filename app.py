@@ -254,43 +254,42 @@ def add_document():
             else:
                 row_values.append('')
         
-        if 'foto' in request.files and request.files['foto'].filename != '':
-            foto = request.files['foto']
-            
-            # Generar nombre según la pestaña
-            if sheet_name in ['Camion T1', 'Camion T2']:
-                identificador = form_data.get('PATENTE', 'SIN_PATENTE')
-                documento = form_data.get('VENC VTV', 'DOCUMENTO')
-            elif sheet_name == 'Autoelevadores':
-                identificador = form_data.get('CODIGO DE AE', 'SIN_CODIGO')
-                documento = form_data.get('VENC SEGURO', 'DOCUMENTO')
-            elif sheet_name == 'Choferes y Ayudantes':
-                identificador = form_data.get('APELLIDO Y NOMBRE', 'SIN_NOMBRE')
-                documento = form_data.get('VENCIMIENTO REGISTRO', 'DOCUMENTO')
-            else:
-                identificador = 'DOCUMENTO'
-                documento = 'FOTO'
-            
-            file_extension = os.path.splitext(foto.filename)[1]
-            filename = f"{identificador} - {documento}{file_extension}"
-            file_content = foto.read()
-            
-            file_id = upload_file_to_drive(
-                file_content, 
-                filename, 
-                DRIVE_FOLDER_ID
-            )
-            
-            if file_id:
-                drive_url = f"https://drive.google.com/file/d/{file_id}/view"
-                # Buscar columna de foto o link
-                foto_col = None
-                for i, header in enumerate(headers):
-                    if header.lower() in ['link', 'url', 'foto', 'imagen']:
-                        foto_col = i
-                        break
-                if foto_col is not None:
-                    row_values[foto_col] = drive_url
+        # Procesar múltiples fotos
+        for key in request.files:
+            if key.startswith('foto_'):
+                foto = request.files[key]
+                if foto.filename != '':
+                    # Extraer el nombre del documento de la clave (ej: foto_VENC_VTV)
+                    doc_name = key.replace('foto_', '')
+                    
+                    # Generar nombre según la pestaña
+                    if sheet_name in ['Camion T1', 'Camion T2']:
+                        identificador = form_data.get('PATENTE', 'SIN_PATENTE')
+                    elif sheet_name == 'Autoelevadores':
+                        identificador = form_data.get('CODIGO DE AE', 'SIN_CODIGO')
+                    elif sheet_name == 'Choferes y Ayudantes':
+                        identificador = form_data.get('APELLIDO Y NOMBRE', 'SIN_NOMBRE')
+                    else:
+                        identificador = 'DOCUMENTO'
+                    
+                    file_extension = os.path.splitext(foto.filename)[1]
+                    filename = f"{identificador} - {doc_name}{file_extension}"
+                    file_content = foto.read()
+                    
+                    file_id = upload_file_to_drive(
+                        file_content, 
+                        filename, 
+                        DRIVE_FOLDER_ID
+                    )
+                    
+                    if file_id:
+                        drive_url = f"https://drive.google.com/file/d/{file_id}/view"
+                        # Buscar la columna correspondiente (agregar _FOTO al nombre)
+                        foto_header = f"{doc_name}_FOTO"
+                        for i, header in enumerate(headers):
+                            if header == foto_header:
+                                row_values[i] = drive_url
+                                break
         
         success = add_row_to_sheet(sheet_name, row_values)
         
@@ -352,55 +351,46 @@ def update_document(sheet_name, row_number):
 
 @app.route('/api/update_with_photo/<sheet_name>/<int:row_number>', methods=['POST'])
 def update_document_with_photo(sheet_name, row_number):
-    """Actualiza un documento existente con foto"""
+    """Actualiza un documento existente con múltiples fotos"""
     try:
         # Obtener datos del formulario
         form_data = {}
         for key in request.form:
             form_data[key] = request.form[key]
         
-        # Procesar foto si se subió
-        if 'foto' in request.files and request.files['foto'].filename != '':
-            foto = request.files['foto']
-            
-            # Generar nombre según la pestaña
-            if sheet_name in ['Camion T1', 'Camion T2']:
-                identificador = form_data.get('PATENTE', 'SIN_PATENTE')
-                documento = form_data.get('VENC VTV', 'DOCUMENTO')
-            elif sheet_name == 'Autoelevadores':
-                identificador = form_data.get('CODIGO DE AE', 'SIN_CODIGO')
-                documento = form_data.get('VENC SEGURO', 'DOCUMENTO')
-            elif sheet_name == 'Choferes y Ayudantes':
-                identificador = form_data.get('APELLIDO Y NOMBRE', 'SIN_NOMBRE')
-                documento = form_data.get('VENCIMIENTO REGISTRO', 'DOCUMENTO')
-            else:
-                identificador = 'DOCUMENTO'
-                documento = 'FOTO'
-            
-            file_extension = os.path.splitext(foto.filename)[1]
-            filename = f"{identificador} - {documento}{file_extension}"
-            file_content = foto.read()
-            
-            file_id = upload_file_to_drive(
-                file_content, 
-                filename, 
-                DRIVE_FOLDER_ID
-            )
-            
-            if file_id:
-                drive_url = f"https://drive.google.com/file/d/{file_id}/view"
-                # Buscar columna de foto o link
-                sheet_data = get_all_data(sheet_name)
-                headers = sheet_data.get('headers', [])
-                foto_col = None
-                for i, header in enumerate(headers):
-                    if header.lower() in ['link', 'url', 'foto', 'imagen']:
-                        foto_col = i
-                        break
-                if foto_col is not None:
-                    # Encontrar el nombre de la columna en los headers
-                    col_name = headers[foto_col]
-                    form_data[col_name] = drive_url
+        # Procesar múltiples fotos
+        for key in request.files:
+            if key.startswith('foto_'):
+                foto = request.files[key]
+                if foto.filename != '':
+                    # Extraer el nombre del documento de la clave (ej: foto_VENC_VTV)
+                    doc_name = key.replace('foto_', '')
+                    
+                    # Generar nombre según la pestaña
+                    if sheet_name in ['Camion T1', 'Camion T2']:
+                        identificador = form_data.get('PATENTE', 'SIN_PATENTE')
+                    elif sheet_name == 'Autoelevadores':
+                        identificador = form_data.get('CODIGO DE AE', 'SIN_CODIGO')
+                    elif sheet_name == 'Choferes y Ayudantes':
+                        identificador = form_data.get('APELLIDO Y NOMBRE', 'SIN_NOMBRE')
+                    else:
+                        identificador = 'DOCUMENTO'
+                    
+                    file_extension = os.path.splitext(foto.filename)[1]
+                    filename = f"{identificador} - {doc_name}{file_extension}"
+                    file_content = foto.read()
+                    
+                    file_id = upload_file_to_drive(
+                        file_content, 
+                        filename, 
+                        DRIVE_FOLDER_ID
+                    )
+                    
+                    if file_id:
+                        drive_url = f"https://drive.google.com/file/d/{file_id}/view"
+                        # Buscar la columna correspondiente (agregar _FOTO al nombre)
+                        foto_header = f"{doc_name}_FOTO"
+                        form_data[foto_header] = drive_url
         
         # Obtener datos actuales para preservar
         sheet_data = get_all_data(sheet_name)
