@@ -534,25 +534,54 @@
             }, 5000);
         }
         
+        // Función para parsear fecha en diferentes formatos
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            
+            // Limpiar espacios
+            dateStr = dateStr.trim();
+            
+            // Intentar formato DD/MM/YYYY o D/M/YYYY
+            if (dateStr.includes('/')) {
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    const day = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1;
+                    const year = parseInt(parts[2]);
+                    if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                        return new Date(year, month, day);
+                    }
+                }
+            }
+            
+            // Intentar formato YYYY-MM-DD
+            if (dateStr.includes('-')) {
+                const parts = dateStr.split('-');
+                if (parts.length === 3) {
+                    const year = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1;
+                    const day = parseInt(parts[2]);
+                    if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+                        return new Date(year, month, day);
+                    }
+                }
+            }
+            
+            // Intentar formato directo
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+                return date;
+            }
+            
+            return null;
+        }
+        
         // Función para calcular el estado de una fecha
         function getDateStatus(dateStr) {
             if (!dateStr) return { class: '', text: '' };
             
-            let expDate = null;
-            
-            // Intentar parsear fecha en formato DD/MM/YYYY
-            if (dateStr.includes('/')) {
-                const parts = dateStr.split('/');
-                if (parts.length === 3) {
-                    expDate = new Date(parts[2], parts[1] - 1, parts[0]);
-                }
-            } else {
-                expDate = new Date(dateStr);
-            }
-            
-            if (isNaN(expDate.getTime())) {
-                return { class: '', text: '' };
-            }
+            const expDate = parseDate(dateStr);
+            if (!expDate) return { class: '', text: '' };
             
             const today = new Date();
             today.setHours(0, 0, 0, 0);
