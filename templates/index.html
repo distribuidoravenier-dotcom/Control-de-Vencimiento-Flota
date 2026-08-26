@@ -328,8 +328,8 @@
         }
         
         .photo-thumb {
-            max-width: 50px;
-            max-height: 50px;
+            max-width: 40px;
+            max-height: 40px;
             border-radius: 4px;
             cursor: pointer;
             border: 1px solid #ddd;
@@ -339,6 +339,12 @@
         .photo-thumb:hover {
             border-color: #667eea;
             transform: scale(1.05);
+        }
+        
+        .photo-group {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
         }
         
         .loading {
@@ -392,7 +398,7 @@
             padding: 30px;
             border-radius: 10px;
             width: 90%;
-            max-width: 700px;
+            max-width: 800px;
             position: relative;
             max-height: 90vh;
             overflow-y: auto;
@@ -417,20 +423,40 @@
             margin-left: 10px;
         }
         
-        .current-photo {
-            max-width: 200px;
-            max-height: 200px;
-            border-radius: 8px;
-            border: 2px solid #ddd;
-            margin-top: 10px;
-        }
-        
         .photo-preview {
-            max-width: 150px;
-            max-height: 150px;
+            max-width: 100px;
+            max-height: 100px;
             border-radius: 8px;
             border: 2px solid #667eea;
-            margin-top: 10px;
+            margin-top: 5px;
+        }
+        
+        .photo-upload-group {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #fafafa;
+        }
+        
+        .photo-upload-group label {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .photo-upload-group .current-photo-thumb {
+            max-width: 60px;
+            max-height: 60px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin-top: 5px;
+        }
+        
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 5px;
+            margin-top: 5px;
         }
         
         @media (max-width: 768px) {
@@ -473,8 +499,8 @@
             }
             
             .photo-thumb {
-                max-width: 35px;
-                max-height: 35px;
+                max-width: 30px;
+                max-height: 30px;
             }
         }
     </style>
@@ -509,15 +535,8 @@
                 <div id="editFormFields">
                     <!-- Los campos se generan dinámicamente -->
                 </div>
-                <div class="form-group">
-                    <label>📎 Subir Foto (opcional - reemplaza la actual)</label>
-                    <input type="file" id="editFoto" name="foto" accept="image/*" onchange="previewEditPhoto(event)">
-                    <div id="editPhotoPreview"></div>
-                </div>
-                <div id="currentPhotoContainer" style="display:none;">
-                    <label>Foto actual:</label>
-                    <br>
-                    <img id="currentPhoto" class="current-photo" src="" alt="Foto actual">
+                <div id="editPhotoFields">
+                    <!-- Los campos de fotos se generan dinámicamente -->
                 </div>
                 <button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
             </form>
@@ -571,9 +590,6 @@
             'Autoelevadores': 'CODIGO DE AE',
             'Choferes y Ayudantes': 'APELLIDO Y NOMBRE'
         };
-        
-        // Columnas que pueden contener fotos/links
-        const photoColumns = ['LINK', 'URL', 'FOTO', 'IMAGEN'];
         
         // Función para mostrar alertas
         function showAlert(message, type = 'success') {
@@ -695,12 +711,19 @@
             return value.startsWith('http') && (value.includes('drive') || value.includes('docs') || value.includes('google'));
         }
         
+        // Función para obtener las columnas de fotos
+        function getPhotoColumns(headers) {
+            return headers.filter(h => h.endsWith('_FOTO'));
+        }
+        
         // Función para generar campos del formulario dinámicamente
         function generateFormFields(headers, excludeFields = ['_row_number', 'Marca Temporal'], values = {}) {
             let html = '';
+            const photoCols = getPhotoColumns(headers);
             
             headers.forEach(header => {
                 if (excludeFields.includes(header)) return;
+                if (photoCols.includes(header)) return; // Las fotos se manejan aparte
                 
                 const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
                 const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
@@ -732,6 +755,59 @@
             return html;
         }
         
+        // Función para generar campos de fotos
+        function generatePhotoFields(headers, values = {}) {
+            let html = '';
+            const photoCols = getPhotoColumns(headers);
+            
+            if (photoCols.length === 0) return html;
+            
+            html += `<div class="form-group"><label>📸 Fotos de documentos</label>`;
+            
+            photoCols.forEach(col => {
+                const docName = col.replace('_FOTO', '');
+                const photoUrl = values[col] || '';
+                const fileInputId = `foto_${docName}`;
+                
+                html += `<div class="photo-upload-group">`;
+                html += `<label for="${fileInputId}">${docName}:</label>`;
+                
+                if (photoUrl && isPhotoUrl(photoUrl)) {
+                    let fileId = photoUrl;
+                    if (photoUrl.includes('file/d/')) {
+                        const match = photoUrl.match(/file\/d\/([^\/]+)/);
+                        if (match) {
+                            fileId = match[1];
+                        }
+                    }
+                    html += `<br><img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">`;
+                    html += `<br><small>Foto actual</small>`;
+                }
+                
+                html += `<input type="file" id="${fileInputId}" name="${fileInputId}" accept="image/*" onchange="previewPhoto(event, '${fileInputId}')">`;
+                html += `<div id="preview_${fileInputId}"></div>`;
+                html += `</div>`;
+            });
+            
+            html += `</div>`;
+            return html;
+        }
+        
+        // Función para previsualizar foto
+        function previewPhoto(event, inputId) {
+            const file = event.target.files[0];
+            const preview = document.getElementById(`preview_${inputId}`);
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" class="photo-preview" alt="Nueva foto">`;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = '';
+            }
+        }
+        
         // Función para cargar datos de una hoja
         async function loadSheetData(sheetName) {
             const content = document.getElementById('tab-content');
@@ -757,6 +833,7 @@
             const displayColumns = getDisplayColumns(sheetName);
             const filterField = filterFields[sheetName] || 'PATENTE';
             const dateColumns = dateColumnsConfig[sheetName] || [];
+            const photoCols = getPhotoColumns(currentHeaders);
             
             let html = `
                 <!-- Toolbar -->
@@ -779,10 +856,7 @@
                         <div class="form-row" id="addFormFields">
                             ${generateFormFields(displayColumns)}
                         </div>
-                        <div class="form-group">
-                            <label>📎 Subir Foto (opcional)</label>
-                            <input type="file" id="foto" name="foto" accept="image/*">
-                        </div>
+                        ${generatePhotoFields(currentHeaders)}
                         <input type="hidden" id="sheetName" value="${sheetName}">
                         <button type="submit" class="btn">➕ Agregar Documento</button>
                         <button type="button" class="btn btn-cancel" onclick="toggleForm()">Cancelar</button>
@@ -797,11 +871,16 @@
             displayColumns.forEach(col => {
                 html += `<th>${col}</th>`;
             });
+            // Agregar columna de fotos si existen
+            if (photoCols.length > 0) {
+                html += `<th>📸 Fotos</th>`;
+            }
             html += `<th>⚙️ Acciones</th>`;
             html += `</tr></thead><tbody>`;
             
             if (filteredRows.length === 0) {
-                html += `<tr><td colspan="${displayColumns.length + 2}" style="text-align: center; padding: 20px;">📭 No hay documentos</td></tr>`;
+                const colSpan = displayColumns.length + (photoCols.length > 0 ? 2 : 1) + 1;
+                html += `<tr><td colspan="${colSpan}" style="text-align: center; padding: 20px;">📭 No hay documentos</td></tr>`;
             } else {
                 filteredRows.forEach((row) => {
                     html += `<tr>`;
@@ -814,7 +893,6 @@
                         let value = row[col] || '';
                         let cellClass = '';
                         
-                        // Aplicar formato condicional a columnas de fecha específicas
                         if (dateColumns.includes(col) && value) {
                             const dateStatus = getDateStatus(value);
                             if (dateStatus.class) {
@@ -822,21 +900,35 @@
                             }
                         }
                         
-                        // Si es URL de foto, mostrar como imagen en miniatura
-                        if (isPhotoUrl(value)) {
-                            let fileId = value;
-                            if (value.includes('file/d/')) {
-                                const match = value.match(/file\/d\/([^\/]+)/);
-                                if (match) {
-                                    fileId = match[1];
-                                }
-                            }
-                            const previewUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h100`;
-                            value = `<a href="${value}" target="_blank"><img src="${previewUrl}" alt="Foto" class="photo-thumb" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22%3E%3Crect width=%2250%22 height=%2250%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E'"></a>`;
-                        }
-                        
                         html += `<td${cellClass}>${value}</td>`;
                     });
+                    
+                    // Columna de fotos
+                    if (photoCols.length > 0) {
+                        html += `<td><div class="photo-group">`;
+                        let hasPhoto = false;
+                        photoCols.forEach(col => {
+                            const photoUrl = row[col] || '';
+                            if (photoUrl && isPhotoUrl(photoUrl)) {
+                                hasPhoto = true;
+                                let fileId = photoUrl;
+                                if (photoUrl.includes('file/d/')) {
+                                    const match = photoUrl.match(/file\/d\/([^\/]+)/);
+                                    if (match) {
+                                        fileId = match[1];
+                                    }
+                                }
+                                const docName = col.replace('_FOTO', '');
+                                html += `<a href="${photoUrl}" target="_blank" title="${docName}">`;
+                                html += `<img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w80-h80" class="photo-thumb" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E'">`;
+                                html += `</a>`;
+                            }
+                        });
+                        if (!hasPhoto) {
+                            html += `<span style="color:#999;font-size:11px;">Sin fotos</span>`;
+                        }
+                        html += `</div></td>`;
+                    }
                     
                     html += `<td>
                         <div class="actions">
@@ -891,18 +983,32 @@
             renderTable(currentSheet);
         }
         
-        // Función para previsualizar foto en edición
-        function previewEditPhoto(event) {
-            const file = event.target.files[0];
-            const preview = document.getElementById('editPhotoPreview');
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.innerHTML = `<img src="${e.target.result}" class="photo-preview" alt="Nueva foto">`;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                preview.innerHTML = '';
+        // Función para manejar el envío del formulario de agregar
+        async function handleAddDocument(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            const formData = new FormData(form);
+            const sheetName = formData.get('sheet_name');
+            
+            try {
+                const response = await fetch('/api/add', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('✅ Documento agregado correctamente', 'success');
+                    form.reset();
+                    isFormVisible = false;
+                    await loadSheetData(sheetName);
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error al enviar el formulario: ${error.message}`, 'error');
             }
         }
         
@@ -954,26 +1060,39 @@
             
             document.getElementById('editFormFields').innerHTML = html;
             
-            // Mostrar foto actual si existe
-            const photoUrl = row['LINK'] || row['URL'] || row['FOTO'] || row['IMAGEN'] || '';
-            const photoContainer = document.getElementById('currentPhotoContainer');
-            const currentPhoto = document.getElementById('currentPhoto');
-            if (photoUrl && isPhotoUrl(photoUrl)) {
-                let fileId = photoUrl;
-                if (photoUrl.includes('file/d/')) {
-                    const match = photoUrl.match(/file\/d\/([^\/]+)/);
-                    if (match) {
-                        fileId = match[1];
+            // Generar campos de fotos para edición
+            const photoCols = getPhotoColumns(currentHeaders);
+            let photoHtml = '';
+            if (photoCols.length > 0) {
+                photoHtml += `<div class="form-group"><label>📸 Fotos de documentos</label>`;
+                photoCols.forEach(col => {
+                    const docName = col.replace('_FOTO', '');
+                    const photoUrl = row[col] || '';
+                    const fileInputId = `edit_foto_${docName}`;
+                    
+                    photoHtml += `<div class="photo-upload-group">`;
+                    photoHtml += `<label for="${fileInputId}">${docName}:</label>`;
+                    
+                    if (photoUrl && isPhotoUrl(photoUrl)) {
+                        let fileId = photoUrl;
+                        if (photoUrl.includes('file/d/')) {
+                            const match = photoUrl.match(/file\/d\/([^\/]+)/);
+                            if (match) {
+                                fileId = match[1];
+                            }
+                        }
+                        photoHtml += `<br><img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">`;
+                        photoHtml += `<br><small>Foto actual</small>`;
                     }
-                }
-                currentPhoto.src = `https://drive.google.com/thumbnail?id=${fileId}&sz=w200-h200`;
-                photoContainer.style.display = 'block';
-            } else {
-                photoContainer.style.display = 'none';
+                    
+                    photoHtml += `<input type="file" id="${fileInputId}" name="${fileInputId}" accept="image/*" onchange="previewPhoto(event, '${fileInputId}')">`;
+                    photoHtml += `<div id="preview_${fileInputId}"></div>`;
+                    photoHtml += `</div>`;
+                });
+                photoHtml += `</div>`;
             }
+            document.getElementById('editPhotoFields').innerHTML = photoHtml;
             
-            document.getElementById('editPhotoPreview').innerHTML = '';
-            document.getElementById('editFoto').value = '';
             document.getElementById('editModal').style.display = 'block';
         }
         
@@ -990,36 +1109,7 @@
             }
         }
         
-        // Función para manejar el envío del formulario de agregar
-        async function handleAddDocument(e) {
-            e.preventDefault();
-            
-            const form = e.target;
-            const formData = new FormData(form);
-            const sheetName = formData.get('sheet_name');
-            
-            try {
-                const response = await fetch('/api/add', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    showAlert('✅ Documento agregado correctamente', 'success');
-                    form.reset();
-                    isFormVisible = false;
-                    await loadSheetData(sheetName);
-                } else {
-                    showAlert(`❌ Error: ${result.error}`, 'error');
-                }
-            } catch (error) {
-                showAlert(`❌ Error al enviar el formulario: ${error.message}`, 'error');
-            }
-        }
-        
-        // Event listener para el formulario de edición - CORREGIDO: usa la ruta con foto
+        // Event listener para el formulario de edición
         document.getElementById('editForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -1028,23 +1118,36 @@
             
             const formData = new FormData(this);
             
-            // Verificar si hay una foto seleccionada
-            const hasPhoto = formData.get('foto') && formData.get('foto').size > 0;
+            // Verificar si hay alguna foto seleccionada
+            let hasPhoto = false;
+            for (let [key, value] of formData.entries()) {
+                if (key.startsWith('edit_foto_') && value.size > 0) {
+                    hasPhoto = true;
+                    // Cambiar el nombre del campo para que el servidor lo reconozca
+                    const docName = key.replace('edit_foto_', '');
+                    formData.append(`foto_${docName}`, value);
+                }
+            }
+            
+            // Eliminar los campos edit_foto_ originales
+            for (let key of formData.keys()) {
+                if (key.startsWith('edit_foto_')) {
+                    formData.delete(key);
+                }
+            }
             
             try {
                 let response;
                 if (hasPhoto) {
-                    // Si hay foto, usar la ruta con foto
                     response = await fetch(`/api/update_with_photo/${encodeURIComponent(sheetName)}/${rowNumber}`, {
                         method: 'POST',
                         body: formData
                     });
                 } else {
-                    // Si no hay foto, usar la ruta normal (JSON)
                     // Convertir FormData a JSON
                     const jsonData = {};
                     for (let [key, value] of formData.entries()) {
-                        if (key !== 'foto' && key !== 'sheetName' && key !== 'rowNumber') {
+                        if (!key.startsWith('foto_') && key !== 'sheetName' && key !== 'rowNumber') {
                             jsonData[key] = value;
                         }
                     }
