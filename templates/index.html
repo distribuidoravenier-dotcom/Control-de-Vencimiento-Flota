@@ -271,7 +271,6 @@
             background: #f8f9fa;
         }
         
-        /* Estados de la columna Estado */
         .status-ok {
             background-color: #c6f6d5 !important;
             color: #22543d;
@@ -299,7 +298,6 @@
             display: inline-block;
         }
         
-        /* Formato condicional para celdas de fecha */
         .date-ok {
             background-color: #c6f6d5 !important;
             color: #22543d;
@@ -466,7 +464,6 @@
             margin-left: 5px;
         }
         
-        /* Pantalla de inicio */
         .home-screen {
             display: flex;
             flex-direction: column;
@@ -577,13 +574,11 @@
         
         <div id="alert-container"></div>
 
-        <!-- PANTALLA DE INICIO -->
         <div id="homeScreen" class="home-screen">
             <button class="home-btn master-btn" onclick="showModule('master')">🗂️ Maestro de Flota</button>
             <button class="home-btn" onclick="showModule('docs')">📋 Control de Documentación</button>
         </div>
 
-        <!-- MÓDULO: CONTROL DE DOCUMENTACIÓN (funcionalidad original) -->
         <div id="docsModule" style="display:none;">
             <button class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
 
@@ -594,12 +589,9 @@
                 <button class="tab" data-sheet="Choferes y Ayudantes">👨‍✈️ Choferes y Ayudantes</button>
             </div>
 
-            <div id="tab-content">
-                <!-- El contenido de las tabs se carga dinámicamente -->
-            </div>
+            <div id="tab-content"></div>
         </div>
 
-        <!-- MÓDULO: MAESTRO DE FLOTA (todas las columnas) -->
         <div id="masterModule" style="display:none;">
             <button class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
 
@@ -610,13 +602,10 @@
                 <button class="tab" data-sheet="Choferes y Ayudantes">👨‍✈️ Choferes y Ayudantes</button>
             </div>
 
-            <div id="master-tab-content">
-                <!-- El contenido de las tabs se carga dinámicamente -->
-            </div>
+            <div id="master-tab-content"></div>
         </div>
     </div>
     
-    <!-- Modal para editar -->
     <div id="editModal" class="modal">
         <div class="modal-content">
             <span class="modal-close" onclick="closeEditModal()">&times;</span>
@@ -624,19 +613,14 @@
             <form id="editForm" enctype="multipart/form-data">
                 <input type="hidden" id="editSheetName">
                 <input type="hidden" id="editRowNumber">
-                <div id="editFormFields">
-                    <!-- Los campos se generan dinámicamente -->
-                </div>
-                <div id="editPhotoFields">
-                    <!-- Los campos de fotos se generan dinámicamente -->
-                </div>
+                <div id="editFormFields"></div>
+                <div id="editPhotoFields"></div>
                 <button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
             </form>
         </div>
     </div>
     
     <script>
-        // Variables globales
         let currentSheet = 'Camion T1';
         let dataCache = {};
         let currentHeaders = [];
@@ -644,9 +628,8 @@
         let filteredRows = [];
         let isFormVisible = false;
         let currentEditRow = null;
-        let editContextModule = 'docs'; // 'docs' o 'master', indica qué módulo abrió el modal de edición
+        let editContextModule = 'docs';
 
-        // Variables globales para el módulo "Maestro de Flota" (muestra todas las columnas)
         let masterCurrentSheet = 'Camion T1';
         let masterDataCache = {};
         let masterCurrentHeaders = [];
@@ -654,7 +637,6 @@
         let masterFilteredRows = [];
         let masterIsFormVisible = false;
         
-        // Definición de columnas a mostrar por pestaña
         const columnConfig = {
             'Camion T1': [
                 'PATENTE', 'PROPIETARIO', 'MAIL', 'CIA SEGURO', 'VENC VTV', 
@@ -676,7 +658,6 @@
             ]
         };
         
-        // Columnas que deben tener formato condicional de fechas por pestaña
         const dateColumnsConfig = {
             'Camion T1': ['VENC VTV', 'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO', 'POLIZA DE SEGUROS', 'SEGURO DE ACCIDENTES PERSONALES', 'CLAUSULA DE NO REPETICION', 'INDUCCION DE CMQ', 'CAPACITACION DE MANEJO DEFENSIVO'],
             'Camion T2': ['VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN'],
@@ -684,7 +665,6 @@
             'Choferes y Ayudantes': ['VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA']
         };
         
-        // Mapeo de filtros por pestaña
         const filterFields = {
             'Camion T1': 'PATENTE',
             'Camion T2': 'PATENTE',
@@ -692,23 +672,17 @@
             'Choferes y Ayudantes': 'APELLIDO Y NOMBRE'
         };
         
-        // Función para mostrar alertas
         function showAlert(message, type = 'success') {
             const container = document.getElementById('alert-container');
             const alert = document.createElement('div');
             alert.className = `alert alert-${type}`;
             alert.textContent = message;
             container.appendChild(alert);
-            
-            setTimeout(() => {
-                alert.remove();
-            }, 5000);
+            setTimeout(() => alert.remove(), 5000);
         }
         
-        // Función para parsear fecha en diferentes formatos
         function parseDate(dateStr) {
             if (!dateStr) return null;
-            
             dateStr = dateStr.trim();
             if (dateStr === '') return null;
             
@@ -718,11 +692,7 @@
                     let day = parseInt(parts[0]);
                     let month = parseInt(parts[1]) - 1;
                     let year = parseInt(parts[2]);
-                    
-                    if (year < 100) {
-                        year += 2000;
-                    }
-                    
+                    if (year < 100) year += 2000;
                     if (!isNaN(day) && !isNaN(month) && !isNaN(year) && day > 0 && month >= 0 && day <= 31 && month <= 11) {
                         return new Date(year, month, day);
                     }
@@ -742,42 +712,26 @@
             }
             
             const date = new Date(dateStr);
-            if (!isNaN(date.getTime())) {
-                return date;
-            }
-            
+            if (!isNaN(date.getTime())) return date;
             return null;
         }
         
-        // Función para calcular el estado de una fecha
         function getDateStatus(dateStr) {
             if (!dateStr) return { class: '', text: '' };
-            
             const expDate = parseDate(dateStr);
             if (!expDate) return { class: '', text: '' };
-            
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             expDate.setHours(0, 0, 0, 0);
-            
             const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-            
-            if (diffDays < 0) {
-                return { class: 'date-danger', text: 'VENCIDO' };
-            } else if (diffDays >= 0 && diffDays <= 30) {
-                return { class: 'date-warning', text: `${diffDays} días` };
-            } else {
-                return { class: 'date-ok', text: `${diffDays} días` };
-            }
+            if (diffDays < 0) return { class: 'date-danger', text: 'VENCIDO' };
+            else if (diffDays >= 0 && diffDays <= 30) return { class: 'date-warning', text: `${diffDays} días` };
+            else return { class: 'date-ok', text: `${diffDays} días` };
         }
         
-        // Función para calcular el estado general de la fila
         function getRowStatus(row, sheetName) {
             const dateColumns = dateColumnsConfig[sheetName] || [];
-            let hasDate = false;
-            let anyExpired = false;
-            let anyWarning = false;
-            
+            let hasDate = false, anyExpired = false, anyWarning = false;
             dateColumns.forEach(col => {
                 if (row[col]) {
                     hasDate = true;
@@ -786,32 +740,21 @@
                     else if (status.class === 'date-warning') anyWarning = true;
                 }
             });
-            
-            if (!hasDate) {
-                return { class: 'status-ok', text: '✅ Sin fechas' };
-            }
-            
-            if (anyExpired) {
-                return { class: 'status-danger', text: '🔴 VENCIDO' };
-            } else if (anyWarning) {
-                return { class: 'status-warning', text: '🟡 Cerca de vencimiento' };
-            } else {
-                return { class: 'status-ok', text: '✅ OK' };
-            }
+            if (!hasDate) return { class: 'status-ok', text: '✅ Sin fechas' };
+            if (anyExpired) return { class: 'status-danger', text: '🔴 VENCIDO' };
+            else if (anyWarning) return { class: 'status-warning', text: '🟡 Cerca de vencimiento' };
+            else return { class: 'status-ok', text: '✅ OK' };
         }
         
-        // Función para obtener las columnas a mostrar según la pestaña
         function getDisplayColumns(sheetName) {
             const columns = columnConfig[sheetName] || [];
             return [...columns, 'Marca Temporal'];
         }
 
-        // Función para obtener TODAS las columnas de una hoja (usada por Maestro de Flota)
         function getAllColumns(headers) {
             return headers.filter(h => h !== '_row_number' && !h.endsWith('_FOTO'));
         }
 
-        // ==================== NAVEGACIÓN ENTRE MÓDULOS ====================
         function showHome() {
             document.getElementById('homeScreen').style.display = 'flex';
             document.getElementById('docsModule').style.display = 'none';
@@ -831,24 +774,19 @@
             }
         }
         
-        // Función para verificar si un valor es una URL de foto
         function isPhotoUrl(value) {
             if (!value) return false;
             return value.startsWith('http') && (value.includes('drive') || value.includes('docs') || value.includes('google'));
         }
         
-        // Función para obtener las columnas de fotos
         function getPhotoColumns(headers) {
             return headers.filter(h => h.endsWith('_FOTO'));
         }
 
-        // Función para obtener las columnas de fecha que requieren foto
         function getDateColumnsRequiringPhoto(sheetName) {
-            const dateCols = dateColumnsConfig[sheetName] || [];
-            return dateCols;
+            return dateColumnsConfig[sheetName] || [];
         }
 
-        // Función para generar campos del formulario dinámicamente
         function generateFormFields(headers, excludeFields = ['_row_number', 'Marca Temporal'], values = {}, isMaster = false) {
             let html = '';
             const photoCols = getPhotoColumns(headers);
@@ -886,22 +824,17 @@
                 } else {
                     html += `<input type="text" id="field_${header}" name="${header}" value="${value}">`;
                 }
-                
                 html += `</div>`;
             });
-            
             return html;
         }
         
-        // Función para generar campos de fotos
-        function generatePhotoFields(headers, values = {}, isMaster = false) {
+        function generatePhotoFields(headers, values = {}, isMaster = false, prefix = '') {
             let html = '';
             const photoCols = getPhotoColumns(headers);
             const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
             
-            if (photoCols.length === 0) {
-                return html;
-            }
+            if (photoCols.length === 0) return html;
             
             html += `<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">`;
             html += `<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>`;
@@ -910,8 +843,7 @@
             photoCols.forEach(col => {
                 const docName = col.replace('_FOTO', '');
                 const photoUrl = values[col] || '';
-                const fileInputId = `foto_${docName}`;
-                // Verificar si esta foto es obligatoria (si el documento tiene fecha)
+                const fileInputId = `${prefix}foto_${docName}`;
                 const isRequired = dateColsRequiringPhoto.includes(docName) && !isMaster;
                 
                 html += `<div class="photo-upload-group">`;
@@ -925,9 +857,7 @@
                     let fileId = photoUrl;
                     if (photoUrl.includes('file/d/')) {
                         const match = photoUrl.match(/file\/d\/([^\/]+)/);
-                        if (match) {
-                            fileId = match[1];
-                        }
+                        if (match) fileId = match[1];
                     }
                     html += `<br><img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">`;
                     html += `<br><small style="color:#666;">Foto actual - <a href="${photoUrl}" target="_blank">Ver en Drive</a></small>`;
@@ -949,7 +879,6 @@
             return html;
         }
         
-        // Función para previsualizar foto
         function previewPhoto(event, inputId) {
             const file = event.target.files[0];
             const preview = document.getElementById(`preview_${inputId}`);
@@ -964,28 +893,22 @@
             }
         }
         
-        // Función para validar que las fotos requeridas estén cargadas
         function validateRequiredPhotos(sheetName, formData, isMaster = false) {
-            if (isMaster) return true; // En Maestro de Flota no se exigen fotos obligatorias
-            
+            if (isMaster) return true;
             const dateCols = getDateColumnsRequiringPhoto(sheetName);
             const missingPhotos = [];
             
             dateCols.forEach(dateCol => {
-                // Verificar si la fecha tiene valor
                 const dateValue = formData.get(dateCol);
                 if (dateValue && dateValue.trim() !== '') {
-                    // Verificar si se subió una foto para este documento
                     const photoInput = document.getElementById(`foto_${dateCol}`);
                     if (photoInput) {
                         const hasFile = photoInput.files && photoInput.files.length > 0;
-                        // También verificar si ya tiene una foto existente (en edición)
                         const existingPhoto = formData.get(`${dateCol}_FOTO`);
                         if (!hasFile && !existingPhoto) {
                             missingPhotos.push(dateCol);
                         }
                     } else {
-                        // Si no hay input de foto, verificar si ya tiene foto guardada
                         const existingPhoto = formData.get(`${dateCol}_FOTO`);
                         if (!existingPhoto) {
                             missingPhotos.push(dateCol);
@@ -995,18 +918,15 @@
             });
             
             if (missingPhotos.length > 0) {
-                const msg = `⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ${missingPhotos.join(', ')}`;
-                showAlert(msg, 'error');
+                showAlert(`⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ${missingPhotos.join(', ')}`, 'error');
                 return false;
             }
             return true;
         }
         
-        // Función para cargar datos de una hoja
         async function loadSheetData(sheetName) {
             const content = document.getElementById('tab-content');
             content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
-            
             try {
                 const response = await fetch(`/api/sheet/${encodeURIComponent(sheetName)}`);
                 const data = await response.json();
@@ -1020,17 +940,14 @@
             }
         }
         
-        // Función para renderizar la tabla
         function renderTable(sheetName) {
             const content = document.getElementById('tab-content');
-            
             const displayColumns = getDisplayColumns(sheetName);
             const filterField = filterFields[sheetName] || 'PATENTE';
             const dateColumns = dateColumnsConfig[sheetName] || [];
             const photoCols = getPhotoColumns(currentHeaders);
             
             let html = `
-                <!-- Toolbar -->
                 <div class="toolbar">
                     <button class="btn btn-add" onclick="toggleForm()">
                         ${isFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Nuevo'}
@@ -1043,15 +960,13 @@
                     <span class="record-count">📊 Total: ${filteredRows.length} registros</span>
                 </div>
                 
-                <!-- Formulario de agregar -->
                 <div class="form-section ${isFormVisible ? 'visible' : ''}" id="addFormSection">
                     <h3>📄 Agregar nuevo documento</h3>
                     <form id="addForm" enctype="multipart/form-data">
                         <div class="form-row" id="addFormFields">
                             ${generateFormFields(currentHeaders, ['_row_number', 'Marca Temporal'], {}, false)}
                         </div>
-                        ${generatePhotoFields(currentHeaders, {}, false)}
-                        <input type="hidden" id="sheetName" value="${sheetName}">
+                        ${generatePhotoFields(currentHeaders, {}, false, '')}
                         <input type="hidden" name="sheet_name" value="${sheetName}">
                         <button type="submit" class="btn">➕ Agregar Documento</button>
                         <button type="button" class="btn btn-cancel" onclick="toggleForm()">Cancelar</button>
@@ -1060,17 +975,10 @@
             `;
             
             html += `<div class="table-wrapper"><div class="table-container"><table>`;
-            
-            html += `<thead><tr>`;
-            html += `<th>📊 Estado</th>`;
-            displayColumns.forEach(col => {
-                html += `<th>${col}</th>`;
-            });
-            if (photoCols.length > 0) {
-                html += `<th>📸 Fotos</th>`;
-            }
-            html += `<th>⚙️ Acciones</th>`;
-            html += `</tr></thead><tbody>`;
+            html += `<thead><tr><th>📊 Estado</th>`;
+            displayColumns.forEach(col => html += `<th>${col}</th>`);
+            if (photoCols.length > 0) html += `<th>📸 Fotos</th>`;
+            html += `<th>⚙️ Acciones</th></tr></thead><tbody>`;
             
             if (filteredRows.length === 0) {
                 const colSpan = displayColumns.length + (photoCols.length > 0 ? 2 : 1) + 1;
@@ -1078,21 +986,16 @@
             } else {
                 filteredRows.forEach((row) => {
                     html += `<tr>`;
-                    
                     const rowStatus = getRowStatus(row, sheetName);
                     html += `<td><span class="${rowStatus.class}">${rowStatus.text}</span></td>`;
                     
                     displayColumns.forEach(col => {
                         let value = row[col] || '';
                         let cellClass = '';
-                        
                         if (dateColumns.includes(col) && value) {
                             const dateStatus = getDateStatus(value);
-                            if (dateStatus.class) {
-                                cellClass = ` class="${dateStatus.class}"`;
-                            }
+                            if (dateStatus.class) cellClass = ` class="${dateStatus.class}"`;
                         }
-                        
                         html += `<td${cellClass}>${value}</td>`;
                     });
                     
@@ -1106,9 +1009,7 @@
                                 let fileId = photoUrl;
                                 if (photoUrl.includes('file/d/')) {
                                     const match = photoUrl.match(/file\/d\/([^\/]+)/);
-                                    if (match) {
-                                        fileId = match[1];
-                                    }
+                                    if (match) fileId = match[1];
                                 }
                                 const docName = col.replace('_FOTO', '');
                                 html += `<a href="${photoUrl}" target="_blank" title="${docName}">`;
@@ -1116,9 +1017,7 @@
                                 html += `</a>`;
                             }
                         });
-                        if (!hasPhoto) {
-                            html += `<span style="color:#999;font-size:11px;">Sin fotos</span>`;
-                        }
+                        if (!hasPhoto) html += `<span style="color:#999;font-size:11px;">Sin fotos</span>`;
                         html += `</div></td>`;
                     }
                     
@@ -1128,7 +1027,6 @@
                             <button class="btn btn-danger btn-sm" onclick="deleteRow('${sheetName}', ${row._row_number})">🗑️ Eliminar</button>
                         </div>
                     </td>`;
-                    
                     html += `</tr>`;
                 });
             }
@@ -1137,64 +1035,40 @@
             content.innerHTML = html;
             
             const form = document.getElementById('addForm');
-            if (form) {
-                form.addEventListener('submit', handleAddDocument);
-            }
+            if (form) form.addEventListener('submit', handleAddDocument);
         }
         
-        // Función para mostrar/ocultar el formulario
         function toggleForm() {
             isFormVisible = !isFormVisible;
             renderTable(currentSheet);
         }
         
-        // Función para aplicar filtro
         function applyFilter(sheetName) {
             const filterInput = document.getElementById('filterInput');
             const searchTerm = filterInput.value.toLowerCase().trim();
             const filterField = filterFields[sheetName] || 'PATENTE';
-            
-            if (!searchTerm) {
-                filteredRows = [...allRows];
-            } else {
-                filteredRows = allRows.filter(row => {
-                    const value = (row[filterField] || '').toString().toLowerCase();
-                    return value.includes(searchTerm);
-                });
-            }
-            
+            if (!searchTerm) filteredRows = [...allRows];
+            else filteredRows = allRows.filter(row => (row[filterField] || '').toString().toLowerCase().includes(searchTerm));
             renderTable(sheetName);
         }
         
-        // Función para limpiar filtro
         function clearFilter() {
-            const filterInput = document.getElementById('filterInput');
-            filterInput.value = '';
+            document.getElementById('filterInput').value = '';
             filteredRows = [...allRows];
             renderTable(currentSheet);
         }
         
-        // Función para manejar el envío del formulario de agregar
         async function handleAddDocument(e) {
             e.preventDefault();
-            
             const form = e.target;
             const formData = new FormData(form);
             const sheetName = formData.get('sheet_name');
             
-            // Validar fotos requeridas
-            if (!validateRequiredPhotos(sheetName, formData, false)) {
-                return;
-            }
+            if (!validateRequiredPhotos(sheetName, formData, false)) return;
             
             try {
-                const response = await fetch('/api/add', {
-                    method: 'POST',
-                    body: formData
-                });
-                
+                const response = await fetch('/api/add', { method: 'POST', body: formData });
                 const result = await response.json();
-                
                 if (result.success) {
                     showAlert('✅ Documento agregado correctamente', 'success');
                     form.reset();
@@ -1208,13 +1082,11 @@
             }
         }
         
-        // ==================== MÓDULO: MAESTRO DE FLOTA (todas las columnas) ====================
-
-        // Función para cargar datos de una hoja para Maestro de Flota
+        // ==================== MAESTRO DE FLOTA ====================
+        
         async function loadMasterData(sheetName) {
             const content = document.getElementById('master-tab-content');
             content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
-
             try {
                 const response = await fetch(`/api/sheet/${encodeURIComponent(sheetName)}`);
                 const data = await response.json();
@@ -1228,17 +1100,14 @@
             }
         }
 
-        // Función para renderizar la tabla de Maestro de Flota (todas las columnas)
         function renderMasterTable(sheetName) {
             const content = document.getElementById('master-tab-content');
-
             const displayColumns = getAllColumns(masterCurrentHeaders);
             const filterField = filterFields[sheetName] || 'PATENTE';
             const dateColumns = dateColumnsConfig[sheetName] || [];
             const photoCols = getPhotoColumns(masterCurrentHeaders);
 
             let html = `
-                <!-- Toolbar -->
                 <div class="toolbar">
                     <button class="btn btn-add" onclick="toggleMasterForm()">
                         ${masterIsFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Nuevo'}
@@ -1251,14 +1120,13 @@
                     <span class="record-count">📊 Total: ${masterFilteredRows.length} registros</span>
                 </div>
 
-                <!-- Formulario de agregar -->
                 <div class="form-section ${masterIsFormVisible ? 'visible' : ''}" id="addFormSectionMaster">
                     <h3>📄 Agregar nuevo registro</h3>
                     <form id="addFormMaster" enctype="multipart/form-data">
                         <div class="form-row" id="addFormFieldsMaster">
                             ${generateFormFields(masterCurrentHeaders, ['_row_number', 'Marca Temporal'], {}, true)}
                         </div>
-                        ${generatePhotoFields(masterCurrentHeaders, {}, true)}
+                        ${generatePhotoFields(masterCurrentHeaders, {}, true, '')}
                         <input type="hidden" name="sheet_name" value="${sheetName}">
                         <button type="submit" class="btn">➕ Agregar Registro</button>
                         <button type="button" class="btn btn-cancel" onclick="toggleMasterForm()">Cancelar</button>
@@ -1267,17 +1135,10 @@
             `;
 
             html += `<div class="table-wrapper"><div class="table-container"><table>`;
-
-            html += `<thead><tr>`;
-            html += `<th>📊 Estado</th>`;
-            displayColumns.forEach(col => {
-                html += `<th>${col}</th>`;
-            });
-            if (photoCols.length > 0) {
-                html += `<th>📸 Fotos</th>`;
-            }
-            html += `<th>⚙️ Acciones</th>`;
-            html += `</tr></thead><tbody>`;
+            html += `<thead><tr><th>📊 Estado</th>`;
+            displayColumns.forEach(col => html += `<th>${col}</th>`);
+            if (photoCols.length > 0) html += `<th>📸 Fotos</th>`;
+            html += `<th>⚙️ Acciones</th></tr></thead><tbody>`;
 
             if (masterFilteredRows.length === 0) {
                 const colSpan = displayColumns.length + (photoCols.length > 0 ? 2 : 1) + 1;
@@ -1285,21 +1146,16 @@
             } else {
                 masterFilteredRows.forEach((row) => {
                     html += `<tr>`;
-
                     const rowStatus = getRowStatus(row, sheetName);
                     html += `<td><span class="${rowStatus.class}">${rowStatus.text}</span></td>`;
 
                     displayColumns.forEach(col => {
                         let value = row[col] || '';
                         let cellClass = '';
-
                         if (dateColumns.includes(col) && value) {
                             const dateStatus = getDateStatus(value);
-                            if (dateStatus.class) {
-                                cellClass = ` class="${dateStatus.class}"`;
-                            }
+                            if (dateStatus.class) cellClass = ` class="${dateStatus.class}"`;
                         }
-
                         html += `<td${cellClass}>${value}</td>`;
                     });
 
@@ -1313,9 +1169,7 @@
                                 let fileId = photoUrl;
                                 if (photoUrl.includes('file/d/')) {
                                     const match = photoUrl.match(/file\/d\/([^\/]+)/);
-                                    if (match) {
-                                        fileId = match[1];
-                                    }
+                                    if (match) fileId = match[1];
                                 }
                                 const docName = col.replace('_FOTO', '');
                                 html += `<a href="${photoUrl}" target="_blank" title="${docName}">`;
@@ -1323,9 +1177,7 @@
                                 html += `</a>`;
                             }
                         });
-                        if (!hasPhoto) {
-                            html += `<span style="color:#999;font-size:11px;">Sin fotos</span>`;
-                        }
+                        if (!hasPhoto) html += `<span style="color:#999;font-size:11px;">Sin fotos</span>`;
                         html += `</div></td>`;
                     }
 
@@ -1335,7 +1187,6 @@
                             <button class="btn btn-danger btn-sm" onclick="deleteMasterRow('${sheetName}', ${row._row_number})">🗑️ Eliminar</button>
                         </div>
                     </td>`;
-
                     html += `</tr>`;
                 });
             }
@@ -1344,59 +1195,37 @@
             content.innerHTML = html;
 
             const form = document.getElementById('addFormMaster');
-            if (form) {
-                form.addEventListener('submit', handleAddMasterDocument);
-            }
+            if (form) form.addEventListener('submit', handleAddMasterDocument);
         }
 
-        // Función para mostrar/ocultar el formulario de Maestro de Flota
         function toggleMasterForm() {
             masterIsFormVisible = !masterIsFormVisible;
             renderMasterTable(masterCurrentSheet);
         }
 
-        // Función para aplicar filtro en Maestro de Flota
         function applyMasterFilter(sheetName) {
             const filterInput = document.getElementById('filterInputMaster');
             const searchTerm = filterInput.value.toLowerCase().trim();
             const filterField = filterFields[sheetName] || 'PATENTE';
-
-            if (!searchTerm) {
-                masterFilteredRows = [...masterAllRows];
-            } else {
-                masterFilteredRows = masterAllRows.filter(row => {
-                    const value = (row[filterField] || '').toString().toLowerCase();
-                    return value.includes(searchTerm);
-                });
-            }
-
+            if (!searchTerm) masterFilteredRows = [...masterAllRows];
+            else masterFilteredRows = masterAllRows.filter(row => (row[filterField] || '').toString().toLowerCase().includes(searchTerm));
             renderMasterTable(sheetName);
         }
 
-        // Función para limpiar filtro en Maestro de Flota
         function clearMasterFilter() {
-            const filterInput = document.getElementById('filterInputMaster');
-            filterInput.value = '';
+            document.getElementById('filterInputMaster').value = '';
             masterFilteredRows = [...masterAllRows];
             renderMasterTable(masterCurrentSheet);
         }
 
-        // Función para manejar el envío del formulario de agregar en Maestro de Flota
         async function handleAddMasterDocument(e) {
             e.preventDefault();
-
             const form = e.target;
             const formData = new FormData(form);
             const sheetName = formData.get('sheet_name');
-
             try {
-                const response = await fetch('/api/add', {
-                    method: 'POST',
-                    body: formData
-                });
-
+                const response = await fetch('/api/add', { method: 'POST', body: formData });
                 const result = await response.json();
-
                 if (result.success) {
                     showAlert('✅ Registro agregado correctamente', 'success');
                     form.reset();
@@ -1410,36 +1239,33 @@
             }
         }
 
-        // Función para editar una fila desde Maestro de Flota (todas las columnas)
         function editMasterRow(sheetName, rowNumber) {
             const row = masterAllRows.find(r => r._row_number === rowNumber);
-
-            if (!row) {
-                showAlert('No se encontró el registro', 'error');
-                return;
-            }
+            if (!row) { showAlert('No se encontró el registro', 'error'); return; }
 
             editContextModule = 'master';
             currentEditRow = row;
-            const displayColumns = getAllColumns(masterCurrentHeaders);
+            // Guardar los headers actuales para usarlos en el modal
+            const headersForEdit = masterCurrentHeaders;
+            const photoCols = getPhotoColumns(headersForEdit);
 
             document.getElementById('editSheetName').value = sheetName;
             document.getElementById('editRowNumber').value = rowNumber;
 
+            // Generar campos de texto
             let html = '';
-            const photoCols = getPhotoColumns(masterCurrentHeaders);
-
-            displayColumns.forEach(header => {
+            const displayCols = getAllColumns(headersForEdit);
+            
+            displayCols.forEach(header => {
                 if (header === 'Marca Temporal') return;
                 if (photoCols.includes(header)) return;
-
+                
                 const value = row[header] || '';
                 const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
                 const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
-
+                
                 html += `<div class="form-group">`;
                 html += `<label>${header}</label>`;
-
                 if (isTextarea) {
                     html += `<textarea id="edit_${header}" name="${header}" rows="2">${value}</textarea>`;
                 } else if (isDate) {
@@ -1456,64 +1282,72 @@
                 } else {
                     html += `<input type="text" id="edit_${header}" name="${header}" value="${value}">`;
                 }
-
                 html += `</div>`;
             });
-
             document.getElementById('editFormFields').innerHTML = html;
 
-            let photoHtml = '';
-            if (photoCols.length > 0) {
-                photoHtml += `<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">`;
-                photoHtml += `<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>`;
-
-                photoCols.forEach(col => {
-                    const docName = col.replace('_FOTO', '');
-                    const photoUrl = row[col] || '';
-                    const fileInputId = `edit_foto_${docName}`;
-
-                    photoHtml += `<div class="photo-upload-group">`;
-                    photoHtml += `<label for="${fileInputId}">📷 ${docName}:</label>`;
-
-                    if (photoUrl && isPhotoUrl(photoUrl)) {
-                        let fileId = photoUrl;
-                        if (photoUrl.includes('file/d/')) {
-                            const match = photoUrl.match(/file\/d\/([^\/]+)/);
-                            if (match) {
-                                fileId = match[1];
-                            }
-                        }
-                        photoHtml += `<br><img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">`;
-                        photoHtml += `<br><small style="color:#666;">Foto actual - <a href="${photoUrl}" target="_blank">Ver en Drive</a></small>`;
-                    } else {
-                        photoHtml += `<br><small style="color:#999;">No hay foto cargada</small>`;
-                    }
-
-                    photoHtml += `<br><input type="file" id="${fileInputId}" name="${fileInputId}" accept="image/*" onchange="previewPhoto(event, '${fileInputId}')">`;
-                    photoHtml += `<div id="preview_${fileInputId}"></div>`;
-                    photoHtml += `</div>`;
-                });
-
-                photoHtml += `</div>`;
-            }
+            // Generar campos de fotos para edición - usando los headers correctos
+            let photoHtml = generatePhotoFieldsForEdit(headersForEdit, row, true);
             document.getElementById('editPhotoFields').innerHTML = photoHtml;
 
             document.getElementById('editModal').style.display = 'block';
         }
 
-        // Función para eliminar una fila desde Maestro de Flota
+        function generatePhotoFieldsForEdit(headers, values = {}, isMaster = false) {
+            let html = '';
+            const photoCols = getPhotoColumns(headers);
+            const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
+            
+            if (photoCols.length === 0) return html;
+            
+            html += `<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">`;
+            html += `<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>`;
+            html += `<p style="color:#666; font-size:14px; margin-bottom:15px;">Las fotos son obligatorias para los documentos con fecha. Si ya tienes una foto, no es necesario subirla de nuevo.</p>`;
+            
+            photoCols.forEach(col => {
+                const docName = col.replace('_FOTO', '');
+                const photoUrl = values[col] || '';
+                const fileInputId = `edit_foto_${docName}`;
+                const isRequired = dateColsRequiringPhoto.includes(docName) && !isMaster;
+                
+                html += `<div class="photo-upload-group">`;
+                html += `<label for="${fileInputId}">📷 ${docName}:`;
+                if (isRequired) {
+                    html += ` <span class="photo-required">(OBLIGATORIA)</span>`;
+                }
+                html += `</label>`;
+                
+                if (photoUrl && isPhotoUrl(photoUrl)) {
+                    let fileId = photoUrl;
+                    if (photoUrl.includes('file/d/')) {
+                        const match = photoUrl.match(/file\/d\/([^\/]+)/);
+                        if (match) fileId = match[1];
+                    }
+                    html += `<br><img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">`;
+                    html += `<br><small style="color:#666;">Foto actual - <a href="${photoUrl}" target="_blank">Ver en Drive</a></small>`;
+                    html += `<br><small style="color:#888;">Si quieres reemplazarla, selecciona una nueva foto.</small>`;
+                } else {
+                    html += `<br><small style="color:#999;">No hay foto cargada</small>`;
+                }
+                
+                html += `<br><input type="file" id="${fileInputId}" name="${fileInputId}" accept="image/*" onchange="previewPhoto(event, '${fileInputId}')"`;
+                if (isRequired && !photoUrl) {
+                    html += ` required`;
+                }
+                html += `>`;
+                html += `<div id="preview_${fileInputId}"></div>`;
+                html += `</div>`;
+            });
+            
+            html += `</div>`;
+            return html;
+        }
+
         async function deleteMasterRow(sheetName, rowNumber) {
-            if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) {
-                return;
-            }
-
+            if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
             try {
-                const response = await fetch(`/api/delete/${encodeURIComponent(sheetName)}/${rowNumber}`, {
-                    method: 'DELETE'
-                });
-
+                const response = await fetch(`/api/delete/${encodeURIComponent(sheetName)}/${rowNumber}`, { method: 'DELETE' });
                 const result = await response.json();
-
                 if (result.success) {
                     showAlert('✅ Registro eliminado correctamente', 'success');
                     await loadMasterData(sheetName);
@@ -1525,27 +1359,24 @@
             }
         }
 
-        // Función para editar una fila
+        // ==================== EDICIÓN (CONTROL DE DOCUMENTACIÓN) ====================
+        
         function editRow(sheetName, rowNumber) {
             const row = allRows.find(r => r._row_number === rowNumber);
-            
-            if (!row) {
-                showAlert('No se encontró el documento', 'error');
-                return;
-            }
+            if (!row) { showAlert('No se encontró el documento', 'error'); return; }
             
             editContextModule = 'docs';
             currentEditRow = row;
+            const headersForEdit = currentHeaders;
             const displayColumns = getDisplayColumns(sheetName);
+            const photoCols = getPhotoColumns(headersForEdit);
+            const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(sheetName);
             
             document.getElementById('editSheetName').value = sheetName;
             document.getElementById('editRowNumber').value = rowNumber;
             
             // Generar campos de texto/fechas
             let html = '';
-            const photoCols = getPhotoColumns(currentHeaders);
-            const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(sheetName);
-            
             displayColumns.forEach(header => {
                 if (header === 'Marca Temporal') return;
                 if (photoCols.includes(header)) return;
@@ -1557,9 +1388,7 @@
                 
                 html += `<div class="form-group">`;
                 html += `<label>${header}`;
-                if (requiresPhoto) {
-                    html += ` <span class="photo-required">(requiere foto)</span>`;
-                }
+                if (requiresPhoto) html += ` <span class="photo-required">(requiere foto)</span>`;
                 html += `</label>`;
                 
                 if (isTextarea) {
@@ -1578,101 +1407,44 @@
                 } else {
                     html += `<input type="text" id="edit_${header}" name="${header}" value="${value}">`;
                 }
-                
                 html += `</div>`;
             });
-            
             document.getElementById('editFormFields').innerHTML = html;
             
-            // Generar campos de fotos para edición
-            let photoHtml = '';
-            if (photoCols.length > 0) {
-                photoHtml += `<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">`;
-                photoHtml += `<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>`;
-                photoHtml += `<p style="color:#666; font-size:14px; margin-bottom:15px;">Las fotos son obligatorias para los documentos con fecha. Si ya tienes una foto, no es necesario subirla de nuevo.</p>`;
-                
-                photoCols.forEach(col => {
-                    const docName = col.replace('_FOTO', '');
-                    const photoUrl = row[col] || '';
-                    const fileInputId = `edit_foto_${docName}`;
-                    const isRequired = dateColsRequiringPhoto.includes(docName);
-                    
-                    photoHtml += `<div class="photo-upload-group">`;
-                    photoHtml += `<label for="${fileInputId}">📷 ${docName}:`;
-                    if (isRequired) {
-                        photoHtml += ` <span class="photo-required">(OBLIGATORIA)</span>`;
-                    }
-                    photoHtml += `</label>`;
-                    
-                    if (photoUrl && isPhotoUrl(photoUrl)) {
-                        let fileId = photoUrl;
-                        if (photoUrl.includes('file/d/')) {
-                            const match = photoUrl.match(/file\/d\/([^\/]+)/);
-                            if (match) {
-                                fileId = match[1];
-                            }
-                        }
-                        photoHtml += `<br><img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">`;
-                        photoHtml += `<br><small style="color:#666;">Foto actual - <a href="${photoUrl}" target="_blank">Ver en Drive</a></small>`;
-                        photoHtml += `<br><small style="color:#888;">Si quieres reemplazarla, selecciona una nueva foto.</small>`;
-                    } else {
-                        photoHtml += `<br><small style="color:#999;">No hay foto cargada</small>`;
-                    }
-                    
-                    photoHtml += `<br><input type="file" id="${fileInputId}" name="${fileInputId}" accept="image/*" onchange="previewPhoto(event, '${fileInputId}')"`;
-                    if (isRequired && !photoUrl) {
-                        photoHtml += ` required`;
-                    }
-                    photoHtml += `>`;
-                    photoHtml += `<div id="preview_${fileInputId}"></div>`;
-                    photoHtml += `</div>`;
-                });
-                
-                photoHtml += `</div>`;
-            }
+            // Generar campos de fotos para edición usando la función específica
+            let photoHtml = generatePhotoFieldsForEdit(headersForEdit, row, false);
             document.getElementById('editPhotoFields').innerHTML = photoHtml;
             
             document.getElementById('editModal').style.display = 'block';
         }
         
-        // Función para cerrar el modal
         function closeEditModal() {
             document.getElementById('editModal').style.display = 'none';
         }
         
-        // Cerrar modal al hacer clic fuera
         window.onclick = function(event) {
             const modal = document.getElementById('editModal');
-            if (event.target == modal) {
-                modal.style.display = 'none';
-            }
+            if (event.target == modal) modal.style.display = 'none';
         }
         
-        // Event listener para el formulario de edición
         document.getElementById('editForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const sheetName = document.getElementById('editSheetName').value;
             const rowNumber = parseInt(document.getElementById('editRowNumber').value);
-            
             const formData = new FormData(this);
             
             // Validar fotos requeridas en edición (solo para Control de Documentación)
             if (editContextModule !== 'master') {
-                // Verificar si hay fechas sin foto
                 const dateCols = getDateColumnsRequiringPhoto(sheetName);
                 let missingPhotos = [];
                 
                 dateCols.forEach(dateCol => {
                     const dateValue = formData.get(dateCol);
                     if (dateValue && dateValue.trim() !== '') {
-                        // Verificar si se subió una foto nueva
                         const photoInput = document.getElementById(`edit_foto_${dateCol}`);
                         let hasNewFile = photoInput && photoInput.files && photoInput.files.length > 0;
-                        
-                        // Verificar si ya tiene una foto guardada
                         const existingPhoto = formData.get(`${dateCol}_FOTO`);
-                        
                         if (!hasNewFile && !existingPhoto) {
                             missingPhotos.push(dateCol);
                         }
@@ -1680,8 +1452,7 @@
                 });
                 
                 if (missingPhotos.length > 0) {
-                    const msg = `⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ${missingPhotos.join(', ')}`;
-                    showAlert(msg, 'error');
+                    showAlert(`⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ${missingPhotos.join(', ')}`, 'error');
                     return;
                 }
             }
@@ -1702,9 +1473,7 @@
             // Eliminar los campos edit_foto_ originales
             const keysToDelete = [];
             for (let key of formData.keys()) {
-                if (key.startsWith('edit_foto_')) {
-                    keysToDelete.push(key);
-                }
+                if (key.startsWith('edit_foto_')) keysToDelete.push(key);
             }
             keysToDelete.forEach(key => formData.delete(key));
             
@@ -1724,15 +1493,12 @@
                     }
                     response = await fetch(`/api/update/${encodeURIComponent(sheetName)}/${rowNumber}`, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(jsonData)
                     });
                 }
                 
                 const result = await response.json();
-                
                 if (result.success) {
                     showAlert('✅ Documento actualizado correctamente', 'success');
                     closeEditModal();
@@ -1749,19 +1515,11 @@
             }
         });
         
-        // Función para eliminar una fila
         async function deleteRow(sheetName, rowNumber) {
-            if (!confirm('¿Estás seguro de que deseas eliminar este documento?')) {
-                return;
-            }
-            
+            if (!confirm('¿Estás seguro de que deseas eliminar este documento?')) return;
             try {
-                const response = await fetch(`/api/delete/${encodeURIComponent(sheetName)}/${rowNumber}`, {
-                    method: 'DELETE'
-                });
-                
+                const response = await fetch(`/api/delete/${encodeURIComponent(sheetName)}/${rowNumber}`, { method: 'DELETE' });
                 const result = await response.json();
-                
                 if (result.success) {
                     showAlert('✅ Documento eliminado correctamente', 'success');
                     await loadSheetData(sheetName);
@@ -1773,33 +1531,27 @@
             }
         }
         
-        // Configurar tabs del módulo Control de Documentación
+        // Configurar tabs
         document.querySelectorAll('#tabsDocs .tab').forEach(tab => {
             tab.addEventListener('click', function() {
                 document.querySelectorAll('#tabsDocs .tab').forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
-
-                const sheetName = this.dataset.sheet;
-                currentSheet = sheetName;
+                currentSheet = this.dataset.sheet;
                 isFormVisible = false;
-                loadSheetData(sheetName);
+                loadSheetData(currentSheet);
             });
         });
 
-        // Configurar tabs del módulo Maestro de Flota
         document.querySelectorAll('#tabsMaster .tab').forEach(tab => {
             tab.addEventListener('click', function() {
                 document.querySelectorAll('#tabsMaster .tab').forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
-
-                const sheetName = this.dataset.sheet;
-                masterCurrentSheet = sheetName;
+                masterCurrentSheet = this.dataset.sheet;
                 masterIsFormVisible = false;
-                loadMasterData(sheetName);
+                loadMasterData(masterCurrentSheet);
             });
         });
 
-        // Al iniciar, se muestra la pantalla de inicio con los 2 botones
         showHome();
     </script>
 </body>
