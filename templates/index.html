@@ -459,6 +459,64 @@
             margin-top: 5px;
         }
         
+        /* Pantalla de inicio */
+        .home-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 25px;
+            padding: 60px 20px;
+        }
+
+        .home-btn {
+            width: 100%;
+            max-width: 420px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 30px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+
+        .home-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .home-btn.master-btn {
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+        }
+
+        .home-btn.master-btn:hover {
+            box-shadow: 0 10px 25px rgba(56, 161, 105, 0.4);
+        }
+
+        .back-home-btn {
+            background: #718096;
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .back-home-btn:hover {
+            background: #4a5568;
+        }
+
         @media (max-width: 768px) {
             .form-row {
                 grid-template-columns: 1fr;
@@ -511,16 +569,43 @@
         <p class="subtitle">Control de vencimientos de documentación</p>
         
         <div id="alert-container"></div>
-        
-        <div class="tabs" id="tabs">
-            <button class="tab active" data-sheet="Camion T1">🚚 Camión T1</button>
-            <button class="tab" data-sheet="Camion T2">🚛 Camión T2</button>
-            <button class="tab" data-sheet="Autoelevadores">🏗️ Autoelevadores</button>
-            <button class="tab" data-sheet="Choferes y Ayudantes">👨‍✈️ Choferes y Ayudantes</button>
+
+        <!-- PANTALLA DE INICIO -->
+        <div id="homeScreen" class="home-screen">
+            <button class="home-btn master-btn" onclick="showModule('master')">🗂️ Maestro de Flota</button>
+            <button class="home-btn" onclick="showModule('docs')">📋 Control de Documentación</button>
         </div>
-        
-        <div id="tab-content">
-            <!-- El contenido de las tabs se carga dinámicamente -->
+
+        <!-- MÓDULO: CONTROL DE DOCUMENTACIÓN (funcionalidad original) -->
+        <div id="docsModule" style="display:none;">
+            <button class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
+
+            <div class="tabs" id="tabsDocs">
+                <button class="tab active" data-sheet="Camion T1">🚚 Camión T1</button>
+                <button class="tab" data-sheet="Camion T2">🚛 Camión T2</button>
+                <button class="tab" data-sheet="Autoelevadores">🏗️ Autoelevadores</button>
+                <button class="tab" data-sheet="Choferes y Ayudantes">👨‍✈️ Choferes y Ayudantes</button>
+            </div>
+
+            <div id="tab-content">
+                <!-- El contenido de las tabs se carga dinámicamente -->
+            </div>
+        </div>
+
+        <!-- MÓDULO: MAESTRO DE FLOTA (todas las columnas) -->
+        <div id="masterModule" style="display:none;">
+            <button class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
+
+            <div class="tabs" id="tabsMaster">
+                <button class="tab active" data-sheet="Camion T1">🚚 Camión T1</button>
+                <button class="tab" data-sheet="Camion T2">🚛 Camión T2</button>
+                <button class="tab" data-sheet="Autoelevadores">🏗️ Autoelevadores</button>
+                <button class="tab" data-sheet="Choferes y Ayudantes">👨‍✈️ Choferes y Ayudantes</button>
+            </div>
+
+            <div id="master-tab-content">
+                <!-- El contenido de las tabs se carga dinámicamente -->
+            </div>
         </div>
     </div>
     
@@ -552,6 +637,15 @@
         let filteredRows = [];
         let isFormVisible = false;
         let currentEditRow = null;
+        let editContextModule = 'docs'; // 'docs' o 'master', indica qué módulo abrió el modal de edición
+
+        // Variables globales para el módulo "Maestro de Flota" (muestra todas las columnas)
+        let masterCurrentSheet = 'Camion T1';
+        let masterDataCache = {};
+        let masterCurrentHeaders = [];
+        let masterAllRows = [];
+        let masterFilteredRows = [];
+        let masterIsFormVisible = false;
         
         // Definición de columnas a mostrar por pestaña
         const columnConfig = {
@@ -703,6 +797,31 @@
         function getDisplayColumns(sheetName) {
             const columns = columnConfig[sheetName] || [];
             return [...columns, 'Marca Temporal'];
+        }
+
+        // Función para obtener TODAS las columnas de una hoja (usada por Maestro de Flota)
+        function getAllColumns(headers) {
+            return headers.filter(h => h !== '_row_number' && !h.endsWith('_FOTO'));
+        }
+
+        // ==================== NAVEGACIÓN ENTRE MÓDULOS ====================
+        function showHome() {
+            document.getElementById('homeScreen').style.display = 'flex';
+            document.getElementById('docsModule').style.display = 'none';
+            document.getElementById('masterModule').style.display = 'none';
+        }
+
+        function showModule(module) {
+            document.getElementById('homeScreen').style.display = 'none';
+            if (module === 'docs') {
+                document.getElementById('docsModule').style.display = 'block';
+                document.getElementById('masterModule').style.display = 'none';
+                loadSheetData(currentSheet);
+            } else if (module === 'master') {
+                document.getElementById('masterModule').style.display = 'block';
+                document.getElementById('docsModule').style.display = 'none';
+                loadMasterData(masterCurrentSheet);
+            }
         }
         
         // Función para verificar si un valor es una URL de foto
@@ -1011,6 +1130,323 @@
             }
         }
         
+        // ==================== MÓDULO: MAESTRO DE FLOTA (todas las columnas) ====================
+
+        // Función para cargar datos de una hoja para Maestro de Flota
+        async function loadMasterData(sheetName) {
+            const content = document.getElementById('master-tab-content');
+            content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
+
+            try {
+                const response = await fetch(`/api/sheet/${encodeURIComponent(sheetName)}`);
+                const data = await response.json();
+                masterDataCache[sheetName] = data;
+                masterCurrentHeaders = data.headers || [];
+                masterAllRows = data.rows || [];
+                masterFilteredRows = [...masterAllRows];
+                renderMasterTable(sheetName);
+            } catch (error) {
+                content.innerHTML = `<div class="alert alert-error">❌ Error al cargar datos: ${error.message}</div>`;
+            }
+        }
+
+        // Función para renderizar la tabla de Maestro de Flota (todas las columnas)
+        function renderMasterTable(sheetName) {
+            const content = document.getElementById('master-tab-content');
+
+            const displayColumns = getAllColumns(masterCurrentHeaders);
+            const filterField = filterFields[sheetName] || 'PATENTE';
+            const dateColumns = dateColumnsConfig[sheetName] || [];
+            const photoCols = getPhotoColumns(masterCurrentHeaders);
+
+            let html = `
+                <!-- Toolbar -->
+                <div class="toolbar">
+                    <button class="btn btn-add" onclick="toggleMasterForm()">
+                        ${masterIsFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Nuevo'}
+                    </button>
+                    <div class="filter-group">
+                        <label>🔍 Filtrar por ${filterField}:</label>
+                        <input type="text" id="filterInputMaster" placeholder="Buscar..." oninput="applyMasterFilter('${sheetName}')">
+                        <button class="btn-clear" onclick="clearMasterFilter()">✖ Limpiar</button>
+                    </div>
+                    <span class="record-count">📊 Total: ${masterFilteredRows.length} registros</span>
+                </div>
+
+                <!-- Formulario de agregar -->
+                <div class="form-section ${masterIsFormVisible ? 'visible' : ''}" id="addFormSectionMaster">
+                    <h3>📄 Agregar nuevo registro</h3>
+                    <form id="addFormMaster" enctype="multipart/form-data">
+                        <div class="form-row" id="addFormFieldsMaster">
+                            ${generateFormFields(masterCurrentHeaders)}
+                        </div>
+                        ${generatePhotoFields(masterCurrentHeaders)}
+                        <input type="hidden" name="sheet_name" value="${sheetName}">
+                        <button type="submit" class="btn">➕ Agregar Registro</button>
+                        <button type="button" class="btn btn-cancel" onclick="toggleMasterForm()">Cancelar</button>
+                    </form>
+                </div>
+            `;
+
+            html += `<div class="table-wrapper"><div class="table-container"><table>`;
+
+            html += `<thead><tr>`;
+            html += `<th>📊 Estado</th>`;
+            displayColumns.forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            if (photoCols.length > 0) {
+                html += `<th>📸 Fotos</th>`;
+            }
+            html += `<th>⚙️ Acciones</th>`;
+            html += `</tr></thead><tbody>`;
+
+            if (masterFilteredRows.length === 0) {
+                const colSpan = displayColumns.length + (photoCols.length > 0 ? 2 : 1) + 1;
+                html += `<tr><td colspan="${colSpan}" style="text-align: center; padding: 20px;">📭 No hay registros</td></tr>`;
+            } else {
+                masterFilteredRows.forEach((row) => {
+                    html += `<tr>`;
+
+                    const rowStatus = getRowStatus(row, sheetName);
+                    html += `<td><span class="${rowStatus.class}">${rowStatus.text}</span></td>`;
+
+                    displayColumns.forEach(col => {
+                        let value = row[col] || '';
+                        let cellClass = '';
+
+                        if (dateColumns.includes(col) && value) {
+                            const dateStatus = getDateStatus(value);
+                            if (dateStatus.class) {
+                                cellClass = ` class="${dateStatus.class}"`;
+                            }
+                        }
+
+                        html += `<td${cellClass}>${value}</td>`;
+                    });
+
+                    if (photoCols.length > 0) {
+                        html += `<td><div class="photo-group">`;
+                        let hasPhoto = false;
+                        photoCols.forEach(col => {
+                            const photoUrl = row[col] || '';
+                            if (photoUrl && isPhotoUrl(photoUrl)) {
+                                hasPhoto = true;
+                                let fileId = photoUrl;
+                                if (photoUrl.includes('file/d/')) {
+                                    const match = photoUrl.match(/file\/d\/([^\/]+)/);
+                                    if (match) {
+                                        fileId = match[1];
+                                    }
+                                }
+                                const docName = col.replace('_FOTO', '');
+                                html += `<a href="${photoUrl}" target="_blank" title="${docName}">`;
+                                html += `<img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w80-h80" class="photo-thumb" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E'">`;
+                                html += `</a>`;
+                            }
+                        });
+                        if (!hasPhoto) {
+                            html += `<span style="color:#999;font-size:11px;">Sin fotos</span>`;
+                        }
+                        html += `</div></td>`;
+                    }
+
+                    html += `<td>
+                        <div class="actions">
+                            <button class="btn btn-success btn-sm" onclick="editMasterRow('${sheetName}', ${row._row_number})">✏️ Editar</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteMasterRow('${sheetName}', ${row._row_number})">🗑️ Eliminar</button>
+                        </div>
+                    </td>`;
+
+                    html += `</tr>`;
+                });
+            }
+
+            html += `</tbody></table></div></div>`;
+            content.innerHTML = html;
+
+            const form = document.getElementById('addFormMaster');
+            if (form) {
+                form.addEventListener('submit', handleAddMasterDocument);
+            }
+        }
+
+        // Función para mostrar/ocultar el formulario de Maestro de Flota
+        function toggleMasterForm() {
+            masterIsFormVisible = !masterIsFormVisible;
+            renderMasterTable(masterCurrentSheet);
+        }
+
+        // Función para aplicar filtro en Maestro de Flota
+        function applyMasterFilter(sheetName) {
+            const filterInput = document.getElementById('filterInputMaster');
+            const searchTerm = filterInput.value.toLowerCase().trim();
+            const filterField = filterFields[sheetName] || 'PATENTE';
+
+            if (!searchTerm) {
+                masterFilteredRows = [...masterAllRows];
+            } else {
+                masterFilteredRows = masterAllRows.filter(row => {
+                    const value = (row[filterField] || '').toString().toLowerCase();
+                    return value.includes(searchTerm);
+                });
+            }
+
+            renderMasterTable(sheetName);
+        }
+
+        // Función para limpiar filtro en Maestro de Flota
+        function clearMasterFilter() {
+            const filterInput = document.getElementById('filterInputMaster');
+            filterInput.value = '';
+            masterFilteredRows = [...masterAllRows];
+            renderMasterTable(masterCurrentSheet);
+        }
+
+        // Función para manejar el envío del formulario de agregar en Maestro de Flota
+        async function handleAddMasterDocument(e) {
+            e.preventDefault();
+
+            const form = e.target;
+            const formData = new FormData(form);
+            const sheetName = formData.get('sheet_name');
+
+            try {
+                const response = await fetch('/api/add', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('✅ Registro agregado correctamente', 'success');
+                    form.reset();
+                    masterIsFormVisible = false;
+                    await loadMasterData(sheetName);
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error al enviar el formulario: ${error.message}`, 'error');
+            }
+        }
+
+        // Función para editar una fila desde Maestro de Flota (todas las columnas)
+        function editMasterRow(sheetName, rowNumber) {
+            const row = masterAllRows.find(r => r._row_number === rowNumber);
+
+            if (!row) {
+                showAlert('No se encontró el registro', 'error');
+                return;
+            }
+
+            editContextModule = 'master';
+            currentEditRow = row;
+            const displayColumns = getAllColumns(masterCurrentHeaders);
+
+            document.getElementById('editSheetName').value = sheetName;
+            document.getElementById('editRowNumber').value = rowNumber;
+
+            let html = '';
+            const photoCols = getPhotoColumns(masterCurrentHeaders);
+
+            displayColumns.forEach(header => {
+                if (header === 'Marca Temporal') return;
+                if (photoCols.includes(header)) return;
+
+                const value = row[header] || '';
+                const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
+                const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
+
+                html += `<div class="form-group">`;
+                html += `<label>${header}</label>`;
+
+                if (isTextarea) {
+                    html += `<textarea id="edit_${header}" name="${header}" rows="2">${value}</textarea>`;
+                } else if (isDate) {
+                    let dateValue = value;
+                    if (value && value.includes('/')) {
+                        const parts = value.split('/');
+                        if (parts.length === 3) {
+                            let year = parseInt(parts[2]);
+                            if (year < 100) year += 2000;
+                            dateValue = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                        }
+                    }
+                    html += `<input type="date" id="edit_${header}" name="${header}" value="${dateValue}">`;
+                } else {
+                    html += `<input type="text" id="edit_${header}" name="${header}" value="${value}">`;
+                }
+
+                html += `</div>`;
+            });
+
+            document.getElementById('editFormFields').innerHTML = html;
+
+            let photoHtml = '';
+            if (photoCols.length > 0) {
+                photoHtml += `<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">`;
+                photoHtml += `<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>`;
+
+                photoCols.forEach(col => {
+                    const docName = col.replace('_FOTO', '');
+                    const photoUrl = row[col] || '';
+                    const fileInputId = `edit_foto_${docName}`;
+
+                    photoHtml += `<div class="photo-upload-group">`;
+                    photoHtml += `<label for="${fileInputId}">📷 ${docName}:</label>`;
+
+                    if (photoUrl && isPhotoUrl(photoUrl)) {
+                        let fileId = photoUrl;
+                        if (photoUrl.includes('file/d/')) {
+                            const match = photoUrl.match(/file\/d\/([^\/]+)/);
+                            if (match) {
+                                fileId = match[1];
+                            }
+                        }
+                        photoHtml += `<br><img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">`;
+                        photoHtml += `<br><small style="color:#666;">Foto actual - <a href="${photoUrl}" target="_blank">Ver en Drive</a></small>`;
+                    } else {
+                        photoHtml += `<br><small style="color:#999;">No hay foto cargada</small>`;
+                    }
+
+                    photoHtml += `<br><input type="file" id="${fileInputId}" name="${fileInputId}" accept="image/*" onchange="previewPhoto(event, '${fileInputId}')">`;
+                    photoHtml += `<div id="preview_${fileInputId}"></div>`;
+                    photoHtml += `</div>`;
+                });
+
+                photoHtml += `</div>`;
+            }
+            document.getElementById('editPhotoFields').innerHTML = photoHtml;
+
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        // Función para eliminar una fila desde Maestro de Flota
+        async function deleteMasterRow(sheetName, rowNumber) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/delete/${encodeURIComponent(sheetName)}/${rowNumber}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('✅ Registro eliminado correctamente', 'success');
+                    await loadMasterData(sheetName);
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error al eliminar: ${error.message}`, 'error');
+            }
+        }
+
         // Función para editar una fila (CORREGIDA)
         function editRow(sheetName, rowNumber) {
             const row = allRows.find(r => r._row_number === rowNumber);
@@ -1020,6 +1456,7 @@
                 return;
             }
             
+            editContextModule = 'docs';
             currentEditRow = row;
             const displayColumns = getDisplayColumns(sheetName);
             
@@ -1175,7 +1612,11 @@
                 if (result.success) {
                     showAlert('✅ Documento actualizado correctamente', 'success');
                     closeEditModal();
-                    await loadSheetData(sheetName);
+                    if (editContextModule === 'master') {
+                        await loadMasterData(sheetName);
+                    } else {
+                        await loadSheetData(sheetName);
+                    }
                 } else {
                     showAlert(`❌ Error: ${result.error}`, 'error');
                 }
@@ -1208,21 +1649,34 @@
             }
         }
         
-        // Configurar tabs
-        document.querySelectorAll('.tab').forEach(tab => {
+        // Configurar tabs del módulo Control de Documentación
+        document.querySelectorAll('#tabsDocs .tab').forEach(tab => {
             tab.addEventListener('click', function() {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('#tabsDocs .tab').forEach(t => t.classList.remove('active'));
                 this.classList.add('active');
-                
+
                 const sheetName = this.dataset.sheet;
                 currentSheet = sheetName;
                 isFormVisible = false;
                 loadSheetData(sheetName);
             });
         });
-        
-        // Cargar datos iniciales
-        loadSheetData('Camion T1');
+
+        // Configurar tabs del módulo Maestro de Flota
+        document.querySelectorAll('#tabsMaster .tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('#tabsMaster .tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                const sheetName = this.dataset.sheet;
+                masterCurrentSheet = sheetName;
+                masterIsFormVisible = false;
+                loadMasterData(sheetName);
+            });
+        });
+
+        // Al iniciar, se muestra la pantalla de inicio con los 2 botones
+        showHome();
     </script>
 </body>
 </html>
