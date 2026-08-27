@@ -155,7 +155,9 @@
             color: #333;
         }
         
-        .form-group input, .form-group select, .form-group textarea {
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -387,7 +389,7 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0, 0, 0, 0.5);
         }
         
         .modal-content {
@@ -456,7 +458,7 @@
             gap: 5px;
             margin-top: 5px;
         }
-
+        
         .photo-required {
             color: #e53e3e;
             font-size: 12px;
@@ -472,7 +474,7 @@
             gap: 25px;
             padding: 60px 20px;
         }
-
+        
         .home-btn {
             width: 100%;
             max-width: 420px;
@@ -489,22 +491,22 @@
             justify-content: center;
             gap: 12px;
             transition: all 0.3s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
         }
-
+        
         .home-btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
         }
-
+        
         .home-btn.master-btn {
             background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
         }
-
+        
         .home-btn.master-btn:hover {
             box-shadow: 0 10px 25px rgba(56, 161, 105, 0.4);
         }
-
+        
         .back-home-btn {
             background: #718096;
             color: white;
@@ -516,11 +518,11 @@
             margin-bottom: 15px;
             transition: all 0.3s;
         }
-
+        
         .back-home-btn:hover {
             background: #4a5568;
         }
-
+        
         @media (max-width: 768px) {
             .form-row {
                 grid-template-columns: 1fr;
@@ -544,7 +546,8 @@
                 font-size: 11px;
             }
             
-            th, td {
+            th,
+            td {
                 padding: 5px;
             }
             
@@ -571,7 +574,7 @@
     <div class="container">
         <h1>🚛 Sistema de Gestión de Documentación</h1>
         <p class="subtitle">Control de vencimientos de documentación</p>
-        
+
         <div id="alert-container"></div>
 
         <div id="homeScreen" class="home-screen">
@@ -605,7 +608,7 @@
             <div id="master-tab-content"></div>
         </div>
     </div>
-    
+
     <div id="editModal" class="modal">
         <div class="modal-content">
             <span class="modal-close" onclick="closeEditModal()">&times;</span>
@@ -619,7 +622,7 @@
             </form>
         </div>
     </div>
-    
+
     <script>
         let currentSheet = 'Camion T1';
         let dataCache = {};
@@ -636,42 +639,64 @@
         let masterAllRows = [];
         let masterFilteredRows = [];
         let masterIsFormVisible = false;
-        
+
         const columnConfig = {
             'Camion T1': [
-                'PATENTE', 'PROPIETARIO', 'MAIL', 'CIA SEGURO', 'VENC VTV', 
-                'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO', 
-                'POLIZA DE SEGUROS', 'SEGURO DE ACCIDENTES PERSONALES', 
-                'CLAUSULA DE NO REPETICION', 'INDUCCION DE CMQ', 
+                'PATENTE', 'PROPIETARIO', 'MAIL', 'CIA SEGURO', 'VENC VTV',
+                'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO',
+                'POLIZA DE SEGUROS', 'SEGURO DE ACCIDENTES PERSONALES',
+                'CLAUSULA DE NO REPETICION', 'INDUCCION DE CMQ',
                 'CAPACITACION DE MANEJO DEFENSIVO'
             ],
             'Camion T2': [
-                'PATENTE', 'CIA SEGURO', 'AÑO', 'VENC VTV', 'VENC SEGURO', 
+                'PATENTE', 'CIA SEGURO', 'AÑO', 'VENC VTV', 'VENC SEGURO',
                 'UTA', 'EXTINTOR', 'BOTIQUIN'
             ],
             'Autoelevadores': [
                 'CODIGO DE AE', 'CIA SEGURO', 'AÑO', 'VENC SEGURO', 'EXTINTOR'
             ],
             'Choferes y Ayudantes': [
-                'APELLIDO Y NOMBRE', 'CONTRATACION', 'Mail', 
+                'APELLIDO Y NOMBRE', 'CONTRATACION', 'Mail',
                 'VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA'
             ]
         };
-        
+
         const dateColumnsConfig = {
-            'Camion T1': ['VENC VTV', 'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO', 'POLIZA DE SEGUROS', 'SEGURO DE ACCIDENTES PERSONALES', 'CLAUSULA DE NO REPETICION', 'INDUCCION DE CMQ', 'CAPACITACION DE MANEJO DEFENSIVO'],
+            'Camion T1': ['VENC VTV', 'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO', 'POLIZA DE SEGUROS',
+                'SEGURO DE ACCIDENTES PERSONALES', 'CLAUSULA DE NO REPETICION', 'INDUCCION DE CMQ',
+                'CAPACITACION DE MANEJO DEFENSIVO'
+            ],
             'Camion T2': ['VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN'],
             'Autoelevadores': ['VENC SEGURO', 'EXTINTOR'],
             'Choferes y Ayudantes': ['VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA']
         };
-        
+
         const filterFields = {
             'Camion T1': 'PATENTE',
             'Camion T2': 'PATENTE',
             'Autoelevadores': 'CODIGO DE AE',
             'Choferes y Ayudantes': 'APELLIDO Y NOMBRE'
         };
-        
+
+        // Mapeo de qué columna de foto corresponde a cada documento
+        const photoMapping = {
+            'VENC VTV': 'VENC VTV_FOTO',
+            'VENC SEGURO': 'VENC SEGURO_FOTO',
+            'SENASA': 'SENASA_FOTO',
+            'LICENCIA DE CONDUCIR': 'LICENCIA DE CONDUCIR_FOTO',
+            'PAGO MONOTRIBUTO': 'PAGO MONOTRIBUTO_FOTO',
+            'POLIZA DE SEGUROS': 'POLIZA DE SEGUROS_FOTO',
+            'SEGURO DE ACCIDENTES PERSONALES': 'SEGURO DE ACCIDENTES PERSONALES_FOTO',
+            'CLAUSULA DE NO REPETICION': 'CLAUSULA DE NO REPETICION_FOTO',
+            'INDUCCION DE CMQ': 'INDUCCION DE CMQ_FOTO',
+            'CAPACITACION DE MANEJO DEFENSIVO': 'CAPACITACION DE MANEJO DEFENSIVO_FOTO',
+            'UTA': 'UTA_FOTO',
+            'EXTINTOR': 'EXTINTOR_FOTO',
+            'BOTIQUIN': 'BOTIQUIN_FOTO',
+            'VENCIMIENTO REGISTRO': 'VENCIMIENTO REGISTRO_FOTO',
+            'LIBRETA SANITARIA': 'LIBRETA SANITARIA_FOTO'
+        };
+
         function showAlert(message, type = 'success') {
             const container = document.getElementById('alert-container');
             const alert = document.createElement('div');
@@ -680,12 +705,12 @@
             container.appendChild(alert);
             setTimeout(() => alert.remove(), 5000);
         }
-        
+
         function parseDate(dateStr) {
             if (!dateStr) return null;
             dateStr = dateStr.trim();
             if (dateStr === '') return null;
-            
+
             if (dateStr.includes('/')) {
                 const parts = dateStr.split('/');
                 if (parts.length === 3) {
@@ -698,24 +723,25 @@
                     }
                 }
             }
-            
+
             if (dateStr.includes('-')) {
                 const parts = dateStr.split('-');
                 if (parts.length === 3) {
                     const year = parseInt(parts[0]);
                     const month = parseInt(parts[1]) - 1;
                     const day = parseInt(parts[2]);
-                    if (!isNaN(year) && !isNaN(month) && !isNaN(day) && day > 0 && month >= 0 && day <= 31 && month <= 11) {
+                    if (!isNaN(year) && !isNaN(month) && !isNaN(day) && day > 0 && month >= 0 && day <= 31 && month <=
+                        11) {
                         return new Date(year, month, day);
                     }
                 }
             }
-            
+
             const date = new Date(dateStr);
             if (!isNaN(date.getTime())) return date;
             return null;
         }
-        
+
         function getDateStatus(dateStr) {
             if (!dateStr) return { class: '', text: '' };
             const expDate = parseDate(dateStr);
@@ -728,10 +754,12 @@
             else if (diffDays >= 0 && diffDays <= 30) return { class: 'date-warning', text: `${diffDays} días` };
             else return { class: 'date-ok', text: `${diffDays} días` };
         }
-        
+
         function getRowStatus(row, sheetName) {
             const dateColumns = dateColumnsConfig[sheetName] || [];
-            let hasDate = false, anyExpired = false, anyWarning = false;
+            let hasDate = false,
+                anyExpired = false,
+                anyWarning = false;
             dateColumns.forEach(col => {
                 if (row[col]) {
                     hasDate = true;
@@ -745,7 +773,7 @@
             else if (anyWarning) return { class: 'status-warning', text: '🟡 Cerca de vencimiento' };
             else return { class: 'status-ok', text: '✅ OK' };
         }
-        
+
         function getDisplayColumns(sheetName) {
             const columns = columnConfig[sheetName] || [];
             return [...columns, 'Marca Temporal'];
@@ -773,12 +801,13 @@
                 loadMasterData(masterCurrentSheet);
             }
         }
-        
+
         function isPhotoUrl(value) {
             if (!value) return false;
-            return value.startsWith('http') && (value.includes('drive') || value.includes('docs') || value.includes('google'));
+            return value.startsWith('http') && (value.includes('drive') || value.includes('docs') || value.includes(
+            'google'));
         }
-        
+
         function getPhotoColumns(headers) {
             return headers.filter(h => h.endsWith('_FOTO'));
         }
@@ -787,27 +816,30 @@
             return dateColumnsConfig[sheetName] || [];
         }
 
-        function generateFormFields(headers, excludeFields = ['_row_number', 'Marca Temporal'], values = {}, isMaster = false) {
+        function generateFormFields(headers, excludeFields = ['_row_number', 'Marca Temporal'], values = {}, isMaster =
+        false) {
             let html = '';
             const photoCols = getPhotoColumns(headers);
             const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
-            
+
             headers.forEach(header => {
                 if (excludeFields.includes(header)) return;
                 if (photoCols.includes(header)) return;
-                
-                const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
-                const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
+
+                const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') ||
+                    header.toUpperCase().includes('VENC');
+                const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes(
+                    'COMENTARIO');
                 const value = values[header] || '';
                 const requiresPhoto = dateColsRequiringPhoto.includes(header);
-                
+
                 html += `<div class="form-group">`;
                 html += `<label>${header}`;
                 if (requiresPhoto && !isMaster) {
                     html += ` <span class="photo-required">(requiere foto)</span>`;
                 }
                 html += `</label>`;
-                
+
                 if (isTextarea) {
                     html += `<textarea id="field_${header}" name="${header}" rows="2">${value}</textarea>`;
                 } else if (isDate) {
@@ -828,31 +860,32 @@
             });
             return html;
         }
-        
+
         function generatePhotoFields(headers, values = {}, isMaster = false, prefix = '') {
             let html = '';
             const photoCols = getPhotoColumns(headers);
             const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
-            
+
             if (photoCols.length === 0) return html;
-            
+
             html += `<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">`;
             html += `<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>`;
-            html += `<p style="color:#666; font-size:14px; margin-bottom:15px;">Sube las fotos de los documentos. Las fotos son obligatorias para los documentos con fecha.</p>`;
-            
+            html +=
+                `<p style="color:#666; font-size:14px; margin-bottom:15px;">Sube las fotos de los documentos. Las fotos son obligatorias para los documentos con fecha.</p>`;
+
             photoCols.forEach(col => {
                 const docName = col.replace('_FOTO', '');
                 const photoUrl = values[col] || '';
                 const fileInputId = `${prefix}foto_${docName}`;
                 const isRequired = dateColsRequiringPhoto.includes(docName) && !isMaster;
-                
+
                 html += `<div class="photo-upload-group">`;
                 html += `<label for="${fileInputId}">📷 ${docName}:`;
                 if (isRequired) {
                     html += ` <span class="photo-required">(OBLIGATORIA)</span>`;
                 }
                 html += `</label>`;
-                
+
                 if (photoUrl && isPhotoUrl(photoUrl)) {
                     let fileId = photoUrl;
                     if (photoUrl.includes('file/d/')) {
@@ -865,7 +898,7 @@
                 } else {
                     html += `<br><small style="color:#999;">No hay foto cargada</small>`;
                 }
-                
+
                 html += `<br><input type="file" id="${fileInputId}" name="${fileInputId}" accept="image/*" onchange="previewPhoto(event, '${fileInputId}')"`;
                 if (isRequired && !photoUrl) {
                     html += ` required`;
@@ -874,11 +907,11 @@
                 html += `<div id="preview_${fileInputId}"></div>`;
                 html += `</div>`;
             });
-            
+
             html += `</div>`;
             return html;
         }
-        
+
         function previewPhoto(event, inputId) {
             const file = event.target.files[0];
             const preview = document.getElementById(`preview_${inputId}`);
@@ -892,12 +925,12 @@
                 preview.innerHTML = '';
             }
         }
-        
+
         function validateRequiredPhotos(sheetName, formData, isMaster = false) {
             if (isMaster) return true;
             const dateCols = getDateColumnsRequiringPhoto(sheetName);
             const missingPhotos = [];
-            
+
             dateCols.forEach(dateCol => {
                 const dateValue = formData.get(dateCol);
                 if (dateValue && dateValue.trim() !== '') {
@@ -916,14 +949,16 @@
                     }
                 }
             });
-            
+
             if (missingPhotos.length > 0) {
-                showAlert(`⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ${missingPhotos.join(', ')}`, 'error');
+                showAlert(
+                    `⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ${missingPhotos.join(', ')}`,
+                    'error');
                 return false;
             }
             return true;
         }
-        
+
         async function loadSheetData(sheetName) {
             const content = document.getElementById('tab-content');
             content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
@@ -939,14 +974,14 @@
                 content.innerHTML = `<div class="alert alert-error">❌ Error al cargar datos: ${error.message}</div>`;
             }
         }
-        
+
         function renderTable(sheetName) {
             const content = document.getElementById('tab-content');
             const displayColumns = getDisplayColumns(sheetName);
             const filterField = filterFields[sheetName] || 'PATENTE';
             const dateColumns = dateColumnsConfig[sheetName] || [];
             const photoCols = getPhotoColumns(currentHeaders);
-            
+
             let html = `
                 <div class="toolbar">
                     <button class="btn btn-add" onclick="toggleForm()">
@@ -973,13 +1008,13 @@
                     </form>
                 </div>
             `;
-            
+
             html += `<div class="table-wrapper"><div class="table-container"><table>`;
             html += `<thead><tr><th>📊 Estado</th>`;
             displayColumns.forEach(col => html += `<th>${col}</th>`);
             if (photoCols.length > 0) html += `<th>📸 Fotos</th>`;
             html += `<th>⚙️ Acciones</th></tr></thead><tbody>`;
-            
+
             if (filteredRows.length === 0) {
                 const colSpan = displayColumns.length + (photoCols.length > 0 ? 2 : 1) + 1;
                 html += `<tr><td colspan="${colSpan}" style="text-align: center; padding: 20px;">📭 No hay documentos</td></tr>`;
@@ -988,7 +1023,7 @@
                     html += `<tr>`;
                     const rowStatus = getRowStatus(row, sheetName);
                     html += `<td><span class="${rowStatus.class}">${rowStatus.text}</span></td>`;
-                    
+
                     displayColumns.forEach(col => {
                         let value = row[col] || '';
                         let cellClass = '';
@@ -998,7 +1033,7 @@
                         }
                         html += `<td${cellClass}>${value}</td>`;
                     });
-                    
+
                     if (photoCols.length > 0) {
                         html += `<td><div class="photo-group">`;
                         let hasPhoto = false;
@@ -1013,14 +1048,15 @@
                                 }
                                 const docName = col.replace('_FOTO', '');
                                 html += `<a href="${photoUrl}" target="_blank" title="${docName}">`;
-                                html += `<img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w80-h80" class="photo-thumb" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E'">`;
+                                html +=
+                                    `<img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w80-h80" class="photo-thumb" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E'">`;
                                 html += `</a>`;
                             }
                         });
                         if (!hasPhoto) html += `<span style="color:#999;font-size:11px;">Sin fotos</span>`;
                         html += `</div></td>`;
                     }
-                    
+
                     html += `<td>
                         <div class="actions">
                             <button class="btn btn-success btn-sm" onclick="editRow('${sheetName}', ${row._row_number})">✏️ Editar</button>
@@ -1030,42 +1066,43 @@
                     html += `</tr>`;
                 });
             }
-            
+
             html += `</tbody></table></div></div>`;
             content.innerHTML = html;
-            
+
             const form = document.getElementById('addForm');
             if (form) form.addEventListener('submit', handleAddDocument);
         }
-        
+
         function toggleForm() {
             isFormVisible = !isFormVisible;
             renderTable(currentSheet);
         }
-        
+
         function applyFilter(sheetName) {
             const filterInput = document.getElementById('filterInput');
             const searchTerm = filterInput.value.toLowerCase().trim();
             const filterField = filterFields[sheetName] || 'PATENTE';
             if (!searchTerm) filteredRows = [...allRows];
-            else filteredRows = allRows.filter(row => (row[filterField] || '').toString().toLowerCase().includes(searchTerm));
+            else filteredRows = allRows.filter(row => (row[filterField] || '').toString().toLowerCase().includes(
+            searchTerm));
             renderTable(sheetName);
         }
-        
+
         function clearFilter() {
             document.getElementById('filterInput').value = '';
             filteredRows = [...allRows];
             renderTable(currentSheet);
         }
-        
+
         async function handleAddDocument(e) {
             e.preventDefault();
             const form = e.target;
             const formData = new FormData(form);
             const sheetName = formData.get('sheet_name');
-            
+
             if (!validateRequiredPhotos(sheetName, formData, false)) return;
-            
+
             try {
                 const response = await fetch('/api/add', { method: 'POST', body: formData });
                 const result = await response.json();
@@ -1081,9 +1118,9 @@
                 showAlert(`❌ Error al enviar el formulario: ${error.message}`, 'error');
             }
         }
-        
+
         // ==================== MAESTRO DE FLOTA ====================
-        
+
         async function loadMasterData(sheetName) {
             const content = document.getElementById('master-tab-content');
             content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
@@ -1173,7 +1210,8 @@
                                 }
                                 const docName = col.replace('_FOTO', '');
                                 html += `<a href="${photoUrl}" target="_blank" title="${docName}">`;
-                                html += `<img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w80-h80" class="photo-thumb" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E'">`;
+                                html +=
+                                    `<img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w80-h80" class="photo-thumb" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E'">`;
                                 html += `</a>`;
                             }
                         });
@@ -1208,7 +1246,8 @@
             const searchTerm = filterInput.value.toLowerCase().trim();
             const filterField = filterFields[sheetName] || 'PATENTE';
             if (!searchTerm) masterFilteredRows = [...masterAllRows];
-            else masterFilteredRows = masterAllRows.filter(row => (row[filterField] || '').toString().toLowerCase().includes(searchTerm));
+            else masterFilteredRows = masterAllRows.filter(row => (row[filterField] || '').toString().toLowerCase()
+                .includes(searchTerm));
             renderMasterTable(sheetName);
         }
 
@@ -1245,25 +1284,25 @@
 
             editContextModule = 'master';
             currentEditRow = row;
-            // Guardar los headers actuales para usarlos en el modal
             const headersForEdit = masterCurrentHeaders;
             const photoCols = getPhotoColumns(headersForEdit);
 
             document.getElementById('editSheetName').value = sheetName;
             document.getElementById('editRowNumber').value = rowNumber;
 
-            // Generar campos de texto
             let html = '';
             const displayCols = getAllColumns(headersForEdit);
-            
+
             displayCols.forEach(header => {
                 if (header === 'Marca Temporal') return;
                 if (photoCols.includes(header)) return;
-                
+
                 const value = row[header] || '';
-                const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
-                const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
-                
+                const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes(
+                    'VENCIMIENTO') || header.toUpperCase().includes('VENC');
+                const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes(
+                    'COMENTARIO');
+
                 html += `<div class="form-group">`;
                 html += `<label>${header}</label>`;
                 if (isTextarea) {
@@ -1286,7 +1325,7 @@
             });
             document.getElementById('editFormFields').innerHTML = html;
 
-            // Generar campos de fotos para edición - usando los headers correctos
+            // Generar campos de fotos para edición
             let photoHtml = generatePhotoFieldsForEdit(headersForEdit, row, true);
             document.getElementById('editPhotoFields').innerHTML = photoHtml;
 
@@ -1297,26 +1336,31 @@
             let html = '';
             const photoCols = getPhotoColumns(headers);
             const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
-            
-            if (photoCols.length === 0) return html;
-            
+
+            if (photoCols.length === 0) {
+                html +=
+                    `<p style="color:#999; font-style:italic;">No hay campos de foto configurados para este documento.</p>`;
+                return html;
+            }
+
             html += `<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">`;
             html += `<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>`;
-            html += `<p style="color:#666; font-size:14px; margin-bottom:15px;">Las fotos son obligatorias para los documentos con fecha. Si ya tienes una foto, no es necesario subirla de nuevo.</p>`;
-            
+            html +=
+                `<p style="color:#666; font-size:14px; margin-bottom:15px;">Las fotos son obligatorias para los documentos con fecha. Si ya tienes una foto, no es necesario subirla de nuevo.</p>`;
+
             photoCols.forEach(col => {
                 const docName = col.replace('_FOTO', '');
                 const photoUrl = values[col] || '';
                 const fileInputId = `edit_foto_${docName}`;
                 const isRequired = dateColsRequiringPhoto.includes(docName) && !isMaster;
-                
+
                 html += `<div class="photo-upload-group">`;
                 html += `<label for="${fileInputId}">📷 ${docName}:`;
                 if (isRequired) {
                     html += ` <span class="photo-required">(OBLIGATORIA)</span>`;
                 }
                 html += `</label>`;
-                
+
                 if (photoUrl && isPhotoUrl(photoUrl)) {
                     let fileId = photoUrl;
                     if (photoUrl.includes('file/d/')) {
@@ -1329,7 +1373,7 @@
                 } else {
                     html += `<br><small style="color:#999;">No hay foto cargada</small>`;
                 }
-                
+
                 html += `<br><input type="file" id="${fileInputId}" name="${fileInputId}" accept="image/*" onchange="previewPhoto(event, '${fileInputId}')"`;
                 if (isRequired && !photoUrl) {
                     html += ` required`;
@@ -1338,7 +1382,7 @@
                 html += `<div id="preview_${fileInputId}"></div>`;
                 html += `</div>`;
             });
-            
+
             html += `</div>`;
             return html;
         }
@@ -1360,37 +1404,39 @@
         }
 
         // ==================== EDICIÓN (CONTROL DE DOCUMENTACIÓN) ====================
-        
+
         function editRow(sheetName, rowNumber) {
             const row = allRows.find(r => r._row_number === rowNumber);
             if (!row) { showAlert('No se encontró el documento', 'error'); return; }
-            
+
             editContextModule = 'docs';
             currentEditRow = row;
             const headersForEdit = currentHeaders;
             const displayColumns = getDisplayColumns(sheetName);
             const photoCols = getPhotoColumns(headersForEdit);
             const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(sheetName);
-            
+
             document.getElementById('editSheetName').value = sheetName;
             document.getElementById('editRowNumber').value = rowNumber;
-            
+
             // Generar campos de texto/fechas
             let html = '';
             displayColumns.forEach(header => {
                 if (header === 'Marca Temporal') return;
                 if (photoCols.includes(header)) return;
-                
+
                 const value = row[header] || '';
-                const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
-                const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
+                const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes(
+                    'VENCIMIENTO') || header.toUpperCase().includes('VENC');
+                const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes(
+                    'COMENTARIO');
                 const requiresPhoto = dateColsRequiringPhoto.includes(header);
-                
+
                 html += `<div class="form-group">`;
                 html += `<label>${header}`;
                 if (requiresPhoto) html += ` <span class="photo-required">(requiere foto)</span>`;
                 html += `</label>`;
-                
+
                 if (isTextarea) {
                     html += `<textarea id="edit_${header}" name="${header}" rows="2">${value}</textarea>`;
                 } else if (isDate) {
@@ -1410,35 +1456,35 @@
                 html += `</div>`;
             });
             document.getElementById('editFormFields').innerHTML = html;
-            
-            // Generar campos de fotos para edición usando la función específica
+
+            // Generar campos de fotos para edición
             let photoHtml = generatePhotoFieldsForEdit(headersForEdit, row, false);
             document.getElementById('editPhotoFields').innerHTML = photoHtml;
-            
+
             document.getElementById('editModal').style.display = 'block';
         }
-        
+
         function closeEditModal() {
             document.getElementById('editModal').style.display = 'none';
         }
-        
+
         window.onclick = function(event) {
             const modal = document.getElementById('editModal');
             if (event.target == modal) modal.style.display = 'none';
         }
-        
+
         document.getElementById('editForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const sheetName = document.getElementById('editSheetName').value;
             const rowNumber = parseInt(document.getElementById('editRowNumber').value);
             const formData = new FormData(this);
-            
+
             // Validar fotos requeridas en edición (solo para Control de Documentación)
             if (editContextModule !== 'master') {
                 const dateCols = getDateColumnsRequiringPhoto(sheetName);
                 let missingPhotos = [];
-                
+
                 dateCols.forEach(dateCol => {
                     const dateValue = formData.get(dateCol);
                     if (dateValue && dateValue.trim() !== '') {
@@ -1450,17 +1496,19 @@
                         }
                     }
                 });
-                
+
                 if (missingPhotos.length > 0) {
-                    showAlert(`⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ${missingPhotos.join(', ')}`, 'error');
+                    showAlert(
+                        `⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ${missingPhotos.join(', ')}`,
+                        'error');
                     return;
                 }
             }
-            
+
             // Verificar si hay alguna foto seleccionada
             let hasPhoto = false;
             const photoCols = getPhotoColumns(currentHeaders);
-            
+
             photoCols.forEach(col => {
                 const docName = col.replace('_FOTO', '');
                 const fileInput = document.getElementById(`edit_foto_${docName}`);
@@ -1469,14 +1517,14 @@
                     formData.append(`foto_${docName}`, fileInput.files[0]);
                 }
             });
-            
+
             // Eliminar los campos edit_foto_ originales
             const keysToDelete = [];
             for (let key of formData.keys()) {
                 if (key.startsWith('edit_foto_')) keysToDelete.push(key);
             }
             keysToDelete.forEach(key => formData.delete(key));
-            
+
             try {
                 let response;
                 if (hasPhoto) {
@@ -1497,7 +1545,7 @@
                         body: JSON.stringify(jsonData)
                     });
                 }
-                
+
                 const result = await response.json();
                 if (result.success) {
                     showAlert('✅ Documento actualizado correctamente', 'success');
@@ -1514,7 +1562,7 @@
                 showAlert(`❌ Error al actualizar: ${error.message}`, 'error');
             }
         });
-        
+
         async function deleteRow(sheetName, rowNumber) {
             if (!confirm('¿Estás seguro de que deseas eliminar este documento?')) return;
             try {
@@ -1530,7 +1578,7 @@
                 showAlert(`❌ Error al eliminar: ${error.message}`, 'error');
             }
         }
-        
+
         // Configurar tabs
         document.querySelectorAll('#tabsDocs .tab').forEach(tab => {
             tab.addEventListener('click', function() {
