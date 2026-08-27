@@ -835,67 +835,6 @@
             return headers.filter(h => h.endsWith('_FOTO'));
         }
         
-        // Determina si una columna corresponde a una fecha/vencimiento.
-        function isDateColumn(header) {
-            if (!header) return false;
-            const upper = header.toUpperCase();
-            return upper.includes('FECHA') || upper.includes('VENCIMIENTO') || upper.includes('VENC');
-        }
-
-        // Valida que cada fecha cargada en Control de Documentación tenga su foto de respaldo.
-        function validateRequiredPhotosForAdd(form, headers) {
-            const formData = new FormData(form);
-            const dateHeaders = headers.filter(isDateColumn);
-
-            for (const dateHeader of dateHeaders) {
-                const dateValue = (formData.get(dateHeader) || '').toString().trim();
-                if (!dateValue) continue;
-
-                const photoHeader = `${dateHeader}_FOTO`;
-                if (!headers.includes(photoHeader)) {
-                    return `No existe la columna "${photoHeader}" en Google Sheets para guardar la foto de "${dateHeader}".`;
-                }
-
-                const photo = formData.get(`foto_${dateHeader}`);
-                if (!(photo instanceof File) || photo.size === 0) {
-                    return `La fecha "${dateHeader}" requiere obligatoriamente una foto de respaldo.`;
-                }
-            }
-
-            return null;
-        }
-
-        // Valida fechas modificadas en Control de Documentación durante la edición.
-        function validateRequiredPhotosForEdit(formData, headers, row) {
-            const dateHeaders = headers.filter(isDateColumn);
-
-            for (const dateHeader of dateHeaders) {
-                const newDate = (formData.get(dateHeader) || '').toString().trim();
-                const oldDate = (row[dateHeader] || '').toString().trim();
-                const photoHeader = `${dateHeader}_FOTO`;
-                const oldPhoto = (row[photoHeader] || '').toString().trim();
-                const dateChanged = newDate !== oldDate;
-
-                if (!newDate) continue;
-
-                if (!headers.includes(photoHeader)) {
-                    return `No existe la columna "${photoHeader}" en Google Sheets para guardar la foto de "${dateHeader}".`;
-                }
-
-                const photo = formData.get(`foto_${dateHeader}`);
-
-                if (dateChanged && (!(photo instanceof File) || photo.size === 0)) {
-                    return `La fecha "${dateHeader}" fue cargada/modificada y requiere obligatoriamente una foto de respaldo nueva.`;
-                }
-
-                if (!oldPhoto && (!(photo instanceof File) || photo.size === 0)) {
-                    return `El documento tiene cargada la fecha "${dateHeader}" pero no tiene foto de respaldo.`;
-                }
-            }
-
-            return null;
-        }
-
         // Función para generar campos del formulario dinámicamente
         function generateFormFields(headers, excludeFields = ['_row_number', 'Marca Temporal'], values = {}) {
             let html = '';
@@ -905,7 +844,7 @@
                 if (excludeFields.includes(header)) return;
                 if (photoCols.includes(header)) return;
                 
-                const isDate = isDateColumn(header);
+                const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
                 const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
                 const value = values[header] || '';
                 
@@ -1040,8 +979,7 @@
                             ${generateFormFields(displayColumns)}
                         </div>
                         ${generatePhotoFields(currentHeaders)}
-                        <input type="hidden" id="sheetName" name="sheet_name" value="${sheetName}">
-                        <input type="hidden" name="module" value="docs">
+                        <input type="hidden" id="sheetName" value="${sheetName}">
                         <button type="submit" class="btn">➕ Agregar Documento</button>
                         <button type="button" class="btn btn-cancel" onclick="toggleForm()">Cancelar</button>
                     </form>
@@ -1170,12 +1108,6 @@
             const form = e.target;
             const formData = new FormData(form);
             const sheetName = formData.get('sheet_name');
-
-            const validationError = validateRequiredPhotosForAdd(form, currentHeaders);
-            if (validationError) {
-                showAlert(`❌ ${validationError}`, 'error');
-                return;
-            }
             
             try {
                 const response = await fetch('/api/add', {
@@ -1250,7 +1182,6 @@
                         </div>
                         ${generatePhotoFields(masterCurrentHeaders)}
                         <input type="hidden" name="sheet_name" value="${sheetName}">
-                        <input type="hidden" name="module" value="master">
                         <button type="submit" class="btn">➕ Agregar Registro</button>
                         <button type="button" class="btn btn-cancel" onclick="toggleMasterForm()">Cancelar</button>
                     </form>
@@ -1425,7 +1356,7 @@
                 if (photoCols.includes(header)) return;
 
                 const value = row[header] || '';
-                const isDate = isDateColumn(header);
+                const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
                 const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
 
                 html += `<div class="form-group">`;
@@ -1541,7 +1472,7 @@
                 if (photoCols.includes(header)) return;
                 
                 const value = row[header] || '';
-                const isDate = isDateColumn(header);
+                const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
                 const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
                 
                 html += `<div class="form-group">`;
@@ -1630,7 +1561,6 @@
             const rowNumber = parseInt(document.getElementById('editRowNumber').value);
             
             const formData = new FormData(this);
-            formData.append('module', editContextModule);
             
             // Verificar si hay alguna foto seleccionada
             let hasPhoto = false;
@@ -1645,15 +1575,6 @@
                 }
             });
             
-            // Validar fechas y fotos solo para Control de Documentación.
-            if (editContextModule === 'docs') {
-                const validationError = validateRequiredPhotosForEdit(formData, currentHeaders, currentEditRow);
-                if (validationError) {
-                    showAlert(`❌ ${validationError}`, 'error');
-                    return;
-                }
-            }
-
             // Eliminar los campos edit_foto_ originales
             const keysToDelete = [];
             for (let key of formData.keys()) {
@@ -1673,11 +1594,10 @@
                 } else {
                     const jsonData = {};
                     for (let [key, value] of formData.entries()) {
-                        if (!key.startsWith('foto_') && !key.startsWith('edit_foto_') && key !== 'sheetName' && key !== 'rowNumber' && key !== 'module') {
+                        if (!key.startsWith('foto_') && key !== 'sheetName' && key !== 'rowNumber') {
                             jsonData[key] = value;
                         }
                     }
-                    jsonData['__module'] = editContextModule;
                     response = await fetch(`/api/update/${encodeURIComponent(sheetName)}/${rowNumber}`, {
                         method: 'POST',
                         headers: {
