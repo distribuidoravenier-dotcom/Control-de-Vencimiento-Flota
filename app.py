@@ -232,6 +232,22 @@ def get_sheet(sheet_name):
     data = get_all_data(sheet_name)
     return jsonify(data)
 
+def is_date_header(header):
+    """Determina si una columna corresponde a una fecha/vencimiento."""
+    if not header:
+        return False
+    header_upper = header.upper()
+    return (
+        'FECHA' in header_upper or
+        'VENCIMIENTO' in header_upper or
+        'VENC' in header_upper
+    )
+
+def get_date_photo_requirements(headers):
+    """Devuelve pares (columna_fecha, columna_foto) para fechas que requieren respaldo."""
+    return [(header, f'{header}_FOTO') for header in headers if is_date_header(header)]
+
+
 @app.route('/api/add', methods=['POST'])
 def add_document():
     """API para agregar un nuevo documento"""
@@ -244,7 +260,27 @@ def add_document():
         
         data = get_all_data(sheet_name)
         headers = data.get('headers', [])
-        
+        module = request.form.get('module', 'master')
+
+        # En Control de Documentación, toda fecha cargada debe tener foto de respaldo.
+        if module == 'docs':
+            for date_header, photo_header in get_date_photo_requirements(headers):
+                date_value = form_data.get(date_header, '').strip()
+                if date_value:
+                    if photo_header not in headers:
+                        return jsonify({
+                            'success': False,
+                            'error': f'No existe la columna "{photo_header}" en Google Sheets para guardar la foto de "{date_header}".'
+                        }), 400
+
+                    photo_key = f'foto_{date_header}'
+                    photo = request.files.get(photo_key)
+                    if not photo or not photo.filename:
+                        return jsonify({
+                            'success': False,
+                            'error': f'La fecha "{date_header}" requiere obligatoriamente una foto de respaldo.'
+                        }), 400
+
         row_values = []
         for header in headers:
             if header == 'Marca Temporal':
@@ -315,10 +351,33 @@ def add_document():
 def update_document(sheet_name, row_number):
     """Actualiza un documento existente (solo datos)"""
     try:
-        data = request.json
+        data = request.json or {}
+        module = data.get('__module', 'master')
         
         sheet_data = get_all_data(sheet_name)
         headers = sheet_data.get('headers', [])
+
+        # En Control de Documentación no se permite modificar/cargar una fecha sin su foto.
+        if module == 'docs':
+            current_row = next((r for r in sheet_data.get('rows', []) if r.get('_row_number') == row_number), None)
+            if current_row is None:
+                return jsonify({'success': False, 'error': 'No se encontró el documento.'}), 404
+
+            for date_header, photo_header in get_date_photo_requirements(headers):
+                new_date = str(data.get(date_header, '') or '').strip()
+                old_date = str(current_row.get(date_header, '') or '').strip()
+                old_photo = str(current_row.get(photo_header, '') or '').strip()
+
+                if new_date and new_date != old_date:
+                    return jsonify({
+                        'success': False,
+                        'error': f'La fecha "{date_header}" requiere obligatoriamente una foto de respaldo nueva.'
+                    }), 400
+                if new_date and not old_photo:
+                    return jsonify({
+                        'success': False,
+                        'error': f'El documento tiene cargada la fecha "{date_header}" pero no tiene foto de respaldo.'
+                    }), 400
         
         row_values = []
         for header in headers:
@@ -357,7 +416,43 @@ def update_document_with_photo(sheet_name, row_number):
         form_data = {}
         for key in request.form:
             form_data[key] = request.form[key]
-        
+        module = form_data.get('module', 'master')
+
+        # Obtener datos actuales antes de procesar fotos, para validar cambios de fechas.
+        sheet_data = get_all_data(sheet_name)
+        headers = sheet_data.get('headers', [])
+        current_row = None
+        for row in sheet_data.get('rows', []):
+            if row.get('_row_number') == row_number:
+                current_row = row
+                break
+
+        if current_row is None:
+            return jsonify({'success': False, 'error': 'No se encontró el documento.'}), 404
+
+        # En Control de Documentación, toda fecha nueva/modificada debe tener foto.
+        if module == 'docs':
+            for date_header, photo_header in get_date_photo_requirements(headers):
+                new_date = str(form_data.get(date_header, '') or '').strip()
+                old_date = str(current_row.get(date_header, '') or '').strip()
+                old_photo = str(current_row.get(photo_header, '') or '').strip()
+                date_changed = new_date != old_date
+
+                if new_date and date_changed:
+                    photo_key = f'foto_{date_header}'
+                    photo = request.files.get(photo_key)
+                    if not photo or not photo.filename:
+                        return jsonify({
+                            'success': False,
+                            'error': f'La fecha "{date_header}" requiere obligatoriamente una foto de respaldo nueva.'
+                        }), 400
+
+                if new_date and not old_photo and not request.files.get(f'foto_{date_header}'):
+                    return jsonify({
+                        'success': False,
+                        'error': f'El documento tiene la fecha "{date_header}" pero no tiene foto de respaldo.'
+                    }), 400
+
         # Procesar múltiples fotos
         for key in request.files:
             if key.startswith('foto_'):
@@ -391,17 +486,6 @@ def update_document_with_photo(sheet_name, row_number):
                         # Buscar la columna correspondiente (agregar _FOTO al nombre)
                         foto_header = f"{doc_name}_FOTO"
                         form_data[foto_header] = drive_url
-        
-        # Obtener datos actuales para preservar
-        sheet_data = get_all_data(sheet_name)
-        headers = sheet_data.get('headers', [])
-        
-        # Obtener fila actual
-        current_row = None
-        for row in sheet_data.get('rows', []):
-            if row.get('_row_number') == row_number:
-                current_row = row
-                break
         
         # Construir valores de fila
         row_values = []
