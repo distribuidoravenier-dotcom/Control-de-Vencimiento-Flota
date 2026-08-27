@@ -458,6 +458,13 @@
             gap: 5px;
             margin-top: 5px;
         }
+
+        .photo-required {
+            color: #e53e3e;
+            font-size: 12px;
+            font-weight: normal;
+            margin-left: 5px;
+        }
         
         /* Pantalla de inicio */
         .home-screen {
@@ -834,11 +841,18 @@
         function getPhotoColumns(headers) {
             return headers.filter(h => h.endsWith('_FOTO'));
         }
-        
+
+        // Función para obtener las columnas de fecha que requieren foto
+        function getDateColumnsRequiringPhoto(sheetName) {
+            const dateCols = dateColumnsConfig[sheetName] || [];
+            return dateCols;
+        }
+
         // Función para generar campos del formulario dinámicamente
-        function generateFormFields(headers, excludeFields = ['_row_number', 'Marca Temporal'], values = {}) {
+        function generateFormFields(headers, excludeFields = ['_row_number', 'Marca Temporal'], values = {}, isMaster = false) {
             let html = '';
             const photoCols = getPhotoColumns(headers);
+            const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
             
             headers.forEach(header => {
                 if (excludeFields.includes(header)) return;
@@ -847,9 +861,14 @@
                 const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
                 const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
                 const value = values[header] || '';
+                const requiresPhoto = dateColsRequiringPhoto.includes(header);
                 
                 html += `<div class="form-group">`;
-                html += `<label>${header}</label>`;
+                html += `<label>${header}`;
+                if (requiresPhoto && !isMaster) {
+                    html += ` <span class="photo-required">(requiere foto)</span>`;
+                }
+                html += `</label>`;
                 
                 if (isTextarea) {
                     html += `<textarea id="field_${header}" name="${header}" rows="2">${value}</textarea>`;
@@ -874,23 +893,33 @@
             return html;
         }
         
-        // Función para generar campos de fotos (CORREGIDA)
-        function generatePhotoFields(headers, values = {}) {
+        // Función para generar campos de fotos
+        function generatePhotoFields(headers, values = {}, isMaster = false) {
             let html = '';
             const photoCols = getPhotoColumns(headers);
+            const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
             
-            if (photoCols.length === 0) return html;
+            if (photoCols.length === 0) {
+                return html;
+            }
             
             html += `<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">`;
             html += `<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>`;
+            html += `<p style="color:#666; font-size:14px; margin-bottom:15px;">Sube las fotos de los documentos. Las fotos son obligatorias para los documentos con fecha.</p>`;
             
             photoCols.forEach(col => {
                 const docName = col.replace('_FOTO', '');
                 const photoUrl = values[col] || '';
                 const fileInputId = `foto_${docName}`;
+                // Verificar si esta foto es obligatoria (si el documento tiene fecha)
+                const isRequired = dateColsRequiringPhoto.includes(docName) && !isMaster;
                 
                 html += `<div class="photo-upload-group">`;
-                html += `<label for="${fileInputId}">📷 ${docName}:</label>`;
+                html += `<label for="${fileInputId}">📷 ${docName}:`;
+                if (isRequired) {
+                    html += ` <span class="photo-required">(OBLIGATORIA)</span>`;
+                }
+                html += `</label>`;
                 
                 if (photoUrl && isPhotoUrl(photoUrl)) {
                     let fileId = photoUrl;
@@ -902,11 +931,16 @@
                     }
                     html += `<br><img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">`;
                     html += `<br><small style="color:#666;">Foto actual - <a href="${photoUrl}" target="_blank">Ver en Drive</a></small>`;
+                    html += `<br><small style="color:#888;">Si quieres reemplazarla, selecciona una nueva foto.</small>`;
                 } else {
                     html += `<br><small style="color:#999;">No hay foto cargada</small>`;
                 }
                 
-                html += `<br><input type="file" id="${fileInputId}" name="${fileInputId}" accept="image/*" onchange="previewPhoto(event, '${fileInputId}')">`;
+                html += `<br><input type="file" id="${fileInputId}" name="${fileInputId}" accept="image/*" onchange="previewPhoto(event, '${fileInputId}')"`;
+                if (isRequired && !photoUrl) {
+                    html += ` required`;
+                }
+                html += `>`;
                 html += `<div id="preview_${fileInputId}"></div>`;
                 html += `</div>`;
             });
@@ -928,6 +962,44 @@
             } else {
                 preview.innerHTML = '';
             }
+        }
+        
+        // Función para validar que las fotos requeridas estén cargadas
+        function validateRequiredPhotos(sheetName, formData, isMaster = false) {
+            if (isMaster) return true; // En Maestro de Flota no se exigen fotos obligatorias
+            
+            const dateCols = getDateColumnsRequiringPhoto(sheetName);
+            const missingPhotos = [];
+            
+            dateCols.forEach(dateCol => {
+                // Verificar si la fecha tiene valor
+                const dateValue = formData.get(dateCol);
+                if (dateValue && dateValue.trim() !== '') {
+                    // Verificar si se subió una foto para este documento
+                    const photoInput = document.getElementById(`foto_${dateCol}`);
+                    if (photoInput) {
+                        const hasFile = photoInput.files && photoInput.files.length > 0;
+                        // También verificar si ya tiene una foto existente (en edición)
+                        const existingPhoto = formData.get(`${dateCol}_FOTO`);
+                        if (!hasFile && !existingPhoto) {
+                            missingPhotos.push(dateCol);
+                        }
+                    } else {
+                        // Si no hay input de foto, verificar si ya tiene foto guardada
+                        const existingPhoto = formData.get(`${dateCol}_FOTO`);
+                        if (!existingPhoto) {
+                            missingPhotos.push(dateCol);
+                        }
+                    }
+                }
+            });
+            
+            if (missingPhotos.length > 0) {
+                const msg = `⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ${missingPhotos.join(', ')}`;
+                showAlert(msg, 'error');
+                return false;
+            }
+            return true;
         }
         
         // Función para cargar datos de una hoja
@@ -976,10 +1048,11 @@
                     <h3>📄 Agregar nuevo documento</h3>
                     <form id="addForm" enctype="multipart/form-data">
                         <div class="form-row" id="addFormFields">
-                            ${generateFormFields(displayColumns)}
+                            ${generateFormFields(currentHeaders, ['_row_number', 'Marca Temporal'], {}, false)}
                         </div>
-                        ${generatePhotoFields(currentHeaders)}
+                        ${generatePhotoFields(currentHeaders, {}, false)}
                         <input type="hidden" id="sheetName" value="${sheetName}">
+                        <input type="hidden" name="sheet_name" value="${sheetName}">
                         <button type="submit" class="btn">➕ Agregar Documento</button>
                         <button type="button" class="btn btn-cancel" onclick="toggleForm()">Cancelar</button>
                     </form>
@@ -1109,6 +1182,11 @@
             const formData = new FormData(form);
             const sheetName = formData.get('sheet_name');
             
+            // Validar fotos requeridas
+            if (!validateRequiredPhotos(sheetName, formData, false)) {
+                return;
+            }
+            
             try {
                 const response = await fetch('/api/add', {
                     method: 'POST',
@@ -1178,9 +1256,9 @@
                     <h3>📄 Agregar nuevo registro</h3>
                     <form id="addFormMaster" enctype="multipart/form-data">
                         <div class="form-row" id="addFormFieldsMaster">
-                            ${generateFormFields(masterCurrentHeaders)}
+                            ${generateFormFields(masterCurrentHeaders, ['_row_number', 'Marca Temporal'], {}, true)}
                         </div>
-                        ${generatePhotoFields(masterCurrentHeaders)}
+                        ${generatePhotoFields(masterCurrentHeaders, {}, true)}
                         <input type="hidden" name="sheet_name" value="${sheetName}">
                         <button type="submit" class="btn">➕ Agregar Registro</button>
                         <button type="button" class="btn btn-cancel" onclick="toggleMasterForm()">Cancelar</button>
@@ -1447,7 +1525,7 @@
             }
         }
 
-        // Función para editar una fila (CORREGIDA)
+        // Función para editar una fila
         function editRow(sheetName, rowNumber) {
             const row = allRows.find(r => r._row_number === rowNumber);
             
@@ -1466,6 +1544,7 @@
             // Generar campos de texto/fechas
             let html = '';
             const photoCols = getPhotoColumns(currentHeaders);
+            const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(sheetName);
             
             displayColumns.forEach(header => {
                 if (header === 'Marca Temporal') return;
@@ -1474,9 +1553,14 @@
                 const value = row[header] || '';
                 const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
                 const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
+                const requiresPhoto = dateColsRequiringPhoto.includes(header);
                 
                 html += `<div class="form-group">`;
-                html += `<label>${header}</label>`;
+                html += `<label>${header}`;
+                if (requiresPhoto) {
+                    html += ` <span class="photo-required">(requiere foto)</span>`;
+                }
+                html += `</label>`;
                 
                 if (isTextarea) {
                     html += `<textarea id="edit_${header}" name="${header}" rows="2">${value}</textarea>`;
@@ -1500,19 +1584,25 @@
             
             document.getElementById('editFormFields').innerHTML = html;
             
-            // Generar campos de fotos para edición (CORREGIDO)
+            // Generar campos de fotos para edición
             let photoHtml = '';
             if (photoCols.length > 0) {
                 photoHtml += `<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">`;
                 photoHtml += `<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>`;
+                photoHtml += `<p style="color:#666; font-size:14px; margin-bottom:15px;">Las fotos son obligatorias para los documentos con fecha. Si ya tienes una foto, no es necesario subirla de nuevo.</p>`;
                 
                 photoCols.forEach(col => {
                     const docName = col.replace('_FOTO', '');
                     const photoUrl = row[col] || '';
                     const fileInputId = `edit_foto_${docName}`;
+                    const isRequired = dateColsRequiringPhoto.includes(docName);
                     
                     photoHtml += `<div class="photo-upload-group">`;
-                    photoHtml += `<label for="${fileInputId}">📷 ${docName}:</label>`;
+                    photoHtml += `<label for="${fileInputId}">📷 ${docName}:`;
+                    if (isRequired) {
+                        photoHtml += ` <span class="photo-required">(OBLIGATORIA)</span>`;
+                    }
+                    photoHtml += `</label>`;
                     
                     if (photoUrl && isPhotoUrl(photoUrl)) {
                         let fileId = photoUrl;
@@ -1524,11 +1614,16 @@
                         }
                         photoHtml += `<br><img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">`;
                         photoHtml += `<br><small style="color:#666;">Foto actual - <a href="${photoUrl}" target="_blank">Ver en Drive</a></small>`;
+                        photoHtml += `<br><small style="color:#888;">Si quieres reemplazarla, selecciona una nueva foto.</small>`;
                     } else {
                         photoHtml += `<br><small style="color:#999;">No hay foto cargada</small>`;
                     }
                     
-                    photoHtml += `<br><input type="file" id="${fileInputId}" name="${fileInputId}" accept="image/*" onchange="previewPhoto(event, '${fileInputId}')">`;
+                    photoHtml += `<br><input type="file" id="${fileInputId}" name="${fileInputId}" accept="image/*" onchange="previewPhoto(event, '${fileInputId}')"`;
+                    if (isRequired && !photoUrl) {
+                        photoHtml += ` required`;
+                    }
+                    photoHtml += `>`;
                     photoHtml += `<div id="preview_${fileInputId}"></div>`;
                     photoHtml += `</div>`;
                 });
@@ -1553,7 +1648,7 @@
             }
         }
         
-        // Event listener para el formulario de edición (CORREGIDO)
+        // Event listener para el formulario de edición
         document.getElementById('editForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -1561,6 +1656,35 @@
             const rowNumber = parseInt(document.getElementById('editRowNumber').value);
             
             const formData = new FormData(this);
+            
+            // Validar fotos requeridas en edición (solo para Control de Documentación)
+            if (editContextModule !== 'master') {
+                // Verificar si hay fechas sin foto
+                const dateCols = getDateColumnsRequiringPhoto(sheetName);
+                let missingPhotos = [];
+                
+                dateCols.forEach(dateCol => {
+                    const dateValue = formData.get(dateCol);
+                    if (dateValue && dateValue.trim() !== '') {
+                        // Verificar si se subió una foto nueva
+                        const photoInput = document.getElementById(`edit_foto_${dateCol}`);
+                        let hasNewFile = photoInput && photoInput.files && photoInput.files.length > 0;
+                        
+                        // Verificar si ya tiene una foto guardada
+                        const existingPhoto = formData.get(`${dateCol}_FOTO`);
+                        
+                        if (!hasNewFile && !existingPhoto) {
+                            missingPhotos.push(dateCol);
+                        }
+                    }
+                });
+                
+                if (missingPhotos.length > 0) {
+                    const msg = `⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ${missingPhotos.join(', ')}`;
+                    showAlert(msg, 'error');
+                    return;
+                }
+            }
             
             // Verificar si hay alguna foto seleccionada
             let hasPhoto = false;
