@@ -321,7 +321,8 @@ def parse_date(date_str):
 
 def check_and_register_expirations():
     """Recorre las hojas de documentos, detecta vencimientos dentro de 30 días
-    y los registra en la hoja de historial si no existen ya."""
+    y los registra en la hoja de historial si no existen ya.
+    Optimizado: usa batch append para evitar timeout."""
     try:
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         limit_date = today + timedelta(days=30)
@@ -330,6 +331,11 @@ def check_and_register_expirations():
         history_data = get_all_data(HISTORY_SHEET)
         history_rows = history_data.get('rows', [])
         history_headers = history_data.get('headers', [])
+        
+        # Si la hoja de historial no existe o no tiene headers, no hacer nada
+        if not history_headers:
+            print("La hoja de historial no existe o está vacía. Omitiendo detección automática.")
+            return False
         
         # Crear set de claves existentes para evitar duplicados
         # Clave: (TIPO, DESCRIPCION, FECHA VENCIMIENTO)
@@ -340,6 +346,10 @@ def check_and_register_expirations():
             fecha_venc = row.get('FECHA VENCIMIENTO', '').strip()
             if tipo and desc and fecha_venc:
                 existing_keys.add((tipo, desc, fecha_venc))
+        
+        # Acumular filas nuevas para insertar en un solo batch
+        new_rows = []
+        fecha_deteccion = today.strftime('%d/%m/%Y')
         
         # Recorrer cada hoja de documentos
         for sheet_name, date_columns in DATE_COLUMNS_CONFIG.items():
@@ -372,9 +382,6 @@ def check_and_register_expirations():
                         
                         key = (tipo, descripcion, fecha_venc_str)
                         if key not in existing_keys:
-                            # Registrar nuevo en historial
-                            fecha_deteccion = today.strftime('%d/%m/%Y')
-                            
                             # Construir valores según headers del historial
                             new_row_values = []
                             for h in history_headers:
@@ -391,8 +398,31 @@ def check_and_register_expirations():
                                 else:
                                     new_row_values.append('')
                             
-                            add_row_to_sheet(HISTORY_SHEET, new_row_values)
+                            new_rows.append(new_row_values)
                             existing_keys.add(key)
+        
+        # Insertar todas las filas nuevas en un solo batch (mucho más rápido)
+        if new_rows:
+            try:
+                creds = get_google_creds()
+                service = build('sheets', 'v4', credentials=creds)
+                sheet = service.spreadsheets()
+                
+                body = {
+                    'values': new_rows
+                }
+                
+                sheet.values().append(
+                    spreadsheetId=SPREADSHEET_ID,
+                    range=f"'{HISTORY_SHEET}'!A:Z",
+                    valueInputOption='RAW',
+                    insertDataOption='INSERT_ROWS',
+                    body=body
+                ).execute()
+                
+                print(f"Se agregaron {len(new_rows)} registros al historial.")
+            except HttpError as err:
+                print(f"Error al insertar batch en historial: {err}")
         
         return True
         
@@ -414,9 +444,13 @@ def get_sheet(sheet_name):
 @app.route('/api/history')
 def get_history():
     """API para obtener el historial de vencimientos (ejecuta detección automática)"""
-    check_and_register_expirations()
-    data = get_all_data(HISTORY_SHEET)
-    return jsonify(data)
+    try:
+        check_and_register_expirations()
+        data = get_all_data(HISTORY_SHEET)
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error en get_history: {e}")
+        return jsonify({'headers': [], 'rows': [], 'error': str(e)}), 500
 
 @app.route('/api/history/update_status/<int:row_number>', methods=['POST'])
 def update_history_status(row_number):
