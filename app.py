@@ -1,7 +1,7 @@
 import os
 import io
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 from google.oauth2 import service_account
@@ -19,7 +19,28 @@ SHEETS = {
     'Camion T1': 'Camion T1',
     'Camion T2': 'Camion T2',
     'Autoelevadores': 'Autoelevadores',
-    'Choferes y Ayudantes': 'Choferes y Ayudantes'
+    'Choferes y Ayudantes': 'Choferes y Ayudantes',
+    'Historial de Vencimiento de Documentación': 'Historial de Vencimiento de Documentación'
+}
+
+HISTORY_SHEET = 'Historial de Vencimiento de Documentación'
+
+# Configuración de columnas de fecha por hoja (para detección de vencimientos)
+DATE_COLUMNS_CONFIG = {
+    'Camion T1': ['VENC VTV', 'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO',
+                  'POLIZA DE SEGUROS', 'SEGURO DE ACCIDENTES PERSONALES', 'CLAUSULA DE NO REPETICION',
+                  'INDUCCION DE CMQ', 'CAPACITACION DE MANEJO DEFENSIVO'],
+    'Camion T2': ['VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN'],
+    'Autoelevadores': ['VENC SEGURO', 'EXTINTOR'],
+    'Choferes y Ayudantes': ['VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA']
+}
+
+# Campo identificador por hoja
+ID_FIELD_CONFIG = {
+    'Camion T1': 'PATENTE',
+    'Camion T2': 'PATENTE',
+    'Autoelevadores': 'CODIGO DE AE',
+    'Choferes y Ayudantes': 'APELLIDO Y NOMBRE'
 }
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-12345')
@@ -115,6 +136,45 @@ def update_row(sheet_name, row_number, values):
         
     except HttpError as err:
         print(f"Error updating row: {err}")
+        return False
+
+def update_row_partial(sheet_name, row_number, column_updates):
+    """Actualiza celdas específicas de una fila en Google Sheets"""
+    try:
+        creds = get_google_creds()
+        service = build('sheets', 'v4', credentials=creds)
+        sheet = service.spreadsheets()
+        
+        data = get_all_data(sheet_name)
+        headers = data.get('headers', [])
+        
+        requests = []
+        for col_name, value in column_updates.items():
+            if col_name in headers:
+                col_idx = headers.index(col_name)
+                col_letter = chr(65 + col_idx) if col_idx < 26 else 'Z'
+                requests.append({
+                    'range': f"'{sheet_name}'!{col_letter}{row_number}",
+                    'values': [[value]]
+                })
+        
+        if not requests:
+            return False
+        
+        body = {
+            'valueInputOption': 'RAW',
+            'data': requests
+        }
+        
+        sheet.values().batchUpdate(
+            spreadsheetId=SPREADSHEET_ID,
+            body=body
+        ).execute()
+        
+        return True
+        
+    except HttpError as err:
+        print(f"Error updating row partial: {err}")
         return False
 
 def delete_row(sheet_name, row_number):
@@ -221,6 +281,125 @@ def upload_file_to_drive(file_content, filename, folder_id):
         print(f"Error uploading file: {err}")
         return None
 
+def parse_date(date_str):
+    """Parsea una fecha en formatos comunes (dd/mm/yyyy, yyyy-mm-dd)"""
+    if not date_str:
+        return None
+    date_str = str(date_str).strip()
+    if date_str == '':
+        return None
+    
+    # Formato dd/mm/yyyy o d/m/yyyy
+    if '/' in date_str:
+        parts = date_str.split('/')
+        if len(parts) == 3:
+            try:
+                day = int(parts[0])
+                month = int(parts[1])
+                year = int(parts[2])
+                if year < 100:
+                    year += 2000
+                if 1 <= day <= 31 and 1 <= month <= 12:
+                    return datetime(year, month, day)
+            except ValueError:
+                pass
+    
+    # Formato yyyy-mm-dd
+    if '-' in date_str:
+        parts = date_str.split('-')
+        if len(parts) == 3:
+            try:
+                year = int(parts[0])
+                month = int(parts[1])
+                day = int(parts[2])
+                if 1 <= day <= 31 and 1 <= month <= 12:
+                    return datetime(year, month, day)
+            except ValueError:
+                pass
+    
+    return None
+
+def check_and_register_expirations():
+    """Recorre las hojas de documentos, detecta vencimientos dentro de 30 días
+    y los registra en la hoja de historial si no existen ya."""
+    try:
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        limit_date = today + timedelta(days=30)
+        
+        # Obtener datos del historial actual
+        history_data = get_all_data(HISTORY_SHEET)
+        history_rows = history_data.get('rows', [])
+        history_headers = history_data.get('headers', [])
+        
+        # Crear set de claves existentes para evitar duplicados
+        # Clave: (TIPO, DESCRIPCION, FECHA VENCIMIENTO)
+        existing_keys = set()
+        for row in history_rows:
+            tipo = row.get('TIPO', '').strip()
+            desc = row.get('DESCRIPCION', '').strip()
+            fecha_venc = row.get('FECHA VENCIMIENTO', '').strip()
+            if tipo and desc and fecha_venc:
+                existing_keys.add((tipo, desc, fecha_venc))
+        
+        # Recorrer cada hoja de documentos
+        for sheet_name, date_columns in DATE_COLUMNS_CONFIG.items():
+            if sheet_name == HISTORY_SHEET:
+                continue
+            
+            data = get_all_data(sheet_name)
+            rows = data.get('rows', [])
+            id_field = ID_FIELD_CONFIG.get(sheet_name, '')
+            
+            for row in rows:
+                identificador = row.get(id_field, '').strip() if id_field else ''
+                if not identificador:
+                    continue
+                
+                for date_col in date_columns:
+                    date_value = row.get(date_col, '').strip()
+                    if not date_value:
+                        continue
+                    
+                    exp_date = parse_date(date_value)
+                    if not exp_date:
+                        continue
+                    
+                    # Detectar si vence dentro de los próximos 30 días (incluye vencidos)
+                    if exp_date <= limit_date:
+                        tipo = date_col
+                        descripcion = identificador
+                        fecha_venc_str = exp_date.strftime('%d/%m/%Y')
+                        
+                        key = (tipo, descripcion, fecha_venc_str)
+                        if key not in existing_keys:
+                            # Registrar nuevo en historial
+                            fecha_deteccion = today.strftime('%d/%m/%Y')
+                            
+                            # Construir valores según headers del historial
+                            new_row_values = []
+                            for h in history_headers:
+                                if h == 'FECHA':
+                                    new_row_values.append(fecha_deteccion)
+                                elif h == 'TIPO':
+                                    new_row_values.append(tipo)
+                                elif h == 'DESCRIPCION':
+                                    new_row_values.append(descripcion)
+                                elif h == 'FECHA VENCIMIENTO':
+                                    new_row_values.append(fecha_venc_str)
+                                elif h == 'ESTADO':
+                                    new_row_values.append('En Proceso')
+                                else:
+                                    new_row_values.append('')
+                            
+                            add_row_to_sheet(HISTORY_SHEET, new_row_values)
+                            existing_keys.add(key)
+        
+        return True
+        
+    except Exception as e:
+        print(f"Error en check_and_register_expirations: {e}")
+        return False
+
 @app.route('/')
 def index():
     """Página principal"""
@@ -231,6 +410,70 @@ def get_sheet(sheet_name):
     """API para obtener datos de una hoja"""
     data = get_all_data(sheet_name)
     return jsonify(data)
+
+@app.route('/api/history')
+def get_history():
+    """API para obtener el historial de vencimientos (ejecuta detección automática)"""
+    check_and_register_expirations()
+    data = get_all_data(HISTORY_SHEET)
+    return jsonify(data)
+
+@app.route('/api/history/update_status/<int:row_number>', methods=['POST'])
+def update_history_status(row_number):
+    """Actualiza el estado de un registro del historial"""
+    try:
+        data = request.json
+        new_status = data.get('estado', '')
+        
+        if new_status not in ['En Proceso', 'Completo', 'Vencido', 'Notificado']:
+            return jsonify({
+                'success': False,
+                'error': 'Estado no válido'
+            }), 400
+        
+        success = update_row_partial(HISTORY_SHEET, row_number, {'ESTADO': new_status})
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Estado actualizado correctamente'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Error al actualizar el estado'
+            }), 500
+            
+    except Exception as e:
+        print(f"Error en update_history_status: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/history/delete/<int:row_number>', methods=['DELETE'])
+def delete_history_row(row_number):
+    """Elimina un registro del historial"""
+    try:
+        success = delete_row(HISTORY_SHEET, row_number)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Registro eliminado correctamente'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Error al eliminar el registro'
+            }), 500
+            
+    except Exception as e:
+        print(f"Error en delete_history_row: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.route('/api/add', methods=['POST'])
 def add_document():
