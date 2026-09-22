@@ -1470,10 +1470,36 @@
             content.innerHTML = '<div class="loading">🔄 Cargando historial y detectando vencimientos...</div>';
             try {
                 const response = await fetch('/api/history');
-                const data = await response.json();
+                
+                // Leer como texto primero para evitar "Unexpected end of JSON input"
+                const text = await response.text();
+                if (!text || text.trim() === '') {
+                    throw new Error('El servidor devolvió una respuesta vacía. Verificá que la hoja "Historial de Vencimiento de Documentación" exista en el Spreadsheet con los encabezados: FECHA | TIPO | DESCRIPCION | FECHA VENCIMIENTO | ESTADO');
+                }
+                
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (parseErr) {
+                    throw new Error(`Respuesta no válida del servidor: ${text.substring(0, 200)}`);
+                }
+                
+                if (!response.ok) {
+                    throw new Error(data.error || `Error HTTP ${response.status}`);
+                }
+                
                 historyHeaders = data.headers || [];
                 historyAllRows = data.rows || [];
                 historyFilteredRows = [...historyAllRows];
+                
+                if (historyHeaders.length === 0) {
+                    content.innerHTML = `<div class="alert alert-error">
+                        ⚠️ La hoja "Historial de Vencimiento de Documentación" no existe o está vacía.<br>
+                        Creala en tu Google Spreadsheet con los encabezados: <b>FECHA | TIPO | DESCRIPCION | FECHA VENCIMIENTO | ESTADO</b>
+                    </div>`;
+                    return;
+                }
+                
                 renderHistoryTable();
             } catch (error) {
                 content.innerHTML = `<div class="alert alert-error">❌ Error al cargar historial: ${error.message}</div>`;
@@ -1482,7 +1508,6 @@
 
         function renderHistoryTable() {
             const content = document.getElementById('history-content');
-            const dateColumns = ['FECHA', 'FECHA VENCIMIENTO'];
 
             let html = `
                 <div class="toolbar">
