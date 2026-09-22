@@ -507,6 +507,14 @@
             box-shadow: 0 10px 25px rgba(56, 161, 105, 0.4);
         }
         
+        .home-btn.history-btn {
+            background: linear-gradient(135deg, #ed8936 0%, #c05621 100%);
+        }
+        
+        .home-btn.history-btn:hover {
+            box-shadow: 0 10px 25px rgba(237, 137, 54, 0.4);
+        }
+        
         .back-home-btn {
             background: #718096;
             color: white;
@@ -521,6 +529,40 @@
         
         .back-home-btn:hover {
             background: #4a5568;
+        }
+        
+        .status-select {
+            padding: 5px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 110px;
+        }
+        
+        .status-select.en-proceso {
+            background: #fefcbf;
+            color: #744210;
+            border-color: #f6e05e;
+        }
+        
+        .status-select.completo {
+            background: #c6f6d5;
+            color: #22543d;
+            border-color: #9ae6b4;
+        }
+        
+        .status-select.vencido {
+            background: #fed7d7;
+            color: #742a2a;
+            border-color: #fc8181;
+        }
+        
+        .status-select.notificado {
+            background: #bee3f8;
+            color: #2a4365;
+            border-color: #90cdf4;
         }
         
         @media (max-width: 768px) {
@@ -580,6 +622,7 @@
         <div id="homeScreen" class="home-screen">
             <button class="home-btn master-btn" onclick="showModule('master')">🗂️ Maestro de Flota</button>
             <button class="home-btn" onclick="showModule('docs')">📋 Control de Documentación</button>
+            <button class="home-btn history-btn" onclick="showModule('history')">📊 Historial de Vencimiento de Documentación</button>
         </div>
 
         <div id="docsModule" style="display:none;">
@@ -606,6 +649,11 @@
             </div>
 
             <div id="master-tab-content"></div>
+        </div>
+
+        <div id="historyModule" style="display:none;">
+            <button class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
+            <div id="history-content"></div>
         </div>
     </div>
 
@@ -639,6 +687,10 @@
         let masterAllRows = [];
         let masterFilteredRows = [];
         let masterIsFormVisible = false;
+
+        let historyAllRows = [];
+        let historyFilteredRows = [];
+        let historyHeaders = [];
 
         const columnConfig = {
             'Camion T1': [
@@ -787,6 +839,7 @@
             document.getElementById('homeScreen').style.display = 'flex';
             document.getElementById('docsModule').style.display = 'none';
             document.getElementById('masterModule').style.display = 'none';
+            document.getElementById('historyModule').style.display = 'none';
         }
 
         function showModule(module) {
@@ -794,11 +847,18 @@
             if (module === 'docs') {
                 document.getElementById('docsModule').style.display = 'block';
                 document.getElementById('masterModule').style.display = 'none';
+                document.getElementById('historyModule').style.display = 'none';
                 loadSheetData(currentSheet);
             } else if (module === 'master') {
                 document.getElementById('masterModule').style.display = 'block';
                 document.getElementById('docsModule').style.display = 'none';
+                document.getElementById('historyModule').style.display = 'none';
                 loadMasterData(masterCurrentSheet);
+            } else if (module === 'history') {
+                document.getElementById('historyModule').style.display = 'block';
+                document.getElementById('docsModule').style.display = 'none';
+                document.getElementById('masterModule').style.display = 'none';
+                loadHistoryData();
             }
         }
 
@@ -1395,6 +1455,149 @@
                 if (result.success) {
                     showAlert('✅ Registro eliminado correctamente', 'success');
                     await loadMasterData(sheetName);
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error al eliminar: ${error.message}`, 'error');
+            }
+        }
+
+        // ==================== HISTORIAL DE VENCIMIENTO ====================
+
+        async function loadHistoryData() {
+            const content = document.getElementById('history-content');
+            content.innerHTML = '<div class="loading">🔄 Cargando historial y detectando vencimientos...</div>';
+            try {
+                const response = await fetch('/api/history');
+                const data = await response.json();
+                historyHeaders = data.headers || [];
+                historyAllRows = data.rows || [];
+                historyFilteredRows = [...historyAllRows];
+                renderHistoryTable();
+            } catch (error) {
+                content.innerHTML = `<div class="alert alert-error">❌ Error al cargar historial: ${error.message}</div>`;
+            }
+        }
+
+        function renderHistoryTable() {
+            const content = document.getElementById('history-content');
+            const dateColumns = ['FECHA', 'FECHA VENCIMIENTO'];
+
+            let html = `
+                <div class="toolbar">
+                    <div class="filter-group">
+                        <label>🔍 Filtrar:</label>
+                        <input type="text" id="filterInputHistory" placeholder="Buscar por tipo, descripción o estado..." oninput="applyHistoryFilter()">
+                        <button class="btn-clear" onclick="clearHistoryFilter()">✖ Limpiar</button>
+                    </div>
+                    <span class="record-count">📊 Total: ${historyFilteredRows.length} registros</span>
+                </div>
+            `;
+
+            html += `<div class="table-wrapper"><div class="table-container"><table>`;
+            html += `<thead><tr>`;
+            historyHeaders.forEach(col => {
+                if (col !== '_row_number') html += `<th>${col}</th>`;
+            });
+            html += `<th>⚙️ Acciones</th></tr></thead><tbody>`;
+
+            if (historyFilteredRows.length === 0) {
+                const colSpan = historyHeaders.filter(h => h !== '_row_number').length + 1;
+                html += `<tr><td colspan="${colSpan}" style="text-align: center; padding: 20px;">📭 No hay registros en el historial</td></tr>`;
+            } else {
+                historyFilteredRows.forEach((row) => {
+                    html += `<tr>`;
+
+                    historyHeaders.forEach(col => {
+                        if (col === '_row_number') return;
+                        const value = row[col] || '';
+
+                        if (col === 'FECHA' || col === 'FECHA VENCIMIENTO') {
+                            let cellClass = '';
+                            if (col === 'FECHA VENCIMIENTO' && value) {
+                                const dateStatus = getDateStatus(value);
+                                if (dateStatus.class) cellClass = ` class="${dateStatus.class}"`;
+                            }
+                            html += `<td${cellClass}>${value}</td>`;
+                        } else if (col === 'ESTADO') {
+                            const estado = value || 'En Proceso';
+                            const estadoClass = estado.toLowerCase().replace(/\s/g, '-');
+                            html += `<td>
+                                <select class="status-select ${estadoClass}" onchange="updateHistoryStatus(${row._row_number}, this.value)">
+                                    <option value="En Proceso" ${estado === 'En Proceso' ? 'selected' : ''}>En Proceso</option>
+                                    <option value="Completo" ${estado === 'Completo' ? 'selected' : ''}>Completo</option>
+                                    <option value="Vencido" ${estado === 'Vencido' ? 'selected' : ''}>Vencido</option>
+                                    <option value="Notificado" ${estado === 'Notificado' ? 'selected' : ''}>Notificado</option>
+                                </select>
+                            </td>`;
+                        } else {
+                            html += `<td>${value}</td>`;
+                        }
+                    });
+
+                    html += `<td>
+                        <button class="btn btn-danger btn-sm" onclick="deleteHistoryRow(${row._row_number})">🗑️ Eliminar</button>
+                    </td>`;
+                    html += `</tr>`;
+                });
+            }
+
+            html += `</tbody></table></div></div>`;
+            content.innerHTML = html;
+        }
+
+        function applyHistoryFilter() {
+            const filterInput = document.getElementById('filterInputHistory');
+            const searchTerm = filterInput.value.toLowerCase().trim();
+            if (!searchTerm) {
+                historyFilteredRows = [...historyAllRows];
+            } else {
+                historyFilteredRows = historyAllRows.filter(row => {
+                    const tipo = (row['TIPO'] || '').toLowerCase();
+                    const desc = (row['DESCRIPCION'] || '').toLowerCase();
+                    const estado = (row['ESTADO'] || '').toLowerCase();
+                    return tipo.includes(searchTerm) || desc.includes(searchTerm) || estado.includes(searchTerm);
+                });
+            }
+            renderHistoryTable();
+        }
+
+        function clearHistoryFilter() {
+            document.getElementById('filterInputHistory').value = '';
+            historyFilteredRows = [...historyAllRows];
+            renderHistoryTable();
+        }
+
+        async function updateHistoryStatus(rowNumber, newStatus) {
+            try {
+                const response = await fetch(`/api/history/update_status/${rowNumber}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ estado: newStatus })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('✅ Estado actualizado correctamente', 'success');
+                    // Actualizar en memoria
+                    const row = historyAllRows.find(r => r._row_number === rowNumber);
+                    if (row) row['ESTADO'] = newStatus;
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error al actualizar estado: ${error.message}`, 'error');
+            }
+        }
+
+        async function deleteHistoryRow(rowNumber) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este registro del historial?')) return;
+            try {
+                const response = await fetch(`/api/history/delete/${rowNumber}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('✅ Registro eliminado correctamente', 'success');
+                    await loadHistoryData();
                 } else {
                     showAlert(`❌ Error: ${result.error}`, 'error');
                 }
