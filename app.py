@@ -22,6 +22,17 @@ SHEET_CONFIG_MP = 'Configuracion MP'
 SHEET_CONFIG_DROPDOWNS = 'Configuracion Desplegables'
 SHEET_PROGRAMACION_MP = 'Programacion Mantenimiento Preventivo'
 
+# Headers de la hoja de Programación (se crean automáticamente)
+PROG_HEADERS = [
+    'Marca Temporal',
+    'PATENTE',
+    'FECHA ULTIMO MANTENIMIENTO',
+    'PROXIMO MANTENIMIENTO FECHA',
+    'KM ULTIMO MANTENIMIENTO',
+    'TIPO MANTENIMIENTO',
+    'OBSERVACIONES'
+]
+
 SHEETS = {
     'Camion T1': 'Camion T1',
     'Camion T2': 'Camion T2',
@@ -778,19 +789,26 @@ def get_mantenimiento_config():
         hist_data = get_all_data(SHEET_HISTORIAL_MP, SPREADSHEET_ID_MP)
 
         # PATENTES disponibles desde Camion T2 del spreadsheet original
+        # También obtenemos el ODOMETRO por patente (para KM ULTIMO MANTENIMIENTO)
         camion_t2_data = get_all_data('Camion T2', SPREADSHEET_ID)
         patentes_camion_t2 = []
+        odometro_por_patente = {}
         for row in camion_t2_data.get('rows', []):
             patente = (row.get('PATENTE') or '').strip()
-            if patente and patente not in patentes_camion_t2:
-                patentes_camion_t2.append(patente)
+            if patente:
+                if patente not in patentes_camion_t2:
+                    patentes_camion_t2.append(patente)
+                # Guardar odómetro (si hay múltiples filas con misma patente, guarda la última encontrada)
+                odometro = (row.get('ODOMETRO') or '').strip()
+                if odometro:
+                    odometro_por_patente[patente] = odometro
         patentes_camion_t2.sort()
 
         # Programación de mantenimiento preventivo
         ensure_sheet_exists(
             SHEET_PROGRAMACION_MP,
             SPREADSHEET_ID_MP,
-            headers=['PATENTE', 'FECHA ULTIMO MANTENIMIENTO', 'KM ULTIMO MANTENIMIENTO', 'PROXIMO MANTENIMIENTO FECHA', 'PROXIMO MANTENIMIENTO KM', 'TIPO MANTENIMIENTO', 'OBSERVACIONES']
+            headers=PROG_HEADERS
         )
         programacion_data = get_all_data(SHEET_PROGRAMACION_MP, SPREADSHEET_ID_MP)
 
@@ -801,6 +819,7 @@ def get_mantenimiento_config():
             'historial_headers': hist_data.get('headers', []),
             'historial_rows': hist_data.get('rows', []),
             'patentes_camion_t2': patentes_camion_t2,
+            'odometro_por_patente': odometro_por_patente,
             'programacion_headers': programacion_data.get('headers', []),
             'programacion_rows': programacion_data.get('rows', [])
         })
@@ -971,7 +990,7 @@ def add_programacion():
         ensure_sheet_exists(
             sheet_name,
             SPREADSHEET_ID_MP,
-            headers=['PATENTE', 'FECHA ULTIMO MANTENIMIENTO', 'KM ULTIMO MANTENIMIENTO', 'PROXIMO MANTENIMIENTO FECHA', 'PROXIMO MANTENIMIENTO KM', 'TIPO MANTENIMIENTO', 'OBSERVACIONES']
+            headers=PROG_HEADERS
         )
 
         sheet_data = get_all_data(sheet_name, SPREADSHEET_ID_MP)
@@ -980,9 +999,29 @@ def add_programacion():
         if not headers:
             return jsonify({'success': False, 'error': 'La hoja Programación no tiene encabezados'}), 500
 
+        # Marca Temporal automática
+        marca_temporal = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        # Calcular PROXIMO MANTENIMIENTO FECHA = FECHA ULTIMO MANTENIMIENTO + 1 año
+        fecha_ultimo = data.get('FECHA ULTIMO MANTENIMIENTO', '')
+        proximo_fecha = ''
+        parsed = parse_date(fecha_ultimo)
+        if parsed:
+            try:
+                proximo = parsed.replace(year=parsed.year + 1)
+            except ValueError:
+                # 29 de febrero en año no bisiesto -> 28 de febrero
+                proximo = parsed.replace(year=parsed.year + 1, day=28)
+            proximo_fecha = proximo.strftime('%d/%m/%Y')
+
         row_values = []
         for header in headers:
-            row_values.append(str(data.get(header, '')))
+            if header == 'Marca Temporal':
+                row_values.append(marca_temporal)
+            elif header == 'PROXIMO MANTENIMIENTO FECHA':
+                row_values.append(proximo_fecha)
+            else:
+                row_values.append(str(data.get(header, '')))
 
         success = add_row_to_sheet(sheet_name, row_values, SPREADSHEET_ID_MP)
 
@@ -1004,9 +1043,33 @@ def update_programacion(row_number):
         sheet_data = get_all_data(sheet_name, SPREADSHEET_ID_MP)
         headers = sheet_data.get('headers', [])
 
+        # Recalcular PROXIMO MANTENIMIENTO FECHA = FECHA ULTIMO MANTENIMIENTO + 1 año
+        fecha_ultimo = data.get('FECHA ULTIMO MANTENIMIENTO', '')
+        proximo_fecha = ''
+        parsed = parse_date(fecha_ultimo)
+        if parsed:
+            try:
+                proximo = parsed.replace(year=parsed.year + 1)
+            except ValueError:
+                proximo = parsed.replace(year=parsed.year + 1, day=28)
+            proximo_fecha = proximo.strftime('%d/%m/%Y')
+
+        # Preservar Marca Temporal original (no la modificamos al editar)
+        current_row = None
+        for row in sheet_data.get('rows', []):
+            if row.get('_row_number') == row_number:
+                current_row = row
+                break
+        marca_temporal = current_row.get('Marca Temporal', '') if current_row else ''
+
         row_values = []
         for header in headers:
-            row_values.append(str(data.get(header, '')))
+            if header == 'Marca Temporal':
+                row_values.append(marca_temporal)
+            elif header == 'PROXIMO MANTENIMIENTO FECHA':
+                row_values.append(proximo_fecha)
+            else:
+                row_values.append(str(data.get(header, '')))
 
         success = update_row(sheet_name, row_number, row_values, SPREADSHEET_ID_MP)
 
