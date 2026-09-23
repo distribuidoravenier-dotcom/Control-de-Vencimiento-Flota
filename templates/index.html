@@ -839,6 +839,7 @@ let progRows = [];
 let progFilteredRows = [];
 let progIsFormVisible = false;
 let patentesCamionT2 = [];
+let odometroPorPatente = {};
 
 const columnConfig = {
 'Camion T1': [
@@ -1812,6 +1813,7 @@ progHeaders = data.programacion_headers || [];
 progRows = data.programacion_rows || [];
 progFilteredRows = [...progRows];
 patentesCamionT2 = data.patentes_camion_t2 || [];
+odometroPorPatente = data.odometro_por_patente || {};
 
 renderMantenimientosView();
 } else {
@@ -2185,7 +2187,7 @@ if (form) form.addEventListener('submit', handleAddProgramacion);
 
 function generateProgramacionFormFields(values = {}, isEdit = false) {
 let html = '';
-const displayCols = progHeaders.filter(h => h !== '_row_number');
+const displayCols = progHeaders.filter(h => h !== '_row_number' && h !== 'Marca Temporal' && h !== 'PROXIMO MANTENIMIENTO FECHA');
 const prefix = isEdit ? 'edit_prog_' : 'prog_';
 
 displayCols.forEach(header => {
@@ -2198,8 +2200,8 @@ const isNumber = header.toUpperCase().includes('KM');
 html += `<div class="form-group">`;
 html += `<label>${header}</label>`;
 
-if (isDropdown && header === 'PATENTE') {
-html += `<select id="${prefix}${header}" name="${header}">`;
+if (header === 'PATENTE') {
+html += `<select id="${prefix}${header}" name="${header}" onchange="autocompletarKmDesdeOdometro('${isEdit ? 'edit' : 'add'}')">`;
 html += `<option value="">-- Seleccionar --</option>`;
 patentesCamionT2.forEach(opt => {
 const selected = (value === opt) ? ' selected' : '';
@@ -2219,7 +2221,7 @@ html += `<select id="${prefix}${header}" name="${header}">`;
 html += `<option value="">-- Sin opciones configuradas --</option>`;
 if (value) html += `<option value="${value}" selected>${value}</option>`;
 html += `</select>`;
-} else if (isDate) {
+} else if (header === 'FECHA ULTIMO MANTENIMIENTO') {
 let dateValue = value;
 if (value && value.includes('/')) {
 const parts = value.split('/');
@@ -2229,7 +2231,14 @@ if (year < 100) year += 2000;
 dateValue = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
 }
 }
-html += `<input type="date" id="${prefix}${header}" name="${header}" value="${dateValue}">`;
+html += `<input type="date" id="${prefix}${header}" name="${header}" value="${dateValue}" onchange="calcularProximoMantenimiento('${isEdit ? 'edit' : 'add'}')">`;
+html += `<small style="color:#666; display:block; margin-top:5px;" id="${prefix}proximo_label">📅 Próximo mantenimiento: se calcula 1 año después</small>`;
+} else if (header === 'PROXIMO MANTENIMIENTO FECHA') {
+// No se muestra en el formulario, se calcula automáticamente
+return;
+} else if (header === 'KM ULTIMO MANTENIMIENTO') {
+html += `<input type="text" id="${prefix}${header}" name="${header}" value="${value}" readonly style="background:#f0f0f0; cursor:not-allowed;">`;
+html += `<small style="color:#666;">Se completa automáticamente desde la columna ODOMETRO de Camion T2 al seleccionar la patente</small>`;
 } else if (isTextarea) {
 html += `<textarea id="${prefix}${header}" name="${header}" rows="2">${value}</textarea>`;
 } else if (isNumber) {
@@ -2240,6 +2249,47 @@ html += `<input type="text" id="${prefix}${header}" name="${header}" value="${va
 html += `</div>`;
 });
 return html;
+}
+
+function autocompletarKmDesdeOdometro(mode) {
+const prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
+const patenteSelect = document.getElementById(`${prefix}PATENTE`);
+const kmInput = document.getElementById(`${prefix}KM ULTIMO MANTENIMIENTO`);
+
+if (!patenteSelect || !kmInput) return;
+
+const patente = patenteSelect.value;
+if (patente && odometroPorPatente[patente]) {
+kmInput.value = odometroPorPatente[patente];
+} else {
+kmInput.value = '';
+}
+}
+
+function calcularProximoMantenimiento(mode) {
+const prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
+const fechaInput = document.getElementById(`${prefix}FECHA ULTIMO MANTENIMIENTO`);
+const label = document.getElementById(`${prefix}proximo_label`);
+
+if (!fechaInput || !label) return;
+
+const fechaVal = fechaInput.value; // formato yyyy-mm-dd
+if (!fechaVal) {
+label.textContent = '📅 Próximo mantenimiento: se calcula 1 año después';
+return;
+}
+
+const parts = fechaVal.split('-');
+if (parts.length !== 3) return;
+
+let year = parseInt(parts[0]);
+let month = parseInt(parts[1]);
+let day = parseInt(parts[2]);
+
+year += 1;
+let proximoStr = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+
+label.textContent = `📅 Próximo mantenimiento: ${proximoStr}`;
 }
 
 function toggleProgramacionForm() {
@@ -2296,6 +2346,10 @@ if (!row) { showAlert('No se encontró el registro', 'error'); return; }
 
 document.getElementById('editProgramacionRowNumber').value = rowNumber;
 document.getElementById('editProgramacionFields').innerHTML = generateProgramacionFormFields(row, true);
+
+setTimeout(() => {
+calcularProximoMantenimiento('edit');
+}, 100);
 
 document.getElementById('editProgramacionModal').style.display = 'block';
 }
@@ -2375,13 +2429,13 @@ html += `
 
                <div class="config-section">
                    <h3>📅 Configuración de PATENTES (Camion T2)</h3>
-                   <p style="color:#666; margin-bottom:15px;">Estas son las patentes traídas automáticamente desde la solapa "Camion T2" del maestro de flota. Se usan como desplegable en la Programación de Mantenimiento Preventivo.</p>
+                   <p style="color:#666; margin-bottom:15px;">Estas son las patentes traídas automáticamente desde la solapa "Camion T2" del maestro de flota. Se usan como desplegable en la Programación de Mantenimiento Preventivo. El ODOMETRO se toma automáticamente de la misma solapa.</p>
                    <div class="dropdown-config-item">
-                       <label>🚛 PATENTES disponibles</label>
+                       <label>🚛 PATENTES disponibles con ODOMETRO</label>
                        <div style="background:white; padding:10px; border:1px solid #e0e0e0; border-radius:4px; max-height:250px; overflow-y:auto; font-family:monospace; font-size:13px;">
-                           ${patentesCamionT2.length === 0 ? '<span style="color:#999;">No hay patentes cargadas en Camion T2</span>' : patentesCamionT2.map(p => `<div>• ${p}</div>`).join('')}
+                           ${patentesCamionT2.length === 0 ? '<span style="color:#999;">No hay patentes cargadas en Camion T2</span>' : patentesCamionT2.map(p => `<div>• <b>${p}</b> — ODOMETRO: ${odometroPorPatente[p] || '(sin dato)'}</div>`).join('')}
                        </div>
-                       <small style="color:#666; display:block; margin-top:8px;">ℹ️ Para modificar estas patentes, editá la solapa "Camion T2" del maestro de flota.</small>
+                       <small style="color:#666; display:block; margin-top:8px;">ℹ️ Para modificar estas patentes y odómetros, editá la solapa "Camion T2" del maestro de flota.</small>
                    </div>
                </div>
 
