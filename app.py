@@ -20,6 +20,7 @@ SPREADSHEET_ID_MP = '1ZCgxrjf84jAlc6F8KsiuvFXkZ2qwbUEHfDAHwnfDhzg'
 SHEET_HISTORIAL_MP = 'Historial Mantenimientos'
 SHEET_CONFIG_MP = 'Configuracion MP'
 SHEET_CONFIG_DROPDOWNS = 'Configuracion Desplegables'
+SHEET_PROGRAMACION_MP = 'Programacion Mantenimiento Preventivo'
 
 SHEETS = {
     'Camion T1': 'Camion T1',
@@ -266,8 +267,8 @@ def add_row_to_sheet(sheet_name, values, spreadsheet_id=None):
         print(f"Error adding row: {err}")
         return False
 
-def ensure_sheet_exists(sheet_name, spreadsheet_id=None):
-    """Crea la hoja si no existe"""
+def ensure_sheet_exists(sheet_name, spreadsheet_id=None, headers=None):
+    """Crea la hoja si no existe y opcionalmente escribe headers"""
     try:
         creds = get_google_creds()
         service = build('sheets', 'v4', credentials=creds)
@@ -276,16 +277,26 @@ def ensure_sheet_exists(sheet_name, spreadsheet_id=None):
         sid = spreadsheet_id or SPREADSHEET_ID
 
         spreadsheet = service.spreadsheets().get(spreadsheetId=sid).execute()
+        exists = False
         for s in spreadsheet.get('sheets', []):
             if s['properties']['title'] == sheet_name:
-                return True
+                exists = True
+                break
 
-        requests = [{
-            'addSheet': {
-                'properties': {'title': sheet_name}
-            }
-        }]
-        sheet.batchUpdate(spreadsheetId=sid, body={'requests': requests}).execute()
+        if not exists:
+            requests = [{
+                'addSheet': {
+                    'properties': {'title': sheet_name}
+                }
+            }]
+            sheet.batchUpdate(spreadsheetId=sid, body={'requests': requests}).execute()
+            if headers:
+                sheet.values().update(
+                    spreadsheetId=sid,
+                    range=f"'{sheet_name}'!A1",
+                    valueInputOption='RAW',
+                    body={'values': [headers]}
+                ).execute()
         return True
     except HttpError as err:
         print(f"Error ensuring sheet: {err}")
@@ -766,12 +777,32 @@ def get_mantenimiento_config():
         config_mp_data = get_all_data(SHEET_CONFIG_MP, SPREADSHEET_ID_MP)
         hist_data = get_all_data(SHEET_HISTORIAL_MP, SPREADSHEET_ID_MP)
 
+        # PATENTES disponibles desde Camion T2 del spreadsheet original
+        camion_t2_data = get_all_data('Camion T2', SPREADSHEET_ID)
+        patentes_camion_t2 = []
+        for row in camion_t2_data.get('rows', []):
+            patente = (row.get('PATENTE') or '').strip()
+            if patente and patente not in patentes_camion_t2:
+                patentes_camion_t2.append(patente)
+        patentes_camion_t2.sort()
+
+        # Programación de mantenimiento preventivo
+        ensure_sheet_exists(
+            SHEET_PROGRAMACION_MP,
+            SPREADSHEET_ID_MP,
+            headers=['PATENTE', 'FECHA ULTIMO MANTENIMIENTO', 'KM ULTIMO MANTENIMIENTO', 'PROXIMO MANTENIMIENTO FECHA', 'PROXIMO MANTENIMIENTO KM', 'TIPO MANTENIMIENTO', 'OBSERVACIONES']
+        )
+        programacion_data = get_all_data(SHEET_PROGRAMACION_MP, SPREADSHEET_ID_MP)
+
         return jsonify({
             'success': True,
             'dropdowns': dropdown_data,
             'config_mp': config_mp_data,
             'historial_headers': hist_data.get('headers', []),
-            'historial_rows': hist_data.get('rows', [])
+            'historial_rows': hist_data.get('rows', []),
+            'patentes_camion_t2': patentes_camion_t2,
+            'programacion_headers': programacion_data.get('headers', []),
+            'programacion_rows': programacion_data.get('rows', [])
         })
     except Exception as e:
         print(f"Error en get_mantenimiento_config: {e}")
@@ -926,6 +957,79 @@ def delete_mantenimiento(row_number):
             return jsonify({'success': False, 'error': 'Error al eliminar'}), 500
     except Exception as e:
         print(f"Error en delete_mantenimiento: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==================== PROGRAMACIÓN MANTENIMIENTO PREVENTIVO ====================
+
+@app.route('/api/programacion/add', methods=['POST'])
+def add_programacion():
+    """Agrega un nuevo registro de programación de mantenimiento preventivo"""
+    try:
+        data = request.json
+        sheet_name = SHEET_PROGRAMACION_MP
+
+        ensure_sheet_exists(
+            sheet_name,
+            SPREADSHEET_ID_MP,
+            headers=['PATENTE', 'FECHA ULTIMO MANTENIMIENTO', 'KM ULTIMO MANTENIMIENTO', 'PROXIMO MANTENIMIENTO FECHA', 'PROXIMO MANTENIMIENTO KM', 'TIPO MANTENIMIENTO', 'OBSERVACIONES']
+        )
+
+        sheet_data = get_all_data(sheet_name, SPREADSHEET_ID_MP)
+        headers = sheet_data.get('headers', [])
+
+        if not headers:
+            return jsonify({'success': False, 'error': 'La hoja Programación no tiene encabezados'}), 500
+
+        row_values = []
+        for header in headers:
+            row_values.append(str(data.get(header, '')))
+
+        success = add_row_to_sheet(sheet_name, row_values, SPREADSHEET_ID_MP)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Programación agregada correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al guardar en Google Sheets'}), 500
+    except Exception as e:
+        print(f"Error en add_programacion: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/programacion/update/<int:row_number>', methods=['POST'])
+def update_programacion(row_number):
+    """Actualiza un registro de programación"""
+    try:
+        data = request.json
+        sheet_name = SHEET_PROGRAMACION_MP
+
+        sheet_data = get_all_data(sheet_name, SPREADSHEET_ID_MP)
+        headers = sheet_data.get('headers', [])
+
+        row_values = []
+        for header in headers:
+            row_values.append(str(data.get(header, '')))
+
+        success = update_row(sheet_name, row_number, row_values, SPREADSHEET_ID_MP)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Programación actualizada correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al actualizar'}), 500
+    except Exception as e:
+        print(f"Error en update_programacion: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/programacion/delete/<int:row_number>', methods=['DELETE'])
+def delete_programacion(row_number):
+    """Elimina un registro de programación"""
+    try:
+        success = delete_row(SHEET_PROGRAMACION_MP, row_number, SPREADSHEET_ID_MP)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Programación eliminada correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al eliminar'}), 500
+    except Exception as e:
+        print(f"Error en delete_programacion: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
