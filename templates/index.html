@@ -756,6 +756,7 @@ max-height: 30px;
 
 <div class="tabs" id="tabsMantenimientos">
 <button class="tab active" data-view="historial">🔧 Historial Mantenimientos</button>
+<button class="tab" data-view="programacion">📅 Programación Mantenimiento Preventivo</button>
 <button class="tab" data-view="config">⚙️ Configuración</button>
 </div>
 
@@ -784,6 +785,18 @@ max-height: 30px;
 <form id="editMantenimientoForm">
 <input type="hidden" id="editMantenimientoRowNumber">
 <div id="editMantenimientoFields"></div>
+<button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
+</form>
+</div>
+</div>
+
+<div id="editProgramacionModal" class="modal">
+<div class="modal-content">
+<span class="modal-close" onclick="closeEditProgramacionModal()">&times;</span>
+<h2>✏️ Editar Programación</h2>
+<form id="editProgramacionForm">
+<input type="hidden" id="editProgramacionRowNumber">
+<div id="editProgramacionFields"></div>
 <button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
 </form>
 </div>
@@ -819,6 +832,13 @@ let mpIsFormVisible = false;
 let mpDropdowns = {};
 let mpConfigMP = [];
 let mpConfigLoaded = false;
+
+// Programación Mantenimiento Preventivo
+let progHeaders = [];
+let progRows = [];
+let progFilteredRows = [];
+let progIsFormVisible = false;
+let patentesCamionT2 = [];
 
 const columnConfig = {
 'Camion T1': [
@@ -878,6 +898,9 @@ const photoMapping = {
 
 // Columnas de mantenimientos que deben ser desplegables
 const MP_DROPDOWN_COLUMNS = ['PATENTE', 'TIPO MANTENIMIENTO', 'CONCEPTO GENERAL', 'TIPO REPARACIÓN', 'PROVEEDOR'];
+
+// Columnas de programación que deben ser desplegables
+const PROG_DROPDOWN_COLUMNS = ['PATENTE', 'TIPO MANTENIMIENTO'];
 
 function showAlert(message, type = 'success') {
 const container = document.getElementById('alert-container');
@@ -1784,6 +1807,12 @@ mpFilteredRows = [...mpRows];
 mpDropdowns = parseDropdowns(data.dropdowns);
 mpConfigMP = parseConfigMP(data.config_mp);
 mpConfigLoaded = true;
+
+progHeaders = data.programacion_headers || [];
+progRows = data.programacion_rows || [];
+progFilteredRows = [...progRows];
+patentesCamionT2 = data.patentes_camion_t2 || [];
+
 renderMantenimientosView();
 } else {
 content.innerHTML = `<div class="alert alert-error">❌ Error: ${data.error}</div>`;
@@ -1800,7 +1829,6 @@ if (!dropdownData || !dropdownData.headers || dropdownData.headers.length === 0)
 const headers = dropdownData.headers || [];
 const rowsRaw = dropdownData.rows || [];
 
-// Reconstruir: cada columna es un campo con sus opciones
 headers.forEach((fieldName, colIdx) => {
 const options = [];
 rowsRaw.forEach(rowObj => {
@@ -1833,6 +1861,8 @@ function renderMantenimientosView() {
 const content = document.getElementById('mantenimientos-content');
 if (mpCurrentView === 'historial') {
 renderMantenimientosHistorial(content);
+} else if (mpCurrentView === 'programacion') {
+renderProgramacion(content);
 } else {
 renderMantenimientosConfig(content);
 }
@@ -2089,6 +2119,235 @@ showAlert(`❌ Error al eliminar: ${error.message}`, 'error');
 }
 }
 
+// ==================== PROGRAMACIÓN MANTENIMIENTO PREVENTIVO ====================
+
+function renderProgramacion(content) {
+const displayColumns = progHeaders.filter(h => h !== '_row_number');
+
+let html = `
+               <div class="toolbar">
+                   <button class="btn btn-add" onclick="toggleProgramacionForm()">
+                       ${progIsFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Programación'}
+                   </button>
+                   <div class="filter-group">
+                       <label>🔍 Filtrar por PATENTE:</label>
+                       <input type="text" id="filterInputProg" placeholder="Buscar..." oninput="applyProgramacionFilter()">
+                       <button class="btn-clear" onclick="clearProgramacionFilter()">✖ Limpiar</button>
+                   </div>
+                   <span class="record-count">📊 Total: ${progFilteredRows.length} registros</span>
+               </div>
+           `;
+
+if (progIsFormVisible) {
+html += `
+               <div class="form-section visible" id="addProgramacionSection">
+                   <h3>📅 Agregar programación de mantenimiento preventivo</h3>
+                   <form id="addProgramacionForm">
+                       <div class="form-row" id="addProgramacionFields">
+                           ${generateProgramacionFormFields({}, false)}
+                       </div>
+                       <button type="submit" class="btn">➕ Agregar Programación</button>
+                       <button type="button" class="btn btn-cancel" onclick="toggleProgramacionForm()">Cancelar</button>
+                   </form>
+               </div>
+               `;
+}
+
+html += `<div class="table-wrapper"><div class="table-container"><table>`;
+html += `<thead><tr>`;
+displayColumns.forEach(col => html += `<th>${col}</th>`);
+html += `<th>⚙️ Acciones</th></tr></thead><tbody>`;
+
+if (progFilteredRows.length === 0) {
+html += `<tr><td colspan="${displayColumns.length + 1}" style="text-align: center; padding: 20px;">📭 No hay programaciones cargadas</td></tr>`;
+} else {
+progFilteredRows.forEach((row) => {
+html += `<tr>`;
+displayColumns.forEach(col => {
+html += `<td>${row[col] || ''}</td>`;
+});
+html += `<td>
+                       <div class="actions">
+                           <button class="btn btn-success btn-sm" onclick="editProgramacion(${row._row_number})">✏️ Editar</button>
+                           <button class="btn btn-danger btn-sm" onclick="deleteProgramacion(${row._row_number})">🗑️ Eliminar</button>
+                       </div>
+                   </td>`;
+html += `</tr>`;
+});
+}
+
+html += `</tbody></table></div></div>`;
+content.innerHTML = html;
+
+const form = document.getElementById('addProgramacionForm');
+if (form) form.addEventListener('submit', handleAddProgramacion);
+}
+
+function generateProgramacionFormFields(values = {}, isEdit = false) {
+let html = '';
+const displayCols = progHeaders.filter(h => h !== '_row_number');
+const prefix = isEdit ? 'edit_prog_' : 'prog_';
+
+displayCols.forEach(header => {
+const value = values[header] || '';
+const isDropdown = PROG_DROPDOWN_COLUMNS.includes(header);
+const isDate = header.toUpperCase().includes('FECHA');
+const isTextarea = header.toUpperCase().includes('OBSERVACION');
+const isNumber = header.toUpperCase().includes('KM');
+
+html += `<div class="form-group">`;
+html += `<label>${header}</label>`;
+
+if (isDropdown && header === 'PATENTE') {
+html += `<select id="${prefix}${header}" name="${header}">`;
+html += `<option value="">-- Seleccionar --</option>`;
+patentesCamionT2.forEach(opt => {
+const selected = (value === opt) ? ' selected' : '';
+html += `<option value="${opt}"${selected}>${opt}</option>`;
+});
+html += `</select>`;
+} else if (isDropdown && mpDropdowns[header] && mpDropdowns[header].length > 0) {
+html += `<select id="${prefix}${header}" name="${header}">`;
+html += `<option value="">-- Seleccionar --</option>`;
+mpDropdowns[header].forEach(opt => {
+const selected = (value === opt) ? ' selected' : '';
+html += `<option value="${opt}"${selected}>${opt}</option>`;
+});
+html += `</select>`;
+} else if (isDropdown) {
+html += `<select id="${prefix}${header}" name="${header}">`;
+html += `<option value="">-- Sin opciones configuradas --</option>`;
+if (value) html += `<option value="${value}" selected>${value}</option>`;
+html += `</select>`;
+} else if (isDate) {
+let dateValue = value;
+if (value && value.includes('/')) {
+const parts = value.split('/');
+if (parts.length === 3) {
+let year = parseInt(parts[2]);
+if (year < 100) year += 2000;
+dateValue = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+}
+}
+html += `<input type="date" id="${prefix}${header}" name="${header}" value="${dateValue}">`;
+} else if (isTextarea) {
+html += `<textarea id="${prefix}${header}" name="${header}" rows="2">${value}</textarea>`;
+} else if (isNumber) {
+html += `<input type="number" step="1" id="${prefix}${header}" name="${header}" value="${value}">`;
+} else {
+html += `<input type="text" id="${prefix}${header}" name="${header}" value="${value}">`;
+}
+html += `</div>`;
+});
+return html;
+}
+
+function toggleProgramacionForm() {
+progIsFormVisible = !progIsFormVisible;
+renderMantenimientosView();
+}
+
+function applyProgramacionFilter() {
+const filterInput = document.getElementById('filterInputProg');
+const searchTerm = filterInput.value.toLowerCase().trim();
+if (!searchTerm) progFilteredRows = [...progRows];
+else progFilteredRows = progRows.filter(row => (row['PATENTE'] || '').toString().toLowerCase().includes(searchTerm));
+renderProgramacion(document.getElementById('mantenimientos-content'));
+}
+
+function clearProgramacionFilter() {
+document.getElementById('filterInputProg').value = '';
+progFilteredRows = [...progRows];
+renderProgramacion(document.getElementById('mantenimientos-content'));
+}
+
+async function handleAddProgramacion(e) {
+e.preventDefault();
+const form = e.target;
+const formData = new FormData(form);
+const data = {};
+for (let [key, value] of formData.entries()) {
+data[key] = value;
+}
+
+try {
+const response = await fetch('/api/programacion/add', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify(data)
+});
+const result = await response.json();
+if (result.success) {
+showAlert('✅ Programación agregada correctamente', 'success');
+form.reset();
+progIsFormVisible = false;
+await loadMantenimientosData();
+} else {
+showAlert(`❌ Error: ${result.error}`, 'error');
+}
+} catch (error) {
+showAlert(`❌ Error: ${error.message}`, 'error');
+}
+}
+
+function editProgramacion(rowNumber) {
+const row = progRows.find(r => r._row_number === rowNumber);
+if (!row) { showAlert('No se encontró el registro', 'error'); return; }
+
+document.getElementById('editProgramacionRowNumber').value = rowNumber;
+document.getElementById('editProgramacionFields').innerHTML = generateProgramacionFormFields(row, true);
+
+document.getElementById('editProgramacionModal').style.display = 'block';
+}
+
+function closeEditProgramacionModal() {
+document.getElementById('editProgramacionModal').style.display = 'none';
+}
+
+document.getElementById('editProgramacionForm').addEventListener('submit', async function(e) {
+e.preventDefault();
+const rowNumber = parseInt(document.getElementById('editProgramacionRowNumber').value);
+const formData = new FormData(this);
+const data = {};
+for (let [key, value] of formData.entries()) {
+data[key] = value;
+}
+
+try {
+const response = await fetch(`/api/programacion/update/${rowNumber}`, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify(data)
+});
+const result = await response.json();
+if (result.success) {
+showAlert('✅ Programación actualizada correctamente', 'success');
+closeEditProgramacionModal();
+await loadMantenimientosData();
+} else {
+showAlert(`❌ Error: ${result.error}`, 'error');
+}
+} catch (error) {
+showAlert(`❌ Error: ${error.message}`, 'error');
+}
+});
+
+async function deleteProgramacion(rowNumber) {
+if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
+try {
+const response = await fetch(`/api/programacion/delete/${rowNumber}`, { method: 'DELETE' });
+const result = await response.json();
+if (result.success) {
+showAlert('✅ Programación eliminada correctamente', 'success');
+await loadMantenimientosData();
+} else {
+showAlert(`❌ Error: ${result.error}`, 'error');
+}
+} catch (error) {
+showAlert(`❌ Error al eliminar: ${error.message}`, 'error');
+}
+}
+
 // ==================== CONFIGURACIÓN MANTENIMIENTOS ====================
 
 function renderMantenimientosConfig(content) {
@@ -2112,6 +2371,18 @@ html += `
 html += `
                    </div>
                    <button class="btn btn-success" onclick="saveDropdowns()">💾 Guardar Desplegables</button>
+               </div>
+
+               <div class="config-section">
+                   <h3>📅 Configuración de PATENTES (Camion T2)</h3>
+                   <p style="color:#666; margin-bottom:15px;">Estas son las patentes traídas automáticamente desde la solapa "Camion T2" del maestro de flota. Se usan como desplegable en la Programación de Mantenimiento Preventivo.</p>
+                   <div class="dropdown-config-item">
+                       <label>🚛 PATENTES disponibles</label>
+                       <div style="background:white; padding:10px; border:1px solid #e0e0e0; border-radius:4px; max-height:250px; overflow-y:auto; font-family:monospace; font-size:13px;">
+                           ${patentesCamionT2.length === 0 ? '<span style="color:#999;">No hay patentes cargadas en Camion T2</span>' : patentesCamionT2.map(p => `<div>• ${p}</div>`).join('')}
+                       </div>
+                       <small style="color:#666; display:block; margin-top:8px;">ℹ️ Para modificar estas patentes, editá la solapa "Camion T2" del maestro de flota.</small>
+                   </div>
                </div>
 
                <div class="config-section">
@@ -2298,6 +2569,8 @@ const modal = document.getElementById('editModal');
 if (event.target == modal) modal.style.display = 'none';
 const modalMP = document.getElementById('editMantenimientoModal');
 if (event.target == modalMP) modalMP.style.display = 'none';
+const modalProg = document.getElementById('editProgramacionModal');
+if (event.target == modalProg) modalProg.style.display = 'none';
 }
 
 document.getElementById('editForm').addEventListener('submit', async function(e) {
@@ -2430,6 +2703,8 @@ document.querySelectorAll('#tabsMantenimientos .tab').forEach(t => t.classList.r
 this.classList.add('active');
 mpCurrentView = this.dataset.view;
 if (mpCurrentView === 'config') {
+renderMantenimientosView();
+} else if (mpCurrentView === 'programacion') {
 renderMantenimientosView();
 } else {
 loadMantenimientosData();
