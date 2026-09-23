@@ -507,12 +507,12 @@
             box-shadow: 0 10px 25px rgba(56, 161, 105, 0.4);
         }
         
-        .home-btn.history-btn {
-            background: linear-gradient(135deg, #ed8936 0%, #c05621 100%);
+        .home-btn.mp-btn {
+            background: linear-gradient(135deg, #d69e2e 0%, #b7791f 100%);
         }
         
-        .home-btn.history-btn:hover {
-            box-shadow: 0 10px 25px rgba(237, 137, 54, 0.4);
+        .home-btn.mp-btn:hover {
+            box-shadow: 0 10px 25px rgba(214, 158, 46, 0.4);
         }
         
         .back-home-btn {
@@ -531,38 +531,90 @@
             background: #4a5568;
         }
         
-        .status-select {
-            padding: 5px 8px;
+        .config-section {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .config-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .dropdown-config-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .dropdown-config-item label {
+            font-weight: 700;
+            color: #667eea;
+            display: block;
+            margin-bottom: 8px;
+        }
+        
+        .dropdown-config-item textarea {
+            width: 100%;
+            padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
+            font-size: 13px;
+            resize: vertical;
+            min-height: 60px;
+            font-family: monospace;
+        }
+        
+        .config-mp-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .config-mp-table th {
+            background: #667eea;
+            color: white;
+            padding: 8px;
+            font-size: 13px;
+        }
+        
+        .config-mp-table td {
+            padding: 5px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .config-mp-table input {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        .btn-remove-row {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
             cursor: pointer;
-            min-width: 110px;
+            font-size: 12px;
         }
         
-        .status-select.en-proceso {
-            background: #fefcbf;
-            color: #744210;
-            border-color: #f6e05e;
-        }
-        
-        .status-select.completo {
-            background: #c6f6d5;
-            color: #22543d;
-            border-color: #9ae6b4;
-        }
-        
-        .status-select.vencido {
-            background: #fed7d7;
-            color: #742a2a;
-            border-color: #fc8181;
-        }
-        
-        .status-select.notificado {
-            background: #bee3f8;
-            color: #2a4365;
-            border-color: #90cdf4;
+        .btn-add-row {
+            background: #38a169;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 10px;
+            font-weight: 600;
         }
         
         @media (max-width: 768px) {
@@ -622,7 +674,7 @@
         <div id="homeScreen" class="home-screen">
             <button class="home-btn master-btn" onclick="showModule('master')">🗂️ Maestro de Flota</button>
             <button class="home-btn" onclick="showModule('docs')">📋 Control de Documentación</button>
-            <button class="home-btn history-btn" onclick="showModule('history')">📊 Historial de Vencimiento de Documentación</button>
+            <button class="home-btn mp-btn" onclick="showModule('mantenimientos')">🔧 Carga de Mantenimientos</button>
         </div>
 
         <div id="docsModule" style="display:none;">
@@ -651,9 +703,15 @@
             <div id="master-tab-content"></div>
         </div>
 
-        <div id="historyModule" style="display:none;">
+        <div id="mantenimientosModule" style="display:none;">
             <button class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
-            <div id="history-content"></div>
+
+            <div class="tabs" id="tabsMantenimientos">
+                <button class="tab active" data-view="historial">🔧 Historial Mantenimientos</button>
+                <button class="tab" data-view="config">⚙️ Configuración</button>
+            </div>
+
+            <div id="mantenimientos-content"></div>
         </div>
     </div>
 
@@ -666,6 +724,18 @@
                 <input type="hidden" id="editRowNumber">
                 <div id="editFormFields"></div>
                 <div id="editPhotoFields"></div>
+                <button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="editMantenimientoModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeEditMantenimientoModal()">&times;</span>
+            <h2>✏️ Editar Mantenimiento</h2>
+            <form id="editMantenimientoForm">
+                <input type="hidden" id="editMantenimientoRowNumber">
+                <div id="editMantenimientoFields"></div>
                 <button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
             </form>
         </div>
@@ -688,9 +758,15 @@
         let masterFilteredRows = [];
         let masterIsFormVisible = false;
 
-        let historyAllRows = [];
-        let historyFilteredRows = [];
-        let historyHeaders = [];
+        // Mantenimientos
+        let mpCurrentView = 'historial';
+        let mpHeaders = [];
+        let mpRows = [];
+        let mpFilteredRows = [];
+        let mpIsFormVisible = false;
+        let mpDropdowns = {};
+        let mpConfigMP = [];
+        let mpConfigLoaded = false;
 
         const columnConfig = {
             'Camion T1': [
@@ -730,7 +806,6 @@
             'Choferes y Ayudantes': 'APELLIDO Y NOMBRE'
         };
 
-        // Mapeo de qué columna de foto corresponde a cada documento
         const photoMapping = {
             'VENC VTV': 'VENC VTV_FOTO',
             'VENC SEGURO': 'VENC SEGURO_FOTO',
@@ -748,6 +823,9 @@
             'VENCIMIENTO REGISTRO': 'VENCIMIENTO REGISTRO_FOTO',
             'LIBRETA SANITARIA': 'LIBRETA SANITARIA_FOTO'
         };
+
+        // Columnas de mantenimientos que deben ser desplegables
+        const MP_DROPDOWN_COLUMNS = ['PATENTE', 'TIPO MANTENIMIENTO', 'CONCEPTO GENERAL', 'TIPO REPARACIÓN', 'PROVEEDOR'];
 
         function showAlert(message, type = 'success') {
             const container = document.getElementById('alert-container');
@@ -839,7 +917,7 @@
             document.getElementById('homeScreen').style.display = 'flex';
             document.getElementById('docsModule').style.display = 'none';
             document.getElementById('masterModule').style.display = 'none';
-            document.getElementById('historyModule').style.display = 'none';
+            document.getElementById('mantenimientosModule').style.display = 'none';
         }
 
         function showModule(module) {
@@ -847,18 +925,18 @@
             if (module === 'docs') {
                 document.getElementById('docsModule').style.display = 'block';
                 document.getElementById('masterModule').style.display = 'none';
-                document.getElementById('historyModule').style.display = 'none';
+                document.getElementById('mantenimientosModule').style.display = 'none';
                 loadSheetData(currentSheet);
             } else if (module === 'master') {
                 document.getElementById('masterModule').style.display = 'block';
                 document.getElementById('docsModule').style.display = 'none';
-                document.getElementById('historyModule').style.display = 'none';
+                document.getElementById('mantenimientosModule').style.display = 'none';
                 loadMasterData(masterCurrentSheet);
-            } else if (module === 'history') {
-                document.getElementById('historyModule').style.display = 'block';
+            } else if (module === 'mantenimientos') {
+                document.getElementById('mantenimientosModule').style.display = 'block';
                 document.getElementById('docsModule').style.display = 'none';
                 document.getElementById('masterModule').style.display = 'none';
-                loadHistoryData();
+                loadMantenimientosData();
             }
         }
 
@@ -1385,7 +1463,6 @@
             });
             document.getElementById('editFormFields').innerHTML = html;
 
-            // Generar campos de fotos para edición
             let photoHtml = generatePhotoFieldsForEdit(headersForEdit, row, true);
             document.getElementById('editPhotoFields').innerHTML = photoHtml;
 
@@ -1463,174 +1540,6 @@
             }
         }
 
-        // ==================== HISTORIAL DE VENCIMIENTO ====================
-
-        async function loadHistoryData() {
-            const content = document.getElementById('history-content');
-            content.innerHTML = '<div class="loading">🔄 Cargando historial y detectando vencimientos...</div>';
-            try {
-                const response = await fetch('/api/history');
-                
-                // Leer como texto primero para evitar "Unexpected end of JSON input"
-                const text = await response.text();
-                if (!text || text.trim() === '') {
-                    throw new Error('El servidor devolvió una respuesta vacía. Verificá que la hoja "Historial de Vencimiento de Documentación" exista en el Spreadsheet con los encabezados: FECHA | TIPO | DESCRIPCION | FECHA VENCIMIENTO | ESTADO');
-                }
-                
-                let data;
-                try {
-                    data = JSON.parse(text);
-                } catch (parseErr) {
-                    throw new Error(`Respuesta no válida del servidor: ${text.substring(0, 200)}`);
-                }
-                
-                if (!response.ok) {
-                    throw new Error(data.error || `Error HTTP ${response.status}`);
-                }
-                
-                historyHeaders = data.headers || [];
-                historyAllRows = data.rows || [];
-                historyFilteredRows = [...historyAllRows];
-                
-                if (historyHeaders.length === 0) {
-                    content.innerHTML = `<div class="alert alert-error">
-                        ⚠️ La hoja "Historial de Vencimiento de Documentación" no existe o está vacía.<br>
-                        Creala en tu Google Spreadsheet con los encabezados: <b>FECHA | TIPO | DESCRIPCION | FECHA VENCIMIENTO | ESTADO</b>
-                    </div>`;
-                    return;
-                }
-                
-                renderHistoryTable();
-            } catch (error) {
-                content.innerHTML = `<div class="alert alert-error">❌ Error al cargar historial: ${error.message}</div>`;
-            }
-        }
-
-        function renderHistoryTable() {
-            const content = document.getElementById('history-content');
-
-            let html = `
-                <div class="toolbar">
-                    <div class="filter-group">
-                        <label>🔍 Filtrar:</label>
-                        <input type="text" id="filterInputHistory" placeholder="Buscar por tipo, descripción o estado..." oninput="applyHistoryFilter()">
-                        <button class="btn-clear" onclick="clearHistoryFilter()">✖ Limpiar</button>
-                    </div>
-                    <span class="record-count">📊 Total: ${historyFilteredRows.length} registros</span>
-                </div>
-            `;
-
-            html += `<div class="table-wrapper"><div class="table-container"><table>`;
-            html += `<thead><tr>`;
-            historyHeaders.forEach(col => {
-                if (col !== '_row_number') html += `<th>${col}</th>`;
-            });
-            html += `<th>⚙️ Acciones</th></tr></thead><tbody>`;
-
-            if (historyFilteredRows.length === 0) {
-                const colSpan = historyHeaders.filter(h => h !== '_row_number').length + 1;
-                html += `<tr><td colspan="${colSpan}" style="text-align: center; padding: 20px;">📭 No hay registros en el historial</td></tr>`;
-            } else {
-                historyFilteredRows.forEach((row) => {
-                    html += `<tr>`;
-
-                    historyHeaders.forEach(col => {
-                        if (col === '_row_number') return;
-                        const value = row[col] || '';
-
-                        if (col === 'FECHA' || col === 'FECHA VENCIMIENTO') {
-                            let cellClass = '';
-                            if (col === 'FECHA VENCIMIENTO' && value) {
-                                const dateStatus = getDateStatus(value);
-                                if (dateStatus.class) cellClass = ` class="${dateStatus.class}"`;
-                            }
-                            html += `<td${cellClass}>${value}</td>`;
-                        } else if (col === 'ESTADO') {
-                            const estado = value || 'En Proceso';
-                            const estadoClass = estado.toLowerCase().replace(/\s/g, '-');
-                            html += `<td>
-                                <select class="status-select ${estadoClass}" onchange="updateHistoryStatus(${row._row_number}, this.value)">
-                                    <option value="En Proceso" ${estado === 'En Proceso' ? 'selected' : ''}>En Proceso</option>
-                                    <option value="Completo" ${estado === 'Completo' ? 'selected' : ''}>Completo</option>
-                                    <option value="Vencido" ${estado === 'Vencido' ? 'selected' : ''}>Vencido</option>
-                                    <option value="Notificado" ${estado === 'Notificado' ? 'selected' : ''}>Notificado</option>
-                                </select>
-                            </td>`;
-                        } else {
-                            html += `<td>${value}</td>`;
-                        }
-                    });
-
-                    html += `<td>
-                        <button class="btn btn-danger btn-sm" onclick="deleteHistoryRow(${row._row_number})">🗑️ Eliminar</button>
-                    </td>`;
-                    html += `</tr>`;
-                });
-            }
-
-            html += `</tbody></table></div></div>`;
-            content.innerHTML = html;
-        }
-
-        function applyHistoryFilter() {
-            const filterInput = document.getElementById('filterInputHistory');
-            const searchTerm = filterInput.value.toLowerCase().trim();
-            if (!searchTerm) {
-                historyFilteredRows = [...historyAllRows];
-            } else {
-                historyFilteredRows = historyAllRows.filter(row => {
-                    const tipo = (row['TIPO'] || '').toLowerCase();
-                    const desc = (row['DESCRIPCION'] || '').toLowerCase();
-                    const estado = (row['ESTADO'] || '').toLowerCase();
-                    return tipo.includes(searchTerm) || desc.includes(searchTerm) || estado.includes(searchTerm);
-                });
-            }
-            renderHistoryTable();
-        }
-
-        function clearHistoryFilter() {
-            document.getElementById('filterInputHistory').value = '';
-            historyFilteredRows = [...historyAllRows];
-            renderHistoryTable();
-        }
-
-        async function updateHistoryStatus(rowNumber, newStatus) {
-            try {
-                const response = await fetch(`/api/history/update_status/${rowNumber}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ estado: newStatus })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    showAlert('✅ Estado actualizado correctamente', 'success');
-                    // Actualizar en memoria
-                    const row = historyAllRows.find(r => r._row_number === rowNumber);
-                    if (row) row['ESTADO'] = newStatus;
-                } else {
-                    showAlert(`❌ Error: ${result.error}`, 'error');
-                }
-            } catch (error) {
-                showAlert(`❌ Error al actualizar estado: ${error.message}`, 'error');
-            }
-        }
-
-        async function deleteHistoryRow(rowNumber) {
-            if (!confirm('¿Estás seguro de que deseas eliminar este registro del historial?')) return;
-            try {
-                const response = await fetch(`/api/history/delete/${rowNumber}`, { method: 'DELETE' });
-                const result = await response.json();
-                if (result.success) {
-                    showAlert('✅ Registro eliminado correctamente', 'success');
-                    await loadHistoryData();
-                } else {
-                    showAlert(`❌ Error: ${result.error}`, 'error');
-                }
-            } catch (error) {
-                showAlert(`❌ Error al eliminar: ${error.message}`, 'error');
-            }
-        }
-
         // ==================== EDICIÓN (CONTROL DE DOCUMENTACIÓN) ====================
 
         function editRow(sheetName, rowNumber) {
@@ -1647,7 +1556,6 @@
             document.getElementById('editSheetName').value = sheetName;
             document.getElementById('editRowNumber').value = rowNumber;
 
-            // Generar campos de texto/fechas
             let html = '';
             displayColumns.forEach(header => {
                 if (header === 'Marca Temporal') return;
@@ -1685,7 +1593,6 @@
             });
             document.getElementById('editFormFields').innerHTML = html;
 
-            // Generar campos de fotos para edición
             let photoHtml = generatePhotoFieldsForEdit(headersForEdit, row, false);
             document.getElementById('editPhotoFields').innerHTML = photoHtml;
 
@@ -1699,6 +1606,8 @@
         window.onclick = function(event) {
             const modal = document.getElementById('editModal');
             if (event.target == modal) modal.style.display = 'none';
+            const modalMP = document.getElementById('editMantenimientoModal');
+            if (event.target == modalMP) modalMP.style.display = 'none';
         }
 
         document.getElementById('editForm').addEventListener('submit', async function(e) {
@@ -1708,7 +1617,6 @@
             const rowNumber = parseInt(document.getElementById('editRowNumber').value);
             const formData = new FormData(this);
 
-            // Validar fotos requeridas en edición (solo para Control de Documentación)
             if (editContextModule !== 'master') {
                 const dateCols = getDateColumnsRequiringPhoto(sheetName);
                 let missingPhotos = [];
@@ -1733,7 +1641,6 @@
                 }
             }
 
-            // Verificar si hay alguna foto seleccionada
             let hasPhoto = false;
             const photoCols = getPhotoColumns(currentHeaders);
 
@@ -1746,7 +1653,6 @@
                 }
             });
 
-            // Eliminar los campos edit_foto_ originales
             const keysToDelete = [];
             for (let key of formData.keys()) {
                 if (key.startsWith('edit_foto_')) keysToDelete.push(key);
@@ -1807,7 +1713,483 @@
             }
         }
 
-        // Configurar tabs
+        // ==================== MANTENIMIENTOS ====================
+
+        async function loadMantenimientosData() {
+            const content = document.getElementById('mantenimientos-content');
+            content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
+            try {
+                const response = await fetch('/api/mantenimientos/config');
+                const data = await response.json();
+                if (data.success) {
+                    mpHeaders = data.historial_headers || [];
+                    mpRows = data.historial_rows || [];
+                    mpFilteredRows = [...mpRows];
+                    
+                    // Parsear dropdowns
+                    mpDropdowns = parseDropdowns(data.dropdowns);
+                    
+                    // Parsear config MP
+                    mpConfigMP = parseConfigMP(data.config_mp);
+                    
+                    mpConfigLoaded = true;
+                    renderMantenimientosView();
+                } else {
+                    content.innerHTML = `<div class="alert alert-error">❌ Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                content.innerHTML = `<div class="alert alert-error">❌ Error al cargar datos: ${error.message}</div>`;
+            }
+        }
+
+        function parseDropdowns(dropdownData) {
+            const result = {};
+            if (!dropdownData || !dropdownData.rows || dropdownData.rows.length === 0) return result;
+            
+            const headers = dropdownData.headers || [];
+            // Formato: cada columna es un campo, primera fila son nombres de campos
+            // Los datos están en rows, pero los headers son los nombres de los campos
+            // La hoja tiene: fila 1 = nombres de campos (headers), filas siguientes = opciones
+            
+            // Reconstruir: para cada columna, las opciones son los valores en las filas
+            for (let i = 0; i < headers.length; i++) {
+                const fieldName = headers[i];
+                const options = [];
+                dropdownData.rows.forEach(row => {
+                    // row es un objeto con headers como keys
+                    const val = row[fieldName];
+                    if (val && val.trim() !== '') options.push(val.trim());
+                });
+                if (options.length > 0) {
+                    result[fieldName] = options;
+                }
+            }
+            return result;
+        }
+
+        function parseConfigMP(configData) {
+            const result = [];
+            if (!configData || !configData.rows || configData.rows.length === 0) return result;
+            
+            configData.rows.forEach(row => {
+                result.push({
+                    'TIPO MANTENIMIENTO': row['TIPO MANTENIMIENTO'] || '',
+                    'TIPO REPARACIÓN': row['TIPO REPARACIÓN'] || '',
+                    'POLITICA': row['POLITICA'] || ''
+                });
+            });
+            return result;
+        }
+
+        function renderMantenimientosView() {
+            const content = document.getElementById('mantenimientos-content');
+            if (mpCurrentView === 'historial') {
+                renderMantenimientosHistorial(content);
+            } else {
+                renderMantenimientosConfig(content);
+            }
+        }
+
+        function renderMantenimientosHistorial(content) {
+            const displayColumns = mpHeaders.filter(h => h !== '_row_number');
+            const filterField = 'PATENTE';
+
+            let html = `
+                <div class="toolbar">
+                    <button class="btn btn-add" onclick="toggleMantenimientoForm()">
+                        ${mpIsFormVisible ? '❌ Ocultar Formulario' : '➕ Cargar Mantenimiento'}
+                    </button>
+                    <div class="filter-group">
+                        <label>🔍 Filtrar por ${filterField}:</label>
+                        <input type="text" id="filterInputMP" placeholder="Buscar..." oninput="applyMantenimientoFilter()">
+                        <button class="btn-clear" onclick="clearMantenimientoFilter()">✖ Limpiar</button>
+                    </div>
+                    <span class="record-count">📊 Total: ${mpFilteredRows.length} registros</span>
+                </div>
+            `;
+
+            if (mpIsFormVisible) {
+                html += `
+                <div class="form-section visible" id="addMantenimientoSection">
+                    <h3>🔧 Cargar nuevo mantenimiento</h3>
+                    <form id="addMantenimientoForm">
+                        <div class="form-row" id="addMantenimientoFields">
+                            ${generateMantenimientoFormFields({}, false)}
+                        </div>
+                        <button type="submit" class="btn">➕ Cargar Mantenimiento</button>
+                        <button type="button" class="btn btn-cancel" onclick="toggleMantenimientoForm()">Cancelar</button>
+                    </form>
+                </div>
+                `;
+            }
+
+            html += `<div class="table-wrapper"><div class="table-container"><table>`;
+            html += `<thead><tr>`;
+            displayColumns.forEach(col => html += `<th>${col}</th>`);
+            html += `<th>⚙️ Acciones</th></tr></thead><tbody>`;
+
+            if (mpFilteredRows.length === 0) {
+                html += `<tr><td colspan="${displayColumns.length + 1}" style="text-align: center; padding: 20px;">📭 No hay registros de mantenimiento</td></tr>`;
+            } else {
+                mpFilteredRows.forEach((row) => {
+                    html += `<tr>`;
+                    displayColumns.forEach(col => {
+                        html += `<td>${row[col] || ''}</td>`;
+                    });
+                    html += `<td>
+                        <div class="actions">
+                            <button class="btn btn-success btn-sm" onclick="editMantenimiento(${row._row_number})">✏️ Editar</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteMantenimiento(${row._row_number})">🗑️ Eliminar</button>
+                        </div>
+                    </td>`;
+                    html += `</tr>`;
+                });
+            }
+
+            html += `</tbody></table></div></div>`;
+            content.innerHTML = html;
+
+            const form = document.getElementById('addMantenimientoForm');
+            if (form) form.addEventListener('submit', handleAddMantenimiento);
+        }
+
+        function generateMantenimientoFormFields(values = {}, isEdit = false) {
+            let html = '';
+            const displayCols = mpHeaders.filter(h => h !== '_row_number');
+            const prefix = isEdit ? 'edit_mp_' : 'mp_';
+
+            displayCols.forEach(header => {
+                const value = values[header] || '';
+                const isDropdown = MP_DROPDOWN_COLUMNS.includes(header);
+                const isDate = header.toUpperCase().includes('FECHA');
+                const isTextarea = header.toUpperCase().includes('DETALLE');
+                const isNumber = header.toUpperCase().includes('KM') || header.toUpperCase().includes('GASTO');
+
+                html += `<div class="form-group">`;
+                html += `<label>${header}</label>`;
+
+                if (isDropdown && mpDropdowns[header] && mpDropdowns[header].length > 0) {
+                    html += `<select id="${prefix}${header}" name="${header}">`;
+                    html += `<option value="">-- Seleccionar --</option>`;
+                    mpDropdowns[header].forEach(opt => {
+                        const selected = (value === opt) ? ' selected' : '';
+                        html += `<option value="${opt}"${selected}>${opt}</option>`;
+                    });
+                    html += `</select>`;
+                } else if (isDropdown) {
+                    // Es dropdown pero no tiene opciones configuradas
+                    html += `<select id="${prefix}${header}" name="${header}">`;
+                    html += `<option value="">-- Sin opciones configuradas --</option>`;
+                    if (value) html += `<option value="${value}" selected>${value}</option>`;
+                    html += `</select>`;
+                    html += `<small style="color:#e53e3e;">⚠️ Configura las opciones en la pestaña Configuración</small>`;
+                } else if (isDate) {
+                    let dateValue = value;
+                    if (value && value.includes('/')) {
+                        const parts = value.split('/');
+                        if (parts.length === 3) {
+                            let year = parseInt(parts[2]);
+                            if (year < 100) year += 2000;
+                            dateValue = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                        }
+                    }
+                    html += `<input type="date" id="${prefix}${header}" name="${header}" value="${dateValue}">`;
+                } else if (isTextarea) {
+                    html += `<textarea id="${prefix}${header}" name="${header}" rows="2">${value}</textarea>`;
+                } else if (isNumber) {
+                    html += `<input type="number" step="0.01" id="${prefix}${header}" name="${header}" value="${value}" oninput="recalcularKmProximo('${isEdit ? 'edit' : 'add'}')">`;
+                } else {
+                    html += `<input type="text" id="${prefix}${header}" name="${header}" value="${value}">`;
+                }
+                html += `</div>`;
+            });
+            return html;
+        }
+
+        function recalcularKmProximo(mode) {
+            // Buscar campos KM REALIZADO y KM PROXIMO CAMBIO
+            const prefix = mode === 'edit' ? 'edit_mp_' : 'mp_';
+            const kmRealizadoInput = document.getElementById(`${prefix}KM REALIZADO`);
+            const kmProximoInput = document.getElementById(`${prefix}KM PROXIMO CAMBIO`);
+            const tipoMantSelect = document.getElementById(`${prefix}TIPO MANTENIMIENTO`);
+            const tipoRepSelect = document.getElementById(`${prefix}TIPO REPARACIÓN`);
+
+            if (!kmRealizadoInput || !kmProximoInput) return;
+
+            const kmRealizado = parseFloat(kmRealizadoInput.value) || 0;
+            const tipoMant = tipoMantSelect ? tipoMantSelect.value : '';
+            const tipoRep = tipoRepSelect ? tipoRepSelect.value : '';
+
+            // Buscar política en config MP
+            let politica = 0;
+            if (tipoMant && tipoRep) {
+                const config = mpConfigMP.find(c => 
+                    c['TIPO MANTENIMIENTO'] === tipoMant && 
+                    c['TIPO REPARACIÓN'] === tipoRep
+                );
+                if (config) {
+                    politica = parseFloat(config['POLITICA']) || 0;
+                }
+            }
+
+            if (politica > 0 && kmRealizado > 0) {
+                kmProximoInput.value = kmRealizado + politica;
+            }
+        }
+
+        function toggleMantenimientoForm() {
+            mpIsFormVisible = !mpIsFormVisible;
+            renderMantenimientosView();
+        }
+
+        function applyMantenimientoFilter() {
+            const filterInput = document.getElementById('filterInputMP');
+            const searchTerm = filterInput.value.toLowerCase().trim();
+            if (!searchTerm) mpFilteredRows = [...mpRows];
+            else mpFilteredRows = mpRows.filter(row => (row['PATENTE'] || '').toString().toLowerCase().includes(searchTerm));
+            renderMantenimientosHistorial(document.getElementById('mantenimientos-content'));
+        }
+
+        function clearMantenimientoFilter() {
+            document.getElementById('filterInputMP').value = '';
+            mpFilteredRows = [...mpRows];
+            renderMantenimientosHistorial(document.getElementById('mantenimientos-content'));
+        }
+
+        async function handleAddMantenimiento(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const data = {};
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+
+            try {
+                const response = await fetch('/api/mantenimientos/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('✅ Mantenimiento cargado correctamente', 'success');
+                    form.reset();
+                    mpIsFormVisible = false;
+                    await loadMantenimientosData();
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        function editMantenimiento(rowNumber) {
+            const row = mpRows.find(r => r._row_number === rowNumber);
+            if (!row) { showAlert('No se encontró el registro', 'error'); return; }
+
+            document.getElementById('editMantenimientoRowNumber').value = rowNumber;
+            document.getElementById('editMantenimientoFields').innerHTML = generateMantenimientoFormFields(row, true);
+            
+            // Recalcular después de renderizar
+            setTimeout(() => recalcularKmProximo('edit'), 100);
+
+            document.getElementById('editMantenimientoModal').style.display = 'block';
+        }
+
+        function closeEditMantenimientoModal() {
+            document.getElementById('editMantenimientoModal').style.display = 'none';
+        }
+
+        document.getElementById('editMantenimientoForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const rowNumber = parseInt(document.getElementById('editMantenimientoRowNumber').value);
+            const formData = new FormData(this);
+            const data = {};
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+
+            try {
+                const response = await fetch(`/api/mantenimientos/update/${rowNumber}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('✅ Mantenimiento actualizado correctamente', 'success');
+                    closeEditMantenimientoModal();
+                    await loadMantenimientosData();
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error: ${error.message}`, 'error');
+            }
+        });
+
+        async function deleteMantenimiento(rowNumber) {
+            if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
+            try {
+                const response = await fetch(`/api/mantenimientos/delete/${rowNumber}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('✅ Mantenimiento eliminado correctamente', 'success');
+                    await loadMantenimientosData();
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error al eliminar: ${error.message}`, 'error');
+            }
+        }
+
+        // ==================== CONFIGURACIÓN MANTENIMIENTOS ====================
+
+        function renderMantenimientosConfig(content) {
+            let html = `
+                <div class="config-section">
+                    <h3>⚙️ Configuración de Desplegables</h3>
+                    <p style="color:#666; margin-bottom:15px;">Configura las opciones para cada campo desplegable. Escribe una opción por línea.</p>
+                    <div id="dropdownsConfigContainer">
+            `;
+
+            MP_DROPDOWN_COLUMNS.forEach(col => {
+                const options = mpDropdowns[col] || [];
+                html += `
+                    <div class="dropdown-config-item">
+                        <label>📋 ${col}</label>
+                        <textarea id="config_dropdown_${col}" placeholder="Escribe una opción por línea...">${options.join('\n')}</textarea>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                    <button class="btn btn-success" onclick="saveDropdowns()">💾 Guardar Desplegables</button>
+                </div>
+
+                <div class="config-section">
+                    <h3>🔧 Configuración MP (Políticas)</h3>
+                    <p style="color:#666; margin-bottom:15px;">Configura las políticas para cada combinación de TIPO MANTENIMIENTO y TIPO REPARACIÓN. La POLITICA se suma a KM REALIZADO para calcular KM PROXIMO CAMBIO.</p>
+                    <table class="config-mp-table">
+                        <thead>
+                            <tr>
+                                <th>TIPO MANTENIMIENTO</th>
+                                <th>TIPO REPARACIÓN</th>
+                                <th>POLITICA (KM)</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="configMPTableBody">
+            `;
+
+            mpConfigMP.forEach((row, index) => {
+                html += `
+                    <tr>
+                        <td><input type="text" id="config_mp_tm_${index}" value="${row['TIPO MANTENIMIENTO'] || ''}"></td>
+                        <td><input type="text" id="config_mp_tr_${index}" value="${row['TIPO REPARACIÓN'] || ''}"></td>
+                        <td><input type="number" id="config_mp_pol_${index}" value="${row['POLITICA'] || ''}"></td>
+                        <td><button class="btn-remove-row" onclick="removeConfigMPRow(${index})">🗑️</button></td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                    <button class="btn-add-row" onclick="addConfigMPRow()">➕ Agregar Fila</button>
+                    <br><br>
+                    <button class="btn btn-success" onclick="saveConfigMP()">💾 Guardar Configuración MP</button>
+                </div>
+            `;
+
+            content.innerHTML = html;
+        }
+
+        function addConfigMPRow() {
+            mpConfigMP.push({'TIPO MANTENIMIENTO': '', 'TIPO REPARACIÓN': '', 'POLITICA': ''});
+            renderMantenimientosConfig(document.getElementById('mantenimientos-content'));
+        }
+
+        function removeConfigMPRow(index) {
+            mpConfigMP.splice(index, 1);
+            renderMantenimientosConfig(document.getElementById('mantenimientos-content'));
+        }
+
+        async function saveDropdowns() {
+            const dropdowns = {};
+            MP_DROPDOWN_COLUMNS.forEach(col => {
+                const textarea = document.getElementById(`config_dropdown_${col}`);
+                if (textarea) {
+                    const lines = textarea.value.split('\n').map(l => l.trim()).filter(l => l !== '');
+                    if (lines.length > 0) {
+                        dropdowns[col] = lines;
+                    }
+                }
+            });
+
+            try {
+                const response = await fetch('/api/mantenimientos/dropdowns', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dropdowns })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('✅ Desplegables guardados correctamente', 'success');
+                    // Recargar datos
+                    await loadMantenimientosData();
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function saveConfigMP() {
+            const rows = [];
+            mpConfigMP.forEach((row, index) => {
+                const tm = document.getElementById(`config_mp_tm_${index}`);
+                const tr = document.getElementById(`config_mp_tr_${index}`);
+                const pol = document.getElementById(`config_mp_pol_${index}`);
+                if (tm && tr && pol) {
+                    const tmVal = tm.value.trim();
+                    const trVal = tr.value.trim();
+                    const polVal = pol.value.trim();
+                    if (tmVal !== '' || trVal !== '') {
+                        rows.push({
+                            'TIPO MANTENIMIENTO': tmVal,
+                            'TIPO REPARACIÓN': trVal,
+                            'POLITICA': polVal
+                        });
+                    }
+                }
+            });
+
+            try {
+                const response = await fetch('/api/mantenimientos/config_mp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rows })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showAlert('✅ Configuración MP guardada correctamente', 'success');
+                    await loadMantenimientosData();
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // ==================== TABS ====================
+
         document.querySelectorAll('#tabsDocs .tab').forEach(tab => {
             tab.addEventListener('click', function() {
                 document.querySelectorAll('#tabsDocs .tab').forEach(t => t.classList.remove('active'));
@@ -1825,6 +2207,19 @@
                 masterCurrentSheet = this.dataset.sheet;
                 masterIsFormVisible = false;
                 loadMasterData(masterCurrentSheet);
+            });
+        });
+
+        document.querySelectorAll('#tabsMantenimientos .tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('#tabsMantenimientos .tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                mpCurrentView = this.dataset.view;
+                if (mpCurrentView === 'config') {
+                    renderMantenimientosView();
+                } else {
+                    loadMantenimientosData();
+                }
             });
         });
 
