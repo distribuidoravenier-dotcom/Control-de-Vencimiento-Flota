@@ -65,7 +65,14 @@ ID_FIELD_CONFIG = {
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-12345')
 CORS(app)
 
+_creds_cache = None
+_sheets_service_cache = None
+_drive_service_cache = None
+
 def get_google_creds():
+    global _creds_cache
+    if _creds_cache is not None:
+        return _creds_cache
     try:
         if 'GOOGLE_APPLICATION_CREDENTIALS_JSON' in os.environ:
             creds_json = json.loads(os.environ['GOOGLE_APPLICATION_CREDENTIALS_JSON'])
@@ -84,15 +91,29 @@ def get_google_creds():
                     'https://www.googleapis.com/auth/drive'
                 ]
             )
+        _creds_cache = creds
         return creds
     except Exception as e:
         print(f"Error al obtener credenciales: {e}")
         raise
 
+def get_sheets_service():
+    """Devuelve un cliente de Sheets reutilizable en vez de crear uno nuevo en cada llamada."""
+    global _sheets_service_cache
+    if _sheets_service_cache is None:
+        _sheets_service_cache = build('sheets', 'v4', credentials=get_google_creds())
+    return _sheets_service_cache
+
+def get_drive_service():
+    """Devuelve un cliente de Drive reutilizable en vez de crear uno nuevo en cada llamada."""
+    global _drive_service_cache
+    if _drive_service_cache is None:
+        _drive_service_cache = build('drive', 'v3', credentials=get_google_creds())
+    return _drive_service_cache
+
 def get_all_data(sheet_name, spreadsheet_id=None):
     try:
-        creds = get_google_creds()
-        service = build('sheets', 'v4', credentials=creds)
+        service = get_sheets_service()
         sheet = service.spreadsheets()
 
         sid = spreadsheet_id or SPREADSHEET_ID
@@ -127,8 +148,7 @@ def get_all_data(sheet_name, spreadsheet_id=None):
 
 def update_row(sheet_name, row_number, values, spreadsheet_id=None):
     try:
-        creds = get_google_creds()
-        service = build('sheets', 'v4', credentials=creds)
+        service = get_sheets_service()
         sheet = service.spreadsheets()
 
         sid = spreadsheet_id or SPREADSHEET_ID
@@ -158,8 +178,7 @@ def update_row(sheet_name, row_number, values, spreadsheet_id=None):
 
 def update_row_partial(sheet_name, row_number, column_updates):
     try:
-        creds = get_google_creds()
-        service = build('sheets', 'v4', credentials=creds)
+        service = get_sheets_service()
         sheet = service.spreadsheets()
 
         data = get_all_data(sheet_name)
@@ -193,8 +212,7 @@ def update_row_partial(sheet_name, row_number, column_updates):
 
 def update_prog_estado(row_number, estado):
     try:
-        creds = get_google_creds()
-        service = build('sheets', 'v4', credentials=creds)
+        service = get_sheets_service()
         sheet = service.spreadsheets()
 
         data = get_all_data(SHEET_PROGRAMACION_MP, SPREADSHEET_ID_MP)
@@ -221,8 +239,7 @@ def update_prog_estado(row_number, estado):
 
 def delete_row(sheet_name, row_number, spreadsheet_id=None):
     try:
-        creds = get_google_creds()
-        service = build('sheets', 'v4', credentials=creds)
+        service = get_sheets_service()
         sheet = service.spreadsheets()
 
         sid = spreadsheet_id or SPREADSHEET_ID
@@ -261,8 +278,7 @@ def delete_row(sheet_name, row_number, spreadsheet_id=None):
 
 def add_row_to_sheet(sheet_name, values, spreadsheet_id=None):
     try:
-        creds = get_google_creds()
-        service = build('sheets', 'v4', credentials=creds)
+        service = get_sheets_service()
         sheet = service.spreadsheets()
 
         sid = spreadsheet_id or SPREADSHEET_ID
@@ -295,8 +311,7 @@ def ensure_sheet_exists(sheet_name, spreadsheet_id=None, headers=None):
     Si la hoja existe pero los headers no coinciden, los reescribe.
     """
     try:
-        creds = get_google_creds()
-        service = build('sheets', 'v4', credentials=creds)
+        service = get_sheets_service()
         sheet = service.spreadsheets()
 
         sid = spreadsheet_id or SPREADSHEET_ID
@@ -361,8 +376,7 @@ def ensure_sheet_exists(sheet_name, spreadsheet_id=None, headers=None):
 
 def upload_file_to_drive(file_content, filename, folder_id):
     try:
-        creds = get_google_creds()
-        service = build('drive', 'v3', credentials=creds)
+        service = get_drive_service()
 
         file_metadata = {
             'name': filename,
@@ -513,8 +527,7 @@ def check_and_register_expirations():
 
         if new_rows:
             try:
-                creds = get_google_creds()
-                service = build('sheets', 'v4', credentials=creds)
+                service = get_sheets_service()
                 sheet = service.spreadsheets()
 
                 body = {'values': new_rows}
@@ -851,8 +864,7 @@ def save_mantenimiento_dropdowns():
                 rows.append(row)
             body = {'values': rows}
 
-        creds = get_google_creds()
-        service = build('sheets', 'v4', credentials=creds)
+        service = get_sheets_service()
         sheet = service.spreadsheets()
 
         sheet.values().clear(
@@ -891,8 +903,7 @@ def save_config_mp():
                 str(r.get('POLITICA', '')) if r.get('POLITICA', '') != '' else ''
             ])
 
-        creds = get_google_creds()
-        service = build('sheets', 'v4', credentials=creds)
+        service = get_sheets_service()
         sheet = service.spreadsheets()
 
         sheet.values().clear(
