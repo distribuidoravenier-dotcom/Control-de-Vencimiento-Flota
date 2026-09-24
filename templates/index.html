@@ -184,7 +184,6 @@ td {
 
 tr:hover { background: #f8f9fa; }
 
-/* Estado programación */
 .estado-en-proceso {
     background-color: #fefcbf !important;
     color: #744210;
@@ -234,7 +233,6 @@ tr:hover { background: #f8f9fa; }
 .date-warning { background-color: #fefcbf !important; color: #744210; font-weight: 600; }
 .date-danger { background-color: #fed7d7 !important; color: #742a2a; font-weight: 600; }
 
-/* Alerta programación */
 .cell-ok {
     background-color: #c6f6d5 !important;
     color: #22543d;
@@ -498,7 +496,6 @@ tr:hover { background: #f8f9fa; }
     font-weight: 600;
 }
 
-/* Modal confirmación "Tarea Completa" */
 .confirm-modal-content {
     max-width: 500px;
     text-align: center;
@@ -544,50 +541,50 @@ tr:hover { background: #f8f9fa; }
 <div id="alert-container"></div>
 
 <div id="homeScreen" class="home-screen">
-<button class="home-btn master-btn" onclick="showModule('master')">🗂️ Maestro de Flota</button>
-<button class="home-btn" onclick="showModule('docs')">📋 Control de Documentación</button>
-<button class="home-btn history-btn" onclick="showModule('history')">📊 Historial de Vencimiento de Documentación</button>
-<button class="home-btn mp-btn" onclick="showModule('mantenimientos')">🔧 Carga de Mantenimientos</button>
+<button type="button" class="home-btn master-btn" onclick="showModule('master')">🗂️ Maestro de Flota</button>
+<button type="button" class="home-btn" onclick="showModule('docs')">📋 Control de Documentación</button>
+<button type="button" class="home-btn history-btn" onclick="showModule('history')">📊 Historial de Vencimiento de Documentación</button>
+<button type="button" class="home-btn mp-btn" onclick="showModule('mantenimientos')">🔧 Carga de Mantenimientos</button>
 </div>
 
 <div id="docsModule" style="display:none;">
-<button class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
+<button type="button" class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
 
 <div class="tabs" id="tabsDocs">
-<button class="tab active" data-sheet="Camion T1">🚚 Camión T1</button>
-<button class="tab" data-sheet="Camion T2">🚛 Camión T2</button>
-<button class="tab" data-sheet="Autoelevadores">🏗️ Autoelevadores</button>
-<button class="tab" data-sheet="Choferes y Ayudantes">👨‍✈️ Choferes y Ayudantes</button>
+<button type="button" class="tab active" data-sheet="Camion T1">🚚 Camión T1</button>
+<button type="button" class="tab" data-sheet="Camion T2">🚛 Camión T2</button>
+<button type="button" class="tab" data-sheet="Autoelevadores">🏗️ Autoelevadores</button>
+<button type="button" class="tab" data-sheet="Choferes y Ayudantes">👨‍✈️ Choferes y Ayudantes</button>
 </div>
 
 <div id="tab-content"></div>
 </div>
 
 <div id="masterModule" style="display:none;">
-<button class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
+<button type="button" class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
 
 <div class="tabs" id="tabsMaster">
-<button class="tab active" data-sheet="Camion T1">🚚 Camión T1</button>
-<button class="tab" data-sheet="Camion T2">🚛 Camión T2</button>
-<button class="tab" data-sheet="Autoelevadores">🏗️ Autoelevadores</button>
-<button class="tab" data-sheet="Choferes y Ayudantes">👨‍✈️ Choferes y Ayudantes</button>
+<button type="button" class="tab active" data-sheet="Camion T1">🚚 Camión T1</button>
+<button type="button" class="tab" data-sheet="Camion T2">🚛 Camión T2</button>
+<button type="button" class="tab" data-sheet="Autoelevadores">🏗️ Autoelevadores</button>
+<button type="button" class="tab" data-sheet="Choferes y Ayudantes">👨‍✈️ Choferes y Ayudantes</button>
 </div>
 
 <div id="master-tab-content"></div>
 </div>
 
 <div id="historyModule" style="display:none;">
-<button class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
+<button type="button" class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
 <div id="history-content"></div>
 </div>
 
 <div id="mantenimientosModule" style="display:none;">
-<button class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
+<button type="button" class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
 
 <div class="tabs" id="tabsMantenimientos">
-<button class="tab active" data-view="historial">🔧 Historial Mantenimientos</button>
-<button class="tab" data-view="programacion">📅 Programación Mantenimiento Preventivo</button>
-<button class="tab" data-view="config">⚙️ Configuración</button>
+<button type="button" class="tab active" data-view="historial">🔧 Historial Mantenimientos</button>
+<button type="button" class="tab" data-view="programacion">📅 Programación Mantenimiento Preventivo</button>
+<button type="button" class="tab" data-view="config">⚙️ Configuración</button>
 </div>
 
 <div id="mantenimientos-content"></div>
@@ -632,141 +629,128 @@ tr:hover { background: #f8f9fa; }
 </div>
 </div>
 
-<!-- Modal confirmación "Tarea Completa" -->
 <div id="tareaCompletaModal" class="modal">
 <div class="modal-content confirm-modal-content">
 <span class="modal-close" onclick="closeTareaCompletaModal()">&times;</span>
 <h2>✅ Tarea Completa</h2>
 <p id="tareaCompletaMsg">¿Estás seguro de marcar esta tarea como completa?</p>
 <div class="confirm-buttons">
-<button class="btn btn-success" onclick="confirmarTareaCompletaProgramar()">✅ Sí, volver a programar</button>
-<button class="btn btn-cancel" onclick="confirmarTareaCompletaNoProgramar()">🚫 No volver a programar</button>
+<button type="button" class="btn btn-success" onclick="confirmarTareaCompletaProgramar()">✅ Sí, volver a programar</button>
+<button type="button" class="btn btn-cancel" onclick="confirmarTareaCompletaNoProgramar()">🚫 No volver a programar</button>
 </div>
 <br>
-<button class="btn btn-danger btn-sm" style="margin-top:10px;" onclick="closeTareaCompletaModal()">Cancelar</button>
+<button type="button" class="btn btn-danger btn-sm" style="margin-top:10px;" onclick="closeTareaCompletaModal()">Cancelar</button>
 </div>
 </div>
 
 <script>
-let currentSheet = 'Camion T1';
-let dataCache = {};
-let currentHeaders = [];
-let allRows = [];
-let filteredRows = [];
-let isFormVisible = false;
-let currentEditRow = null;
-let editContextModule = 'docs';
+/* ============================================================
+   VARIABLES GLOBALES
+   ============================================================ */
+var currentSheet = 'Camion T1';
+var dataCache = {};
+var currentHeaders = [];
+var allRows = [];
+var filteredRows = [];
+var isFormVisible = false;
+var currentEditRow = null;
+var editContextModule = 'docs';
 
-let masterCurrentSheet = 'Camion T1';
-let masterDataCache = {};
-let masterCurrentHeaders = [];
-let masterAllRows = [];
-let masterFilteredRows = [];
-let masterIsFormVisible = false;
+var masterCurrentSheet = 'Camion T1';
+var masterDataCache = {};
+var masterCurrentHeaders = [];
+var masterAllRows = [];
+var masterFilteredRows = [];
+var masterIsFormVisible = false;
 
-let historyAllRows = [];
-let historyFilteredRows = [];
-let historyHeaders = [];
+var historyAllRows = [];
+var historyFilteredRows = [];
+var historyHeaders = [];
 
-// Mantenimientos
-let mpCurrentView = 'historial';
-let mpHeaders = [];
-let mpRows = [];
-let mpFilteredRows = [];
-let mpIsFormVisible = false;
-let mpDropdowns = {};
-let mpConfigMP = [];
-let mpConfigLoaded = false;
+var mpCurrentView = 'historial';
+var mpHeaders = [];
+var mpRows = [];
+var mpFilteredRows = [];
+var mpIsFormVisible = false;
+var mpDropdowns = {};
+var mpConfigMP = [];
+var mpConfigLoaded = false;
 
-// Programación Mantenimiento Preventivo
-let progHeaders = [];
-let progRows = [];
-let progFilteredRows = [];
-let progIsFormVisible = false;
-let patentesCamionT2 = [];
-let odometroPorPatente = {};
-let progRowSeleccionadaParaCompletar = null;
-let progPatentePrecargada = null;
+var progHeaders = [];
+var progRows = [];
+var progFilteredRows = [];
+var progIsFormVisible = false;
+var patentesCamionT2 = [];
+var odometroPorPatente = {};
+var progRowSeleccionadaParaCompletar = null;
+var progPatentePrecargada = null;
 
-const columnConfig = {
-'Camion T1': [
-'PATENTE', 'PROPIETARIO', 'MAIL', 'CIA SEGURO', 'VENC VTV',
-'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO',
-'POLIZA DE SEGUROS', 'SEGURO DE ACCIDENTES PERSONALES',
-'CLAUSULA DE NO REPETICION', 'INDUCCION DE CMQ',
-'CAPACITACION DE MANEJO DEFENSIVO'
-],
-'Camion T2': [
-'PATENTE', 'CIA SEGURO', 'AÑO', 'VENC VTV', 'VENC SEGURO',
-'UTA', 'EXTINTOR', 'BOTIQUIN'
-],
-'Autoelevadores': [
-'CODIGO DE AE', 'CIA SEGURO', 'AÑO', 'VENC SEGURO', 'EXTINTOR'
-],
-'Choferes y Ayudantes': [
-'APELLIDO Y NOMBRE', 'CONTRATACION', 'Mail',
-'VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA'
-]
+var columnConfig = {
+    'Camion T1': [
+        'PATENTE', 'PROPIETARIO', 'MAIL', 'CIA SEGURO', 'VENC VTV',
+        'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO',
+        'POLIZA DE SEGUROS', 'SEGURO DE ACCIDENTES PERSONALES',
+        'CLAUSULA DE NO REPETICION', 'INDUCCION DE CMQ',
+        'CAPACITACION DE MANEJO DEFENSIVO'
+    ],
+    'Camion T2': [
+        'PATENTE', 'CIA SEGURO', 'AÑO', 'VENC VTV', 'VENC SEGURO',
+        'UTA', 'EXTINTOR', 'BOTIQUIN'
+    ],
+    'Autoelevadores': [
+        'CODIGO DE AE', 'CIA SEGURO', 'AÑO', 'VENC SEGURO', 'EXTINTOR'
+    ],
+    'Choferes y Ayudantes': [
+        'APELLIDO Y NOMBRE', 'CONTRATACION', 'Mail',
+        'VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA'
+    ]
 };
 
-const dateColumnsConfig = {
-'Camion T1': ['VENC VTV', 'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO', 'POLIZA DE SEGUROS',
-'SEGURO DE ACCIDENTES PERSONALES', 'CLAUSULA DE NO REPETICION', 'INDUCCION DE CMQ',
-'CAPACITACION DE MANEJO DEFENSIVO'
-],
-'Camion T2': ['VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN'],
-'Autoelevadores': ['VENC SEGURO', 'EXTINTOR'],
-'Choferes y Ayudantes': ['VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA']
+var dateColumnsConfig = {
+    'Camion T1': ['VENC VTV', 'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO', 'POLIZA DE SEGUROS',
+        'SEGURO DE ACCIDENTES PERSONALES', 'CLAUSULA DE NO REPETICION', 'INDUCCION DE CMQ',
+        'CAPACITACION DE MANEJO DEFENSIVO'
+    ],
+    'Camion T2': ['VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN'],
+    'Autoelevadores': ['VENC SEGURO', 'EXTINTOR'],
+    'Choferes y Ayudantes': ['VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA']
 };
 
-const filterFields = {
-'Camion T1': 'PATENTE',
-'Camion T2': 'PATENTE',
-'Autoelevadores': 'CODIGO DE AE',
-'Choferes y Ayudantes': 'APELLIDO Y NOMBRE'
+var filterFields = {
+    'Camion T1': 'PATENTE',
+    'Camion T2': 'PATENTE',
+    'Autoelevadores': 'CODIGO DE AE',
+    'Choferes y Ayudantes': 'APELLIDO Y NOMBRE'
 };
 
-const photoMapping = {
-'VENC VTV': 'VENC VTV_FOTO',
-'VENC SEGURO': 'VENC SEGURO_FOTO',
-'SENASA': 'SENASA_FOTO',
-'LICENCIA DE CONDUCIR': 'LICENCIA DE CONDUCIR_FOTO',
-'PAGO MONOTRIBUTO': 'PAGO MONOTRIBUTO_FOTO',
-'POLIZA DE SEGUROS': 'POLIZA DE SEGUROS_FOTO',
-'SEGURO DE ACCIDENTES PERSONALES': 'SEGURO DE ACCIDENTES PERSONALES_FOTO',
-'CLAUSULA DE NO REPETICION': 'CLAUSULA DE NO REPETICION_FOTO',
-'INDUCCION DE CMQ': 'INDUCCION DE CMQ_FOTO',
-'CAPACITACION DE MANEJO DEFENSIVO': 'CAPACITACION DE MANEJO DEFENSIVO_FOTO',
-'UTA': 'UTA_FOTO',
-'EXTINTOR': 'EXTINTOR_FOTO',
-'BOTIQUIN': 'BOTIQUIN_FOTO',
-'VENCIMIENTO REGISTRO': 'VENCIMIENTO REGISTRO_FOTO',
-'LIBRETA SANITARIA': 'LIBRETA SANITARIA_FOTO'
-};
+var MP_DROPDOWN_COLUMNS = ['PATENTE', 'TIPO MANTENIMIENTO', 'CONCEPTO GENERAL', 'TIPO REPARACIÓN', 'PROVEEDOR'];
+var PROG_DROPDOWN_COLUMNS = ['PATENTE', 'TIPO MANTENIMIENTO', 'TIPO REPARACIÓN'];
 
-const MP_DROPDOWN_COLUMNS = ['PATENTE', 'TIPO MANTENIMIENTO', 'CONCEPTO GENERAL', 'TIPO REPARACIÓN', 'PROVEEDOR'];
-const PROG_DROPDOWN_COLUMNS = ['PATENTE', 'TIPO MANTENIMIENTO', 'TIPO REPARACIÓN'];
-
-function showAlert(message, type = 'success') {
-    const container = document.getElementById('alert-container');
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${type}`;
+/* ============================================================
+   UTILIDADES
+   ============================================================ */
+function showAlert(message, type) {
+    type = type || 'success';
+    var container = document.getElementById('alert-container');
+    if (!container) return;
+    var alert = document.createElement('div');
+    alert.className = 'alert alert-' + type;
     alert.textContent = message;
     container.appendChild(alert);
-    setTimeout(() => alert.remove(), 5000);
+    setTimeout(function() { alert.remove(); }, 5000);
 }
 
 function parseDate(dateStr) {
     if (!dateStr) return null;
-    dateStr = dateStr.trim();
+    dateStr = String(dateStr).trim();
     if (dateStr === '') return null;
 
-    if (dateStr.includes('/')) {
-        const parts = dateStr.split('/');
+    if (dateStr.indexOf('/') !== -1) {
+        var parts = dateStr.split('/');
         if (parts.length === 3) {
-            let day = parseInt(parts[0]);
-            let month = parseInt(parts[1]) - 1;
-            let year = parseInt(parts[2]);
+            var day = parseInt(parts[0]);
+            var month = parseInt(parts[1]) - 1;
+            var year = parseInt(parts[2]);
             if (year < 100) year += 2000;
             if (!isNaN(day) && !isNaN(month) && !isNaN(year) && day > 0 && month >= 0 && day <= 31 && month <= 11) {
                 return new Date(year, month, day);
@@ -774,43 +758,43 @@ function parseDate(dateStr) {
         }
     }
 
-    if (dateStr.includes('-')) {
-        const parts = dateStr.split('-');
-        if (parts.length === 3) {
-            const year = parseInt(parts[0]);
-            const month = parseInt(parts[1]) - 1;
-            const day = parseInt(parts[2]);
-            if (!isNaN(year) && !isNaN(month) && !isNaN(day) && day > 0 && month >= 0 && day <= 31 && month <= 11) {
-                return new Date(year, month, day);
+    if (dateStr.indexOf('-') !== -1) {
+        var parts2 = dateStr.split('-');
+        if (parts2.length === 3) {
+            var year2 = parseInt(parts2[0]);
+            var month2 = parseInt(parts2[1]) - 1;
+            var day2 = parseInt(parts2[2]);
+            if (!isNaN(year2) && !isNaN(month2) && !isNaN(day2) && day2 > 0 && month2 >= 0 && day2 <= 31 && month2 <= 11) {
+                return new Date(year2, month2, day2);
             }
         }
     }
 
-    const date = new Date(dateStr);
+    var date = new Date(dateStr);
     if (!isNaN(date.getTime())) return date;
     return null;
 }
 
 function getDateStatus(dateStr) {
     if (!dateStr) return { class: '', text: '' };
-    const expDate = parseDate(dateStr);
+    var expDate = parseDate(dateStr);
     if (!expDate) return { class: '', text: '' };
-    const today = new Date();
+    var today = new Date();
     today.setHours(0, 0, 0, 0);
     expDate.setHours(0, 0, 0, 0);
-    const diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+    var diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
     if (diffDays < 0) return { class: 'date-danger', text: 'VENCIDO' };
-    else if (diffDays >= 0 && diffDays <= 30) return { class: 'date-warning', text: `${diffDays} días` };
-    else return { class: 'date-ok', text: `${diffDays} días` };
+    else if (diffDays >= 0 && diffDays <= 30) return { class: 'date-warning', text: diffDays + ' días' };
+    else return { class: 'date-ok', text: diffDays + ' días' };
 }
 
 function getRowStatus(row, sheetName) {
-    const dateColumns = dateColumnsConfig[sheetName] || [];
-    let hasDate = false, anyExpired = false, anyWarning = false;
-    dateColumns.forEach(col => {
+    var dateColumns = dateColumnsConfig[sheetName] || [];
+    var hasDate = false, anyExpired = false, anyWarning = false;
+    dateColumns.forEach(function(col) {
         if (row[col]) {
             hasDate = true;
-            const status = getDateStatus(row[col]);
+            var status = getDateStatus(row[col]);
             if (status.class === 'date-danger') anyExpired = true;
             else if (status.class === 'date-warning') anyWarning = true;
         }
@@ -822,14 +806,30 @@ function getRowStatus(row, sheetName) {
 }
 
 function getDisplayColumns(sheetName) {
-    const columns = columnConfig[sheetName] || [];
-    return [...columns, 'Marca Temporal'];
+    var columns = columnConfig[sheetName] || [];
+    return columns.concat(['Marca Temporal']);
 }
 
 function getAllColumns(headers) {
-    return headers.filter(h => h !== '_row_number' && !h.endsWith('_FOTO'));
+    return headers.filter(function(h) { return h !== '_row_number' && h.indexOf('_FOTO') === -1; });
 }
 
+function isPhotoUrl(value) {
+    if (!value) return false;
+    return value.indexOf('http') === 0 && (value.indexOf('drive') !== -1 || value.indexOf('docs') !== -1 || value.indexOf('google') !== -1);
+}
+
+function getPhotoColumns(headers) {
+    return headers.filter(function(h) { return h.indexOf('_FOTO') !== -1; });
+}
+
+function getDateColumnsRequiringPhoto(sheetName) {
+    return dateColumnsConfig[sheetName] || [];
+}
+
+/* ============================================================
+   NAVEGACIÓN
+   ============================================================ */
 function showHome() {
     document.getElementById('homeScreen').style.display = 'flex';
     document.getElementById('docsModule').style.display = 'none';
@@ -867,118 +867,116 @@ function showModule(module) {
     }
 }
 
-function isPhotoUrl(value) {
-    if (!value) return false;
-    return value.startsWith('http') && (value.includes('drive') || value.includes('docs') || value.includes('google'));
-}
+/* ============================================================
+   FORMULARIOS GENÉRICOS
+   ============================================================ */
+function generateFormFields(headers, excludeFields, values, isMaster) {
+    excludeFields = excludeFields || ['_row_number', 'Marca Temporal'];
+    values = values || {};
+    isMaster = isMaster || false;
+    var html = '';
+    var photoCols = getPhotoColumns(headers);
+    var dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
 
-function getPhotoColumns(headers) {
-    return headers.filter(h => h.endsWith('_FOTO'));
-}
+    headers.forEach(function(header) {
+        if (excludeFields.indexOf(header) !== -1) return;
+        if (photoCols.indexOf(header) !== -1) return;
 
-function getDateColumnsRequiringPhoto(sheetName) {
-    return dateColumnsConfig[sheetName] || [];
-}
+        var upper = header.toUpperCase();
+        var isDate = upper.indexOf('FECHA') !== -1 || upper.indexOf('VENCIMIENTO') !== -1 || upper.indexOf('VENC') !== -1;
+        var isTextarea = upper.indexOf('OBSERVACION') !== -1 || upper.indexOf('COMENTARIO') !== -1;
+        var value = values[header] || '';
+        var requiresPhoto = dateColsRequiringPhoto.indexOf(header) !== -1;
 
-function generateFormFields(headers, excludeFields = ['_row_number', 'Marca Temporal'], values = {}, isMaster = false) {
-    let html = '';
-    const photoCols = getPhotoColumns(headers);
-    const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
-
-    headers.forEach(header => {
-        if (excludeFields.includes(header)) return;
-        if (photoCols.includes(header)) return;
-
-        const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
-        const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
-        const value = values[header] || '';
-        const requiresPhoto = dateColsRequiringPhoto.includes(header);
-
-        html += `<div class="form-group">`;
-        html += `<label>${header}`;
+        html += '<div class="form-group">';
+        html += '<label>' + header;
         if (requiresPhoto && !isMaster) {
-            html += ` <span class="photo-required">(requiere foto)</span>`;
+            html += ' <span class="photo-required">(requiere foto)</span>';
         }
-        html += `</label>`;
+        html += '</label>';
 
         if (isTextarea) {
-            html += `<textarea id="field_${header}" name="${header}" rows="2">${value}</textarea>`;
+            html += '<textarea id="field_' + header + '" name="' + header + '" rows="2">' + value + '</textarea>';
         } else if (isDate) {
-            let dateValue = value;
-            if (value && value.includes('/')) {
-                const parts = value.split('/');
+            var dateValue = value;
+            if (value && value.indexOf('/') !== -1) {
+                var parts = value.split('/');
                 if (parts.length === 3) {
-                    let year = parseInt(parts[2]);
+                    var year = parseInt(parts[2]);
                     if (year < 100) year += 2000;
-                    dateValue = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
                 }
             }
-            html += `<input type="date" id="field_${header}" name="${header}" value="${dateValue}">`;
+            html += '<input type="date" id="field_' + header + '" name="' + header + '" value="' + dateValue + '">';
         } else {
-            html += `<input type="text" id="field_${header}" name="${header}" value="${value}">`;
+            html += '<input type="text" id="field_' + header + '" name="' + header + '" value="' + value + '">';
         }
-        html += `</div>`;
+        html += '</div>';
     });
     return html;
 }
 
-function generatePhotoFields(headers, values = {}, isMaster = false, prefix = '') {
-    let html = '';
-    const photoCols = getPhotoColumns(headers);
-    const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
+function generatePhotoFields(headers, values, isMaster, prefix) {
+    values = values || {};
+    isMaster = isMaster || false;
+    prefix = prefix || '';
+    var html = '';
+    var photoCols = getPhotoColumns(headers);
+    var dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
 
     if (photoCols.length === 0) return html;
 
-    html += `<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">`;
-    html += `<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>`;
-    html += `<p style="color:#666; font-size:14px; margin-bottom:15px;">Sube las fotos de los documentos. Las fotos son obligatorias para los documentos con fecha.</p>`;
+    html += '<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">';
+    html += '<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>';
+    html += '<p style="color:#666; font-size:14px; margin-bottom:15px;">Sube las fotos de los documentos. Las fotos son obligatorias para los documentos con fecha.</p>';
 
-    photoCols.forEach(col => {
-        const docName = col.replace('_FOTO', '');
-        const photoUrl = values[col] || '';
-        const fileInputId = `${prefix}foto_${docName}`;
-        const isRequired = dateColsRequiringPhoto.includes(docName) && !isMaster;
+    photoCols.forEach(function(col) {
+        var docName = col.replace('_FOTO', '');
+        var photoUrl = values[col] || '';
+        var fileInputId = prefix + 'foto_' + docName;
+        var isRequired = dateColsRequiringPhoto.indexOf(docName) !== -1 && !isMaster;
 
-        html += `<div class="photo-upload-group">`;
-        html += `<label for="${fileInputId}">📷 ${docName}:`;
+        html += '<div class="photo-upload-group">';
+        html += '<label for="' + fileInputId + '">📷 ' + docName + ':';
         if (isRequired) {
-            html += ` <span class="photo-required">(OBLIGATORIA)</span>`;
+            html += ' <span class="photo-required">(OBLIGATORIA)</span>';
         }
-        html += `</label>`;
+        html += '</label>';
 
         if (photoUrl && isPhotoUrl(photoUrl)) {
-            let fileId = photoUrl;
-            if (photoUrl.includes('file/d/')) {
-                const match = photoUrl.match(/file\/d\/([^\/]+)/);
+            var fileId = photoUrl;
+            if (photoUrl.indexOf('file/d/') !== -1) {
+                var match = photoUrl.match(/file\/d\/([^\/]+)/);
                 if (match) fileId = match[1];
             }
-            html += `<br><img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">`;
-            html += `<br><small style="color:#666;">Foto actual - <a href="${photoUrl}" target="_blank">Ver en Drive</a></small>`;
-            html += `<br><small style="color:#888;">Si quieres reemplazarla, selecciona una nueva foto.</small>`;
+            html += '<br><img src="https://drive.google.com/thumbnail?id=' + fileId + '&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">';
+            html += '<br><small style="color:#666;">Foto actual - <a href="' + photoUrl + '" target="_blank">Ver en Drive</a></small>';
+            html += '<br><small style="color:#888;">Si quieres reemplazarla, selecciona una nueva foto.</small>';
         } else {
-            html += `<br><small style="color:#999;">No hay foto cargada</small>`;
+            html += '<br><small style="color:#999;">No hay foto cargada</small>';
         }
 
-        html += `<br><input type="file" id="${fileInputId}" name="${fileInputId}" accept="image/*" onchange="previewPhoto(event, '${fileInputId}')"`;
+        html += '<br><input type="file" id="' + fileInputId + '" name="' + fileInputId + '" accept="image/*" onchange="previewPhoto(event, \'' + fileInputId + '\')"';
         if (isRequired && !photoUrl) {
-            html += ` required`;
+            html += ' required';
         }
-        html += `>`;
-        html += `<div id="preview_${fileInputId}"></div>`;
-        html += `</div>`;
+        html += '>';
+        html += '<div id="preview_' + fileInputId + '"></div>';
+        html += '</div>';
     });
 
-    html += `</div>`;
+    html += '</div>';
     return html;
 }
 
 function previewPhoto(event, inputId) {
-    const file = event.target.files[0];
-    const preview = document.getElementById(`preview_${inputId}`);
+    var file = event.target.files[0];
+    var preview = document.getElementById('preview_' + inputId);
+    if (!preview) return;
     if (file) {
-        const reader = new FileReader();
+        var reader = new FileReader();
         reader.onload = function(e) {
-            preview.innerHTML = `<img src="${e.target.result}" class="photo-preview" alt="Nueva foto">`;
+            preview.innerHTML = '<img src="' + e.target.result + '" class="photo-preview" alt="Nueva foto">';
         };
         reader.readAsDataURL(file);
     } else {
@@ -986,24 +984,24 @@ function previewPhoto(event, inputId) {
     }
 }
 
-function validateRequiredPhotos(sheetName, formData, isMaster = false) {
+function validateRequiredPhotos(sheetName, formData, isMaster) {
     if (isMaster) return true;
-    const dateCols = getDateColumnsRequiringPhoto(sheetName);
-    const missingPhotos = [];
+    var dateCols = getDateColumnsRequiringPhoto(sheetName);
+    var missingPhotos = [];
 
-    dateCols.forEach(dateCol => {
-        const dateValue = formData.get(dateCol);
+    dateCols.forEach(function(dateCol) {
+        var dateValue = formData.get(dateCol);
         if (dateValue && dateValue.trim() !== '') {
-            const photoInput = document.getElementById(`foto_${dateCol}`);
+            var photoInput = document.getElementById('foto_' + dateCol);
             if (photoInput) {
-                const hasFile = photoInput.files && photoInput.files.length > 0;
-                const existingPhoto = formData.get(`${dateCol}_FOTO`);
+                var hasFile = photoInput.files && photoInput.files.length > 0;
+                var existingPhoto = formData.get(dateCol + '_FOTO');
                 if (!hasFile && !existingPhoto) {
                     missingPhotos.push(dateCol);
                 }
             } else {
-                const existingPhoto = formData.get(`${dateCol}_FOTO`);
-                if (!existingPhoto) {
+                var existingPhoto2 = formData.get(dateCol + '_FOTO');
+                if (!existingPhoto2) {
                     missingPhotos.push(dateCol);
                 }
             }
@@ -1011,123 +1009,118 @@ function validateRequiredPhotos(sheetName, formData, isMaster = false) {
     });
 
     if (missingPhotos.length > 0) {
-        showAlert(`⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ${missingPhotos.join(', ')}`, 'error');
+        showAlert('⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ' + missingPhotos.join(', '), 'error');
         return false;
     }
     return true;
 }
 
+/* ============================================================
+   CONTROL DE DOCUMENTACIÓN
+   ============================================================ */
 async function loadSheetData(sheetName) {
-    const content = document.getElementById('tab-content');
+    var content = document.getElementById('tab-content');
     content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
     try {
-        const response = await fetch(`/api/sheet/${encodeURIComponent(sheetName)}`);
-        const data = await response.json();
+        var response = await fetch('/api/sheet/' + encodeURIComponent(sheetName));
+        var data = await response.json();
         dataCache[sheetName] = data;
         currentHeaders = data.headers || [];
         allRows = data.rows || [];
-        filteredRows = [...allRows];
+        filteredRows = allRows.slice();
         renderTable(sheetName);
     } catch (error) {
-        content.innerHTML = `<div class="alert alert-error">❌ Error al cargar datos: ${error.message}</div>`;
+        content.innerHTML = '<div class="alert alert-error">❌ Error al cargar datos: ' + error.message + '</div>';
     }
 }
 
 function renderTable(sheetName) {
-    const content = document.getElementById('tab-content');
-    const displayColumns = getDisplayColumns(sheetName);
-    const filterField = filterFields[sheetName] || 'PATENTE';
-    const dateColumns = dateColumnsConfig[sheetName] || [];
-    const photoCols = getPhotoColumns(currentHeaders);
+    var content = document.getElementById('tab-content');
+    var displayColumns = getDisplayColumns(sheetName);
+    var filterField = filterFields[sheetName] || 'PATENTE';
+    var dateColumns = dateColumnsConfig[sheetName] || [];
+    var photoCols = getPhotoColumns(currentHeaders);
 
-    let html = `
-        <div class="toolbar">
-            <button class="btn btn-add" onclick="toggleForm()">
-                ${isFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Nuevo'}
-            </button>
-            <div class="filter-group">
-                <label>🔍 Filtrar por ${filterField}:</label>
-                <input type="text" id="filterInput" placeholder="Buscar..." oninput="applyFilter('${sheetName}')">
-                <button class="btn-clear" onclick="clearFilter()">✖ Limpiar</button>
-            </div>
-            <span class="record-count">📊 Total: ${filteredRows.length} registros</span>
-        </div>
-        
-        <div class="form-section ${isFormVisible ? 'visible' : ''}" id="addFormSection">
-            <h3>📄 Agregar nuevo documento</h3>
-            <form id="addForm" enctype="multipart/form-data">
-                <div class="form-row" id="addFormFields">
-                    ${generateFormFields(currentHeaders, ['_row_number', 'Marca Temporal'], {}, false)}
-                </div>
-                ${generatePhotoFields(currentHeaders, {}, false, '')}
-                <input type="hidden" name="sheet_name" value="${sheetName}">
-                <button type="submit" class="btn">➕ Agregar Documento</button>
-                <button type="button" class="btn btn-cancel" onclick="toggleForm()">Cancelar</button>
-            </form>
-        </div>
-    `;
+    var html = '<div class="toolbar">';
+    html += '<button type="button" class="btn btn-add" onclick="toggleForm()">' + (isFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Nuevo') + '</button>';
+    html += '<div class="filter-group">';
+    html += '<label>🔍 Filtrar por ' + filterField + ':</label>';
+    html += '<input type="text" id="filterInput" placeholder="Buscar..." oninput="applyFilter(\'' + sheetName + '\')">';
+    html += '<button type="button" class="btn-clear" onclick="clearFilter()">✖ Limpiar</button>';
+    html += '</div>';
+    html += '<span class="record-count">📊 Total: ' + filteredRows.length + ' registros</span>';
+    html += '</div>';
 
-    html += `<div class="table-wrapper"><div class="table-container"><table>`;
-    html += `<thead><tr><th>📊 Estado</th>`;
-    displayColumns.forEach(col => html += `<th>${col}</th>`);
-    if (photoCols.length > 0) html += `<th>📸 Fotos</th>`;
-    html += `<th>⚙️ Acciones</th></tr></thead><tbody>`;
+    html += '<div class="form-section ' + (isFormVisible ? 'visible' : '') + '" id="addFormSection">';
+    html += '<h3>📄 Agregar nuevo documento</h3>';
+    html += '<form id="addForm" enctype="multipart/form-data">';
+    html += '<div class="form-row" id="addFormFields">' + generateFormFields(currentHeaders, ['_row_number', 'Marca Temporal'], {}, false) + '</div>';
+    html += generatePhotoFields(currentHeaders, {}, false, '');
+    html += '<input type="hidden" name="sheet_name" value="' + sheetName + '">';
+    html += '<button type="submit" class="btn">➕ Agregar Documento</button>';
+    html += '<button type="button" class="btn btn-cancel" onclick="toggleForm()">Cancelar</button>';
+    html += '</form>';
+    html += '</div>';
+
+    html += '<div class="table-wrapper"><div class="table-container"><table>';
+    html += '<thead><tr><th>📊 Estado</th>';
+    displayColumns.forEach(function(col) { html += '<th>' + col + '</th>'; });
+    if (photoCols.length > 0) html += '<th>📸 Fotos</th>';
+    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
 
     if (filteredRows.length === 0) {
-        const colSpan = displayColumns.length + (photoCols.length > 0 ? 2 : 1) + 1;
-        html += `<tr><td colspan="${colSpan}" style="text-align: center; padding: 20px;">📭 No hay documentos</td></tr>`;
+        var colSpan = displayColumns.length + (photoCols.length > 0 ? 2 : 1) + 1;
+        html += '<tr><td colspan="' + colSpan + '" style="text-align: center; padding: 20px;">📭 No hay documentos</td></tr>';
     } else {
-        filteredRows.forEach((row) => {
-            html += `<tr>`;
-            const rowStatus = getRowStatus(row, sheetName);
-            html += `<td><span class="${rowStatus.class}">${rowStatus.text}</span></td>`;
+        filteredRows.forEach(function(row) {
+            html += '<tr>';
+            var rowStatus = getRowStatus(row, sheetName);
+            html += '<td><span class="' + rowStatus.class + '">' + rowStatus.text + '</span></td>';
 
-            displayColumns.forEach(col => {
-                let value = row[col] || '';
-                let cellClass = '';
-                if (dateColumns.includes(col) && value) {
-                    const dateStatus = getDateStatus(value);
-                    if (dateStatus.class) cellClass = ` class="${dateStatus.class}"`;
+            displayColumns.forEach(function(col) {
+                var value = row[col] || '';
+                var cellClass = '';
+                if (dateColumns.indexOf(col) !== -1 && value) {
+                    var dateStatus = getDateStatus(value);
+                    if (dateStatus.class) cellClass = ' class="' + dateStatus.class + '"';
                 }
-                html += `<td${cellClass}>${value}</td>`;
+                html += '<td' + cellClass + '>' + value + '</td>';
             });
 
             if (photoCols.length > 0) {
-                html += `<td><div class="photo-group">`;
-                let hasPhoto = false;
-                photoCols.forEach(col => {
-                    const photoUrl = row[col] || '';
+                html += '<td><div class="photo-group">';
+                var hasPhoto = false;
+                photoCols.forEach(function(col) {
+                    var photoUrl = row[col] || '';
                     if (photoUrl && isPhotoUrl(photoUrl)) {
                         hasPhoto = true;
-                        let fileId = photoUrl;
-                        if (photoUrl.includes('file/d/')) {
-                            const match = photoUrl.match(/file\/d\/([^\/]+)/);
+                        var fileId = photoUrl;
+                        if (photoUrl.indexOf('file/d/') !== -1) {
+                            var match = photoUrl.match(/file\/d\/([^\/]+)/);
                             if (match) fileId = match[1];
                         }
-                        const docName = col.replace('_FOTO', '');
-                        html += `<a href="${photoUrl}" target="_blank" title="${docName}">`;
-                        html += `<img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w80-h80" class="photo-thumb" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E'">`;
-                        html += `</a>`;
+                        var docName = col.replace('_FOTO', '');
+                        html += '<a href="' + photoUrl + '" target="_blank" title="' + docName + '">';
+                        html += '<img src="https://drive.google.com/thumbnail?id=' + fileId + '&sz=w80-h80" class="photo-thumb" onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E\'">';
+                        html += '</a>';
                     }
                 });
-                if (!hasPhoto) html += `<span style="color:#999;font-size:11px;">Sin fotos</span>`;
-                html += `</div></td>`;
+                if (!hasPhoto) html += '<span style="color:#999;font-size:11px;">Sin fotos</span>';
+                html += '</div></td>';
             }
 
-            html += `<td>
-                <div class="actions">
-                    <button class="btn btn-success btn-sm" onclick="editRow('${sheetName}', ${row._row_number})">✏️ Editar</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteRow('${sheetName}', ${row._row_number})">🗑️ Eliminar</button>
-                </div>
-            </td>`;
-            html += `</tr>`;
+            html += '<td><div class="actions">';
+            html += '<button type="button" class="btn btn-success btn-sm" onclick="editRow(\'' + sheetName + '\', ' + row._row_number + ')">✏️ Editar</button>';
+            html += '<button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(\'' + sheetName + '\', ' + row._row_number + ')">🗑️ Eliminar</button>';
+            html += '</div></td>';
+            html += '</tr>';
         });
     }
 
-    html += `</tbody></table></div></div>`;
+    html += '</tbody></table></div></div>';
     content.innerHTML = html;
 
-    const form = document.getElementById('addForm');
+    var form = document.getElementById('addForm');
     if (form) form.addEventListener('submit', handleAddDocument);
 }
 
@@ -1137,157 +1130,150 @@ function toggleForm() {
 }
 
 function applyFilter(sheetName) {
-    const filterInput = document.getElementById('filterInput');
-    const searchTerm = filterInput.value.toLowerCase().trim();
-    const filterField = filterFields[sheetName] || 'PATENTE';
-    if (!searchTerm) filteredRows = [...allRows];
-    else filteredRows = allRows.filter(row => (row[filterField] || '').toString().toLowerCase().includes(searchTerm));
+    var filterInput = document.getElementById('filterInput');
+    var searchTerm = filterInput.value.toLowerCase().trim();
+    var filterField = filterFields[sheetName] || 'PATENTE';
+    if (!searchTerm) filteredRows = allRows.slice();
+    else filteredRows = allRows.filter(function(row) { return (row[filterField] || '').toString().toLowerCase().indexOf(searchTerm) !== -1; });
     renderTable(sheetName);
 }
 
 function clearFilter() {
     document.getElementById('filterInput').value = '';
-    filteredRows = [...allRows];
+    filteredRows = allRows.slice();
     renderTable(currentSheet);
 }
 
 async function handleAddDocument(e) {
     e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
-    const sheetName = formData.get('sheet_name');
+    var form = e.target;
+    var formData = new FormData(form);
+    var sheetName = formData.get('sheet_name');
 
     if (!validateRequiredPhotos(sheetName, formData, false)) return;
 
     try {
-        const response = await fetch('/api/add', { method: 'POST', body: formData });
-        const result = await response.json();
+        var response = await fetch('/api/add', { method: 'POST', body: formData });
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Documento agregado correctamente', 'success');
             form.reset();
             isFormVisible = false;
             await loadSheetData(sheetName);
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error al enviar el formulario: ${error.message}`, 'error');
+        showAlert('❌ Error al enviar el formulario: ' + error.message, 'error');
     }
 }
 
-// ==================== MAESTRO DE FLOTA ====================
-
+/* ============================================================
+   MAESTRO DE FLOTA
+   ============================================================ */
 async function loadMasterData(sheetName) {
-    const content = document.getElementById('master-tab-content');
+    var content = document.getElementById('master-tab-content');
     content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
     try {
-        const response = await fetch(`/api/sheet/${encodeURIComponent(sheetName)}`);
-        const data = await response.json();
+        var response = await fetch('/api/sheet/' + encodeURIComponent(sheetName));
+        var data = await response.json();
         masterDataCache[sheetName] = data;
         masterCurrentHeaders = data.headers || [];
         masterAllRows = data.rows || [];
-        masterFilteredRows = [...masterAllRows];
+        masterFilteredRows = masterAllRows.slice();
         renderMasterTable(sheetName);
     } catch (error) {
-        content.innerHTML = `<div class="alert alert-error">❌ Error al cargar datos: ${error.message}</div>`;
+        content.innerHTML = '<div class="alert alert-error">❌ Error al cargar datos: ' + error.message + '</div>';
     }
 }
 
 function renderMasterTable(sheetName) {
-    const content = document.getElementById('master-tab-content');
-    const displayColumns = getAllColumns(masterCurrentHeaders);
-    const filterField = filterFields[sheetName] || 'PATENTE';
-    const dateColumns = dateColumnsConfig[sheetName] || [];
-    const photoCols = getPhotoColumns(masterCurrentHeaders);
+    var content = document.getElementById('master-tab-content');
+    var displayColumns = getAllColumns(masterCurrentHeaders);
+    var filterField = filterFields[sheetName] || 'PATENTE';
+    var dateColumns = dateColumnsConfig[sheetName] || [];
+    var photoCols = getPhotoColumns(masterCurrentHeaders);
 
-    let html = `
-        <div class="toolbar">
-            <button class="btn btn-add" onclick="toggleMasterForm()">
-                ${masterIsFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Nuevo'}
-            </button>
-            <div class="filter-group">
-                <label>🔍 Filtrar por ${filterField}:</label>
-                <input type="text" id="filterInputMaster" placeholder="Buscar..." oninput="applyMasterFilter('${sheetName}')">
-                <button class="btn-clear" onclick="clearMasterFilter()">✖ Limpiar</button>
-            </div>
-            <span class="record-count">📊 Total: ${masterFilteredRows.length} registros</span>
-        </div>
+    var html = '<div class="toolbar">';
+    html += '<button type="button" class="btn btn-add" onclick="toggleMasterForm()">' + (masterIsFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Nuevo') + '</button>';
+    html += '<div class="filter-group">';
+    html += '<label>🔍 Filtrar por ' + filterField + ':</label>';
+    html += '<input type="text" id="filterInputMaster" placeholder="Buscar..." oninput="applyMasterFilter(\'' + sheetName + '\')">';
+    html += '<button type="button" class="btn-clear" onclick="clearMasterFilter()">✖ Limpiar</button>';
+    html += '</div>';
+    html += '<span class="record-count">📊 Total: ' + masterFilteredRows.length + ' registros</span>';
+    html += '</div>';
 
-        <div class="form-section ${masterIsFormVisible ? 'visible' : ''}" id="addFormSectionMaster">
-            <h3>📄 Agregar nuevo registro</h3>
-            <form id="addFormMaster" enctype="multipart/form-data">
-                <div class="form-row" id="addFormFieldsMaster">
-                    ${generateFormFields(masterCurrentHeaders, ['_row_number', 'Marca Temporal'], {}, true)}
-                </div>
-                ${generatePhotoFields(masterCurrentHeaders, {}, true, '')}
-                <input type="hidden" name="sheet_name" value="${sheetName}">
-                <button type="submit" class="btn">➕ Agregar Registro</button>
-                <button type="button" class="btn btn-cancel" onclick="toggleMasterForm()">Cancelar</button>
-            </form>
-        </div>
-    `;
+    html += '<div class="form-section ' + (masterIsFormVisible ? 'visible' : '') + '" id="addFormSectionMaster">';
+    html += '<h3>📄 Agregar nuevo registro</h3>';
+    html += '<form id="addFormMaster" enctype="multipart/form-data">';
+    html += '<div class="form-row" id="addFormFieldsMaster">' + generateFormFields(masterCurrentHeaders, ['_row_number', 'Marca Temporal'], {}, true) + '</div>';
+    html += generatePhotoFields(masterCurrentHeaders, {}, true, '');
+    html += '<input type="hidden" name="sheet_name" value="' + sheetName + '">';
+    html += '<button type="submit" class="btn">➕ Agregar Registro</button>';
+    html += '<button type="button" class="btn btn-cancel" onclick="toggleMasterForm()">Cancelar</button>';
+    html += '</form>';
+    html += '</div>';
 
-    html += `<div class="table-wrapper"><div class="table-container"><table>`;
-    html += `<thead><tr><th>📊 Estado</th>`;
-    displayColumns.forEach(col => html += `<th>${col}</th>`);
-    if (photoCols.length > 0) html += `<th>📸 Fotos</th>`;
-    html += `<th>⚙️ Acciones</th></tr></thead><tbody>`;
+    html += '<div class="table-wrapper"><div class="table-container"><table>';
+    html += '<thead><tr><th>📊 Estado</th>';
+    displayColumns.forEach(function(col) { html += '<th>' + col + '</th>'; });
+    if (photoCols.length > 0) html += '<th>📸 Fotos</th>';
+    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
 
     if (masterFilteredRows.length === 0) {
-        const colSpan = displayColumns.length + (photoCols.length > 0 ? 2 : 1) + 1;
-        html += `<tr><td colspan="${colSpan}" style="text-align: center; padding: 20px;">📭 No hay registros</td></tr>`;
+        var colSpan = displayColumns.length + (photoCols.length > 0 ? 2 : 1) + 1;
+        html += '<tr><td colspan="' + colSpan + '" style="text-align: center; padding: 20px;">📭 No hay registros</td></tr>';
     } else {
-        masterFilteredRows.forEach((row) => {
-            html += `<tr>`;
-            const rowStatus = getRowStatus(row, sheetName);
-            html += `<td><span class="${rowStatus.class}">${rowStatus.text}</span></td>`;
+        masterFilteredRows.forEach(function(row) {
+            html += '<tr>';
+            var rowStatus = getRowStatus(row, sheetName);
+            html += '<td><span class="' + rowStatus.class + '">' + rowStatus.text + '</span></td>';
 
-            displayColumns.forEach(col => {
-                let value = row[col] || '';
-                let cellClass = '';
-                if (dateColumns.includes(col) && value) {
-                    const dateStatus = getDateStatus(value);
-                    if (dateStatus.class) cellClass = ` class="${dateStatus.class}"`;
+            displayColumns.forEach(function(col) {
+                var value = row[col] || '';
+                var cellClass = '';
+                if (dateColumns.indexOf(col) !== -1 && value) {
+                    var dateStatus = getDateStatus(value);
+                    if (dateStatus.class) cellClass = ' class="' + dateStatus.class + '"';
                 }
-                html += `<td${cellClass}>${value}</td>`;
+                html += '<td' + cellClass + '>' + value + '</td>';
             });
 
             if (photoCols.length > 0) {
-                html += `<td><div class="photo-group">`;
-                let hasPhoto = false;
-                photoCols.forEach(col => {
-                    const photoUrl = row[col] || '';
+                html += '<td><div class="photo-group">';
+                var hasPhoto = false;
+                photoCols.forEach(function(col) {
+                    var photoUrl = row[col] || '';
                     if (photoUrl && isPhotoUrl(photoUrl)) {
                         hasPhoto = true;
-                        let fileId = photoUrl;
-                        if (photoUrl.includes('file/d/')) {
-                            const match = photoUrl.match(/file\/d\/([^\/]+)/);
+                        var fileId = photoUrl;
+                        if (photoUrl.indexOf('file/d/') !== -1) {
+                            var match = photoUrl.match(/file\/d\/([^\/]+)/);
                             if (match) fileId = match[1];
                         }
-                        const docName = col.replace('_FOTO', '');
-                        html += `<a href="${photoUrl}" target="_blank" title="${docName}">`;
-                        html += `<img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w80-h80" class="photo-thumb" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E'">`;
-                        html += `</a>`;
+                        var docName = col.replace('_FOTO', '');
+                        html += '<a href="' + photoUrl + '" target="_blank" title="' + docName + '">';
+                        html += '<img src="https://drive.google.com/thumbnail?id=' + fileId + '&sz=w80-h80" class="photo-thumb" onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E\'">';
+                        html += '</a>';
                     }
                 });
-                if (!hasPhoto) html += `<span style="color:#999;font-size:11px;">Sin fotos</span>`;
-                html += `</div></td>`;
+                if (!hasPhoto) html += '<span style="color:#999;font-size:11px;">Sin fotos</span>';
+                html += '</div></td>';
             }
 
-            html += `<td>
-                <div class="actions">
-                    <button class="btn btn-success btn-sm" onclick="editMasterRow('${sheetName}', ${row._row_number})">✏️ Editar</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteMasterRow('${sheetName}', ${row._row_number})">🗑️ Eliminar</button>
-                </div>
-            </td>`;
-            html += `</tr>`;
+            html += '<td><div class="actions">';
+            html += '<button type="button" class="btn btn-success btn-sm" onclick="editMasterRow(\'' + sheetName + '\', ' + row._row_number + ')">✏️ Editar</button>';
+            html += '<button type="button" class="btn btn-danger btn-sm" onclick="deleteMasterRow(\'' + sheetName + '\', ' + row._row_number + ')">🗑️ Eliminar</button>';
+            html += '</div></td>';
+            html += '</tr>';
         });
     }
 
-    html += `</tbody></table></div></div>`;
+    html += '</tbody></table></div></div>';
     content.innerHTML = html;
 
-    const form = document.getElementById('addFormMaster');
+    var form = document.getElementById('addFormMaster');
     if (form) form.addEventListener('submit', handleAddMasterDocument);
 }
 
@@ -1297,274 +1283,268 @@ function toggleMasterForm() {
 }
 
 function applyMasterFilter(sheetName) {
-    const filterInput = document.getElementById('filterInputMaster');
-    const searchTerm = filterInput.value.toLowerCase().trim();
-    const filterField = filterFields[sheetName] || 'PATENTE';
-    if (!searchTerm) masterFilteredRows = [...masterAllRows];
-    else masterFilteredRows = masterAllRows.filter(row => (row[filterField] || '').toString().toLowerCase().includes(searchTerm));
+    var filterInput = document.getElementById('filterInputMaster');
+    var searchTerm = filterInput.value.toLowerCase().trim();
+    var filterField = filterFields[sheetName] || 'PATENTE';
+    if (!searchTerm) masterFilteredRows = masterAllRows.slice();
+    else masterFilteredRows = masterAllRows.filter(function(row) { return (row[filterField] || '').toString().toLowerCase().indexOf(searchTerm) !== -1; });
     renderMasterTable(sheetName);
 }
 
 function clearMasterFilter() {
     document.getElementById('filterInputMaster').value = '';
-    masterFilteredRows = [...masterAllRows];
+    masterFilteredRows = masterAllRows.slice();
     renderMasterTable(masterCurrentSheet);
 }
 
 async function handleAddMasterDocument(e) {
     e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
-    const sheetName = formData.get('sheet_name');
+    var form = e.target;
+    var formData = new FormData(form);
+    var sheetName = formData.get('sheet_name');
     try {
-        const response = await fetch('/api/add', { method: 'POST', body: formData });
-        const result = await response.json();
+        var response = await fetch('/api/add', { method: 'POST', body: formData });
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Registro agregado correctamente', 'success');
             form.reset();
             masterIsFormVisible = false;
             await loadMasterData(sheetName);
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error al enviar el formulario: ${error.message}`, 'error');
+        showAlert('❌ Error al enviar el formulario: ' + error.message, 'error');
     }
 }
 
 function editMasterRow(sheetName, rowNumber) {
-    const row = masterAllRows.find(r => r._row_number === rowNumber);
+    var row = masterAllRows.find(function(r) { return r._row_number === rowNumber; });
     if (!row) { showAlert('No se encontró el registro', 'error'); return; }
 
     editContextModule = 'master';
     currentEditRow = row;
-    const headersForEdit = masterCurrentHeaders;
-    const photoCols = getPhotoColumns(headersForEdit);
+    var headersForEdit = masterCurrentHeaders;
+    var photoCols = getPhotoColumns(headersForEdit);
 
     document.getElementById('editSheetName').value = sheetName;
     document.getElementById('editRowNumber').value = rowNumber;
 
-    let html = '';
-    const displayCols = getAllColumns(headersForEdit);
+    var html = '';
+    var displayCols = getAllColumns(headersForEdit);
 
-    displayCols.forEach(header => {
+    displayCols.forEach(function(header) {
         if (header === 'Marca Temporal') return;
-        if (photoCols.includes(header)) return;
+        if (photoCols.indexOf(header) !== -1) return;
 
-        const value = row[header] || '';
-        const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
-        const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
+        var value = row[header] || '';
+        var upper = header.toUpperCase();
+        var isDate = upper.indexOf('FECHA') !== -1 || upper.indexOf('VENCIMIENTO') !== -1 || upper.indexOf('VENC') !== -1;
+        var isTextarea = upper.indexOf('OBSERVACION') !== -1 || upper.indexOf('COMENTARIO') !== -1;
 
-        html += `<div class="form-group">`;
-        html += `<label>${header}</label>`;
+        html += '<div class="form-group">';
+        html += '<label>' + header + '</label>';
         if (isTextarea) {
-            html += `<textarea id="edit_${header}" name="${header}" rows="2">${value}</textarea>`;
+            html += '<textarea id="edit_' + header + '" name="' + header + '" rows="2">' + value + '</textarea>';
         } else if (isDate) {
-            let dateValue = value;
-            if (value && value.includes('/')) {
-                const parts = value.split('/');
+            var dateValue = value;
+            if (value && value.indexOf('/') !== -1) {
+                var parts = value.split('/');
                 if (parts.length === 3) {
-                    let year = parseInt(parts[2]);
+                    var year = parseInt(parts[2]);
                     if (year < 100) year += 2000;
-                    dateValue = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
                 }
             }
-            html += `<input type="date" id="edit_${header}" name="${header}" value="${dateValue}">`;
+            html += '<input type="date" id="edit_' + header + '" name="' + header + '" value="' + dateValue + '">';
         } else {
-            html += `<input type="text" id="edit_${header}" name="${header}" value="${value}">`;
+            html += '<input type="text" id="edit_' + header + '" name="' + header + '" value="' + value + '">';
         }
-        html += `</div>`;
+        html += '</div>';
     });
     document.getElementById('editFormFields').innerHTML = html;
 
-    let photoHtml = generatePhotoFieldsForEdit(headersForEdit, row, true);
+    var photoHtml = generatePhotoFieldsForEdit(headersForEdit, row, true);
     document.getElementById('editPhotoFields').innerHTML = photoHtml;
 
     document.getElementById('editModal').style.display = 'block';
 }
 
-function generatePhotoFieldsForEdit(headers, values = {}, isMaster = false) {
-    let html = '';
-    const photoCols = getPhotoColumns(headers);
-    const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
+function generatePhotoFieldsForEdit(headers, values, isMaster) {
+    values = values || {};
+    isMaster = isMaster || false;
+    var html = '';
+    var photoCols = getPhotoColumns(headers);
+    var dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
 
     if (photoCols.length === 0) {
-        html += `<p style="color:#999; font-style:italic;">No hay campos de foto configurados para este documento.</p>`;
+        html += '<p style="color:#999; font-style:italic;">No hay campos de foto configurados para este documento.</p>';
         return html;
     }
 
-    html += `<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">`;
-    html += `<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>`;
-    html += `<p style="color:#666; font-size:14px; margin-bottom:15px;">Las fotos son obligatorias para los documentos con fecha. Si ya tienes una foto, no es necesario subirla de nuevo.</p>`;
+    html += '<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">';
+    html += '<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>';
+    html += '<p style="color:#666; font-size:14px; margin-bottom:15px;">Las fotos son obligatorias para los documentos con fecha. Si ya tienes una foto, no es necesario subirla de nuevo.</p>';
 
-    photoCols.forEach(col => {
-        const docName = col.replace('_FOTO', '');
-        const photoUrl = values[col] || '';
-        const fileInputId = `edit_foto_${docName}`;
-        const isRequired = dateColsRequiringPhoto.includes(docName) && !isMaster;
+    photoCols.forEach(function(col) {
+        var docName = col.replace('_FOTO', '');
+        var photoUrl = values[col] || '';
+        var fileInputId = 'edit_foto_' + docName;
+        var isRequired = dateColsRequiringPhoto.indexOf(docName) !== -1 && !isMaster;
 
-        html += `<div class="photo-upload-group">`;
-        html += `<label for="${fileInputId}">📷 ${docName}:`;
+        html += '<div class="photo-upload-group">';
+        html += '<label for="' + fileInputId + '">📷 ' + docName + ':';
         if (isRequired) {
-            html += ` <span class="photo-required">(OBLIGATORIA)</span>`;
+            html += ' <span class="photo-required">(OBLIGATORIA)</span>';
         }
-        html += `</label>`;
+        html += '</label>';
 
         if (photoUrl && isPhotoUrl(photoUrl)) {
-            let fileId = photoUrl;
-            if (photoUrl.includes('file/d/')) {
-                const match = photoUrl.match(/file\/d\/([^\/]+)/);
+            var fileId = photoUrl;
+            if (photoUrl.indexOf('file/d/') !== -1) {
+                var match = photoUrl.match(/file\/d\/([^\/]+)/);
                 if (match) fileId = match[1];
             }
-            html += `<br><img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">`;
-            html += `<br><small style="color:#666;">Foto actual - <a href="${photoUrl}" target="_blank">Ver en Drive</a></small>`;
-            html += `<br><small style="color:#888;">Si quieres reemplazarla, selecciona una nueva foto.</small>`;
+            html += '<br><img src="https://drive.google.com/thumbnail?id=' + fileId + '&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">';
+            html += '<br><small style="color:#666;">Foto actual - <a href="' + photoUrl + '" target="_blank">Ver en Drive</a></small>';
+            html += '<br><small style="color:#888;">Si quieres reemplazarla, selecciona una nueva foto.</small>';
         } else {
-            html += `<br><small style="color:#999;">No hay foto cargada</small>`;
+            html += '<br><small style="color:#999;">No hay foto cargada</small>';
         }
 
-        html += `<br><input type="file" id="${fileInputId}" name="${fileInputId}" accept="image/*" onchange="previewPhoto(event, '${fileInputId}')"`;
+        html += '<br><input type="file" id="' + fileInputId + '" name="' + fileInputId + '" accept="image/*" onchange="previewPhoto(event, \'' + fileInputId + '\')"';
         if (isRequired && !photoUrl) {
-            html += ` required`;
+            html += ' required';
         }
-        html += `>`;
-        html += `<div id="preview_${fileInputId}"></div>`;
-        html += `</div>`;
+        html += '>';
+        html += '<div id="preview_' + fileInputId + '"></div>';
+        html += '</div>';
     });
 
-    html += `</div>`;
+    html += '</div>';
     return html;
 }
 
 async function deleteMasterRow(sheetName, rowNumber) {
     if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
     try {
-        const response = await fetch(`/api/delete/${encodeURIComponent(sheetName)}/${rowNumber}`, { method: 'DELETE' });
-        const result = await response.json();
+        var response = await fetch('/api/delete/' + encodeURIComponent(sheetName) + '/' + rowNumber, { method: 'DELETE' });
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Registro eliminado correctamente', 'success');
             await loadMasterData(sheetName);
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error al eliminar: ${error.message}`, 'error');
+        showAlert('❌ Error al eliminar: ' + error.message, 'error');
     }
 }
 
-// ==================== HISTORIAL DE VENCIMIENTO ====================
-
+/* ============================================================
+   HISTORIAL DE VENCIMIENTO
+   ============================================================ */
 async function loadHistoryData() {
-    const content = document.getElementById('history-content');
+    var content = document.getElementById('history-content');
     content.innerHTML = '<div class="loading">🔄 Cargando historial y detectando vencimientos...</div>';
     try {
-        const response = await fetch('/api/history');
-        const text = await response.text();
+        var response = await fetch('/api/history');
+        var text = await response.text();
         if (!text || text.trim() === '') {
             throw new Error('El servidor devolvió una respuesta vacía.');
         }
-        let data;
+        var data;
         try {
             data = JSON.parse(text);
         } catch (parseErr) {
-            throw new Error(`Respuesta no válida del servidor: ${text.substring(0, 200)}`);
+            throw new Error('Respuesta no válida del servidor: ' + text.substring(0, 200));
         }
         if (!response.ok) {
-            throw new Error(data.error || `Error HTTP ${response.status}`);
+            throw new Error(data.error || 'Error HTTP ' + response.status);
         }
         historyHeaders = data.headers || [];
         historyAllRows = data.rows || [];
-        historyFilteredRows = [...historyAllRows];
+        historyFilteredRows = historyAllRows.slice();
         if (historyHeaders.length === 0) {
-            content.innerHTML = `<div class="alert alert-error">
-                ⚠️ La hoja "Historial de Vencimiento de Documentación" no existe o está vacía.<br>
-                Creala en tu Google Spreadsheet con los encabezados: <b>FECHA | TIPO | DESCRIPCION | FECHA VENCIMIENTO | ESTADO</b>
-            </div>`;
+            content.innerHTML = '<div class="alert alert-error">⚠️ La hoja "Historial de Vencimiento de Documentación" no existe o está vacía.<br>Creala en tu Google Spreadsheet con los encabezados: <b>FECHA | TIPO | DESCRIPCION | FECHA VENCIMIENTO | ESTADO</b></div>';
             return;
         }
         renderHistoryTable();
     } catch (error) {
-        content.innerHTML = `<div class="alert alert-error">❌ Error al cargar historial: ${error.message}</div>`;
+        content.innerHTML = '<div class="alert alert-error">❌ Error al cargar historial: ' + error.message + '</div>';
     }
 }
 
 function renderHistoryTable() {
-    const content = document.getElementById('history-content');
-    const dateColumns = ['FECHA', 'FECHA VENCIMIENTO'];
+    var content = document.getElementById('history-content');
 
-    let html = `
-        <div class="toolbar">
-            <div class="filter-group">
-                <label>🔍 Filtrar:</label>
-                <input type="text" id="filterInputHistory" placeholder="Buscar por tipo, descripción o estado..." oninput="applyHistoryFilter()">
-                <button class="btn-clear" onclick="clearHistoryFilter()">✖ Limpiar</button>
-            </div>
-            <span class="record-count">📊 Total: ${historyFilteredRows.length} registros</span>
-        </div>
-    `;
+    var html = '<div class="toolbar">';
+    html += '<div class="filter-group">';
+    html += '<label>🔍 Filtrar:</label>';
+    html += '<input type="text" id="filterInputHistory" placeholder="Buscar por tipo, descripción o estado..." oninput="applyHistoryFilter()">';
+    html += '<button type="button" class="btn-clear" onclick="clearHistoryFilter()">✖ Limpiar</button>';
+    html += '</div>';
+    html += '<span class="record-count">📊 Total: ' + historyFilteredRows.length + ' registros</span>';
+    html += '</div>';
 
-    html += `<div class="table-wrapper"><div class="table-container"><table>`;
-    html += `<thead><tr>`;
-    historyHeaders.forEach(col => {
-        if (col !== '_row_number') html += `<th>${col}</th>`;
+    html += '<div class="table-wrapper"><div class="table-container"><table>';
+    html += '<thead><tr>';
+    historyHeaders.forEach(function(col) {
+        if (col !== '_row_number') html += '<th>' + col + '</th>';
     });
-    html += `<th>⚙️ Acciones</th></tr></thead><tbody>`;
+    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
 
     if (historyFilteredRows.length === 0) {
-        const colSpan = historyHeaders.filter(h => h !== '_row_number').length + 1;
-        html += `<tr><td colspan="${colSpan}" style="text-align: center; padding: 20px;">📭 No hay registros en el historial</td></tr>`;
+        var colSpan = historyHeaders.filter(function(h) { return h !== '_row_number'; }).length + 1;
+        html += '<tr><td colspan="' + colSpan + '" style="text-align: center; padding: 20px;">📭 No hay registros en el historial</td></tr>';
     } else {
-        historyFilteredRows.forEach((row) => {
-            html += `<tr>`;
-            historyHeaders.forEach(col => {
+        historyFilteredRows.forEach(function(row) {
+            html += '<tr>';
+            historyHeaders.forEach(function(col) {
                 if (col === '_row_number') return;
-                const value = row[col] || '';
+                var value = row[col] || '';
 
                 if (col === 'FECHA' || col === 'FECHA VENCIMIENTO') {
-                    let cellClass = '';
+                    var cellClass = '';
                     if (col === 'FECHA VENCIMIENTO' && value) {
-                        const dateStatus = getDateStatus(value);
-                        if (dateStatus.class) cellClass = ` class="${dateStatus.class}"`;
+                        var dateStatus = getDateStatus(value);
+                        if (dateStatus.class) cellClass = ' class="' + dateStatus.class + '"';
                     }
-                    html += `<td${cellClass}>${value}</td>`;
+                    html += '<td' + cellClass + '>' + value + '</td>';
                 } else if (col === 'ESTADO') {
-                    const estado = value || 'En Proceso';
-                    const estadoClass = estado.toLowerCase().replace(/\s/g, '-');
-                    html += `<td>
-                        <select class="status-select ${estadoClass}" onchange="updateHistoryStatus(${row._row_number}, this.value)">
-                            <option value="En Proceso" ${estado === 'En Proceso' ? 'selected' : ''}>En Proceso</option>
-                            <option value="Completo" ${estado === 'Completo' ? 'selected' : ''}>Completo</option>
-                            <option value="Vencido" ${estado === 'Vencido' ? 'selected' : ''}>Vencido</option>
-                            <option value="Notificado" ${estado === 'Notificado' ? 'selected' : ''}>Notificado</option>
-                        </select>
-                    </td>`;
+                    var estado = value || 'En Proceso';
+                    var estadoClass = estado.toLowerCase().replace(/\s/g, '-');
+                    html += '<td><select class="status-select ' + estadoClass + '" onchange="updateHistoryStatus(' + row._row_number + ', this.value)">';
+                    html += '<option value="En Proceso" ' + (estado === 'En Proceso' ? 'selected' : '') + '>En Proceso</option>';
+                    html += '<option value="Completo" ' + (estado === 'Completo' ? 'selected' : '') + '>Completo</option>';
+                    html += '<option value="Vencido" ' + (estado === 'Vencido' ? 'selected' : '') + '>Vencido</option>';
+                    html += '<option value="Notificado" ' + (estado === 'Notificado' ? 'selected' : '') + '>Notificado</option>';
+                    html += '</select></td>';
                 } else {
-                    html += `<td>${value}</td>`;
+                    html += '<td>' + value + '</td>';
                 }
             });
 
-            html += `<td>
-                <button class="btn btn-danger btn-sm" onclick="deleteHistoryRow(${row._row_number})">🗑️ Eliminar</button>
-            </td>`;
-            html += `</tr>`;
+            html += '<td><button type="button" class="btn btn-danger btn-sm" onclick="deleteHistoryRow(' + row._row_number + ')">🗑️ Eliminar</button></td>';
+            html += '</tr>';
         });
     }
 
-    html += `</tbody></table></div></div>`;
+    html += '</tbody></table></div></div>';
     content.innerHTML = html;
 }
 
 function applyHistoryFilter() {
-    const filterInput = document.getElementById('filterInputHistory');
-    const searchTerm = filterInput.value.toLowerCase().trim();
+    var filterInput = document.getElementById('filterInputHistory');
+    var searchTerm = filterInput.value.toLowerCase().trim();
     if (!searchTerm) {
-        historyFilteredRows = [...historyAllRows];
+        historyFilteredRows = historyAllRows.slice();
     } else {
-        historyFilteredRows = historyAllRows.filter(row => {
-            const tipo = (row['TIPO'] || '').toLowerCase();
-            const desc = (row['DESCRIPCION'] || '').toLowerCase();
-            const estado = (row['ESTADO'] || '').toLowerCase();
-            return tipo.includes(searchTerm) || desc.includes(searchTerm) || estado.includes(searchTerm);
+        historyFilteredRows = historyAllRows.filter(function(row) {
+            var tipo = (row['TIPO'] || '').toLowerCase();
+            var desc = (row['DESCRIPCION'] || '').toLowerCase();
+            var estado = (row['ESTADO'] || '').toLowerCase();
+            return tipo.indexOf(searchTerm) !== -1 || desc.indexOf(searchTerm) !== -1 || estado.indexOf(searchTerm) !== -1;
         });
     }
     renderHistoryTable();
@@ -1572,88 +1552,89 @@ function applyHistoryFilter() {
 
 function clearHistoryFilter() {
     document.getElementById('filterInputHistory').value = '';
-    historyFilteredRows = [...historyAllRows];
+    historyFilteredRows = historyAllRows.slice();
     renderHistoryTable();
 }
 
 async function updateHistoryStatus(rowNumber, newStatus) {
     try {
-        const response = await fetch(`/api/history/update_status/${rowNumber}`, {
+        var response = await fetch('/api/history/update_status/' + rowNumber, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ estado: newStatus })
         });
-        const result = await response.json();
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Estado actualizado correctamente', 'success');
-            const row = historyAllRows.find(r => r._row_number === rowNumber);
+            var row = historyAllRows.find(function(r) { return r._row_number === rowNumber; });
             if (row) row['ESTADO'] = newStatus;
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error al actualizar estado: ${error.message}`, 'error');
+        showAlert('❌ Error al actualizar estado: ' + error.message, 'error');
     }
 }
 
 async function deleteHistoryRow(rowNumber) {
     if (!confirm('¿Estás seguro de que deseas eliminar este registro del historial?')) return;
     try {
-        const response = await fetch(`/api/history/delete/${rowNumber}`, { method: 'DELETE' });
-        const result = await response.json();
+        var response = await fetch('/api/history/delete/' + rowNumber, { method: 'DELETE' });
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Registro eliminado correctamente', 'success');
             await loadHistoryData();
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error al eliminar: ${error.message}`, 'error');
+        showAlert('❌ Error al eliminar: ' + error.message, 'error');
     }
 }
 
-// ==================== MANTENIMIENTOS ====================
-
+/* ============================================================
+   MANTENIMIENTOS
+   ============================================================ */
 async function loadMantenimientosData() {
-    const content = document.getElementById('mantenimientos-content');
+    var content = document.getElementById('mantenimientos-content');
     content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
     try {
-        const response = await fetch('/api/mantenimientos/config');
-        const data = await response.json();
+        var response = await fetch('/api/mantenimientos/config');
+        var data = await response.json();
         if (data.success) {
             mpHeaders = data.historial_headers || [];
             mpRows = data.historial_rows || [];
-            mpFilteredRows = [...mpRows];
+            mpFilteredRows = mpRows.slice();
             mpDropdowns = parseDropdowns(data.dropdowns);
             mpConfigMP = parseConfigMP(data.config_mp);
             mpConfigLoaded = true;
 
             progHeaders = data.programacion_headers || [];
             progRows = data.programacion_rows || [];
-            progFilteredRows = [...progRows];
+            progFilteredRows = progRows.slice();
             patentesCamionT2 = data.patentes_camion_t2 || [];
             odometroPorPatente = data.odometro_por_patente || {};
 
             renderMantenimientosView();
         } else {
-            content.innerHTML = `<div class="alert alert-error">❌ Error: ${data.error}</div>`;
+            content.innerHTML = '<div class="alert alert-error">❌ Error: ' + data.error + '</div>';
         }
     } catch (error) {
-        content.innerHTML = `<div class="alert alert-error">❌ Error al cargar datos: ${error.message}</div>`;
+        content.innerHTML = '<div class="alert alert-error">❌ Error al cargar datos: ' + error.message + '</div>';
     }
 }
 
 function parseDropdowns(dropdownData) {
-    const result = {};
+    var result = {};
     if (!dropdownData || !dropdownData.headers || dropdownData.headers.length === 0) return result;
 
-    const headers = dropdownData.headers || [];
-    const rowsRaw = dropdownData.rows || [];
+    var headers = dropdownData.headers || [];
+    var rowsRaw = dropdownData.rows || [];
 
-    headers.forEach((fieldName, colIdx) => {
-        const options = [];
-        rowsRaw.forEach(rowObj => {
-            const val = rowObj[fieldName];
+    headers.forEach(function(fieldName) {
+        var options = [];
+        rowsRaw.forEach(function(rowObj) {
+            var val = rowObj[fieldName];
             if (val && String(val).trim() !== '') options.push(String(val).trim());
         });
         if (options.length > 0) {
@@ -1665,10 +1646,10 @@ function parseDropdowns(dropdownData) {
 }
 
 function parseConfigMP(configData) {
-    const result = [];
+    var result = [];
     if (!configData || !configData.rows || configData.rows.length === 0) return result;
 
-    configData.rows.forEach(row => {
+    configData.rows.forEach(function(row) {
         result.push({
             'TIPO MANTENIMIENTO': row['TIPO MANTENIMIENTO'] || '',
             'TIPO REPARACIÓN': row['TIPO REPARACIÓN'] || '',
@@ -1679,7 +1660,7 @@ function parseConfigMP(configData) {
 }
 
 function renderMantenimientosView() {
-    const content = document.getElementById('mantenimientos-content');
+    var content = document.getElementById('mantenimientos-content');
     if (mpCurrentView === 'historial') {
         renderMantenimientosHistorial(content);
     } else if (mpCurrentView === 'programacion') {
@@ -1690,138 +1671,130 @@ function renderMantenimientosView() {
 }
 
 function renderMantenimientosHistorial(content) {
-    const displayColumns = mpHeaders.filter(h => h !== '_row_number');
+    var displayColumns = mpHeaders.filter(function(h) { return h !== '_row_number'; });
 
-    let html = `
-        <div class="toolbar">
-            <button class="btn btn-add" onclick="toggleMantenimientoForm()">
-                ${mpIsFormVisible ? '❌ Ocultar Formulario' : '➕ Cargar Mantenimiento'}
-            </button>
-            <div class="filter-group">
-                <label>🔍 Filtrar por PATENTE:</label>
-                <input type="text" id="filterInputMP" placeholder="Buscar..." oninput="applyMantenimientoFilter()">
-                <button class="btn-clear" onclick="clearMantenimientoFilter()">✖ Limpiar</button>
-            </div>
-            <span class="record-count">📊 Total: ${mpFilteredRows.length} registros</span>
-        </div>
-    `;
+    var html = '<div class="toolbar">';
+    html += '<button type="button" class="btn btn-add" onclick="toggleMantenimientoForm()">' + (mpIsFormVisible ? '❌ Ocultar Formulario' : '➕ Cargar Mantenimiento') + '</button>';
+    html += '<div class="filter-group">';
+    html += '<label>🔍 Filtrar por PATENTE:</label>';
+    html += '<input type="text" id="filterInputMP" placeholder="Buscar..." oninput="applyMantenimientoFilter()">';
+    html += '<button type="button" class="btn-clear" onclick="clearMantenimientoFilter()">✖ Limpiar</button>';
+    html += '</div>';
+    html += '<span class="record-count">📊 Total: ' + mpFilteredRows.length + ' registros</span>';
+    html += '</div>';
 
     if (mpIsFormVisible) {
-        html += `
-        <div class="form-section visible" id="addMantenimientoSection">
-            <h3>🔧 Cargar nuevo mantenimiento</h3>
-            <form id="addMantenimientoForm">
-                <div class="form-row" id="addMantenimientoFields">
-                    ${generateMantenimientoFormFields({}, false)}
-                </div>
-                <button type="submit" class="btn">➕ Cargar Mantenimiento</button>
-                <button type="button" class="btn btn-cancel" onclick="toggleMantenimientoForm()">Cancelar</button>
-            </form>
-        </div>
-        `;
+        html += '<div class="form-section visible" id="addMantenimientoSection">';
+        html += '<h3>🔧 Cargar nuevo mantenimiento</h3>';
+        html += '<form id="addMantenimientoForm">';
+        html += '<div class="form-row" id="addMantenimientoFields">' + generateMantenimientoFormFields({}, false) + '</div>';
+        html += '<button type="submit" class="btn">➕ Cargar Mantenimiento</button>';
+        html += '<button type="button" class="btn btn-cancel" onclick="toggleMantenimientoForm()">Cancelar</button>';
+        html += '</form>';
+        html += '</div>';
     }
 
-    html += `<div class="table-wrapper"><div class="table-container"><table>`;
-    html += `<thead><tr>`;
-    displayColumns.forEach(col => html += `<th>${col}</th>`);
-    html += `<th>⚙️ Acciones</th></tr></thead><tbody>`;
+    html += '<div class="table-wrapper"><div class="table-container"><table>';
+    html += '<thead><tr>';
+    displayColumns.forEach(function(col) { html += '<th>' + col + '</th>'; });
+    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
 
     if (mpFilteredRows.length === 0) {
-        html += `<tr><td colspan="${displayColumns.length + 1}" style="text-align: center; padding: 20px;">📭 No hay registros de mantenimiento</td></tr>`;
+        html += '<tr><td colspan="' + (displayColumns.length + 1) + '" style="text-align: center; padding: 20px;">📭 No hay registros de mantenimiento</td></tr>';
     } else {
-        mpFilteredRows.forEach((row) => {
-            html += `<tr>`;
-            displayColumns.forEach(col => {
-                html += `<td>${row[col] || ''}</td>`;
+        mpFilteredRows.forEach(function(row) {
+            html += '<tr>';
+            displayColumns.forEach(function(col) {
+                html += '<td>' + (row[col] || '') + '</td>';
             });
-            html += `<td>
-                <div class="actions">
-                    <button class="btn btn-success btn-sm" onclick="editMantenimiento(${row._row_number})">✏️ Editar</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteMantenimiento(${row._row_number})">🗑️ Eliminar</button>
-                </div>
-            </td>`;
-            html += `</tr>`;
+            html += '<td><div class="actions">';
+            html += '<button type="button" class="btn btn-success btn-sm" onclick="editMantenimiento(' + row._row_number + ')">✏️ Editar</button>';
+            html += '<button type="button" class="btn btn-danger btn-sm" onclick="deleteMantenimiento(' + row._row_number + ')">🗑️ Eliminar</button>';
+            html += '</div></td>';
+            html += '</tr>';
         });
     }
 
-    html += `</tbody></table></div></div>`;
+    html += '</tbody></table></div></div>';
     content.innerHTML = html;
 
-    const form = document.getElementById('addMantenimientoForm');
+    var form = document.getElementById('addMantenimientoForm');
     if (form) form.addEventListener('submit', handleAddMantenimiento);
 }
 
-function generateMantenimientoFormFields(values = {}, isEdit = false) {
-    let html = '';
-    const displayCols = mpHeaders.filter(h => h !== '_row_number');
-    const prefix = isEdit ? 'edit_mp_' : 'mp_';
+function generateMantenimientoFormFields(values, isEdit) {
+    values = values || {};
+    isEdit = isEdit || false;
+    var html = '';
+    var displayCols = mpHeaders.filter(function(h) { return h !== '_row_number'; });
+    var prefix = isEdit ? 'edit_mp_' : 'mp_';
 
-    displayCols.forEach(header => {
-        const value = values[header] || '';
-        const isDropdown = MP_DROPDOWN_COLUMNS.includes(header);
-        const isDate = header.toUpperCase().includes('FECHA');
-        const isTextarea = header.toUpperCase().includes('DETALLE');
-        const isNumber = header.toUpperCase().includes('KM') || header.toUpperCase().includes('GASTO');
+    displayCols.forEach(function(header) {
+        var value = values[header] || '';
+        var isDropdown = MP_DROPDOWN_COLUMNS.indexOf(header) !== -1;
+        var upper = header.toUpperCase();
+        var isDate = upper.indexOf('FECHA') !== -1;
+        var isTextarea = upper.indexOf('DETALLE') !== -1;
+        var isNumber = upper.indexOf('KM') !== -1 || upper.indexOf('GASTO') !== -1;
 
-        html += `<div class="form-group">`;
-        html += `<label>${header}</label>`;
+        html += '<div class="form-group">';
+        html += '<label>' + header + '</label>';
 
         if (isDropdown && mpDropdowns[header] && mpDropdowns[header].length > 0) {
-            html += `<select id="${prefix}${header}" name="${header}" onchange="recalcularKmProximo('${isEdit ? 'edit' : 'add'}')">`;
-            html += `<option value="">-- Seleccionar --</option>`;
-            mpDropdowns[header].forEach(opt => {
-                const selected = (value === opt) ? ' selected' : '';
-                html += `<option value="${opt}"${selected}>${opt}</option>`;
+            html += '<select id="' + prefix + header + '" name="' + header + '" onchange="recalcularKmProximo(\'' + (isEdit ? 'edit' : 'add') + '\')">';
+            html += '<option value="">-- Seleccionar --</option>';
+            mpDropdowns[header].forEach(function(opt) {
+                var selected = (value === opt) ? ' selected' : '';
+                html += '<option value="' + opt + '"' + selected + '>' + opt + '</option>';
             });
-            html += `</select>`;
+            html += '</select>';
         } else if (isDropdown) {
-            html += `<select id="${prefix}${header}" name="${header}" onchange="recalcularKmProximo('${isEdit ? 'edit' : 'add'}')">`;
-            html += `<option value="">-- Sin opciones configuradas --</option>`;
-            if (value) html += `<option value="${value}" selected>${value}</option>`;
-            html += `</select>`;
-            html += `<small style="color:#e53e3e;">⚠️ Configura las opciones en la pestaña Configuración</small>`;
+            html += '<select id="' + prefix + header + '" name="' + header + '" onchange="recalcularKmProximo(\'' + (isEdit ? 'edit' : 'add') + '\')">';
+            html += '<option value="">-- Sin opciones configuradas --</option>';
+            if (value) html += '<option value="' + value + '" selected>' + value + '</option>';
+            html += '</select>';
+            html += '<small style="color:#e53e3e;">⚠️ Configura las opciones en la pestaña Configuración</small>';
         } else if (isDate) {
-            let dateValue = value;
-            if (value && value.includes('/')) {
-                const parts = value.split('/');
+            var dateValue = value;
+            if (value && value.indexOf('/') !== -1) {
+                var parts = value.split('/');
                 if (parts.length === 3) {
-                    let year = parseInt(parts[2]);
+                    var year = parseInt(parts[2]);
                     if (year < 100) year += 2000;
-                    dateValue = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
                 }
             }
-            html += `<input type="date" id="${prefix}${header}" name="${header}" value="${dateValue}">`;
+            html += '<input type="date" id="' + prefix + header + '" name="' + header + '" value="' + dateValue + '">';
         } else if (isTextarea) {
-            html += `<textarea id="${prefix}${header}" name="${header}" rows="2">${value}</textarea>`;
+            html += '<textarea id="' + prefix + header + '" name="' + header + '" rows="2">' + value + '</textarea>';
         } else if (isNumber) {
-            html += `<input type="number" step="0.01" id="${prefix}${header}" name="${header}" value="${value}" oninput="recalcularKmProximo('${isEdit ? 'edit' : 'add'}')">`;
+            html += '<input type="number" step="0.01" id="' + prefix + header + '" name="' + header + '" value="' + value + '" oninput="recalcularKmProximo(\'' + (isEdit ? 'edit' : 'add') + '\')">';
         } else {
-            html += `<input type="text" id="${prefix}${header}" name="${header}" value="${value}">`;
+            html += '<input type="text" id="' + prefix + header + '" name="' + header + '" value="' + value + '">';
         }
-        html += `</div>`;
+        html += '</div>';
     });
     return html;
 }
 
 function recalcularKmProximo(mode) {
-    const prefix = mode === 'edit' ? 'edit_mp_' : 'mp_';
-    const kmRealizadoInput = document.getElementById(`${prefix}KM REALIZADO`);
-    const kmProximoInput = document.getElementById(`${prefix}KM PROXIMO CAMBIO`);
-    const tipoMantSelect = document.getElementById(`${prefix}TIPO MANTENIMIENTO`);
-    const tipoRepSelect = document.getElementById(`${prefix}TIPO REPARACIÓN`);
+    var prefix = mode === 'edit' ? 'edit_mp_' : 'mp_';
+    var kmRealizadoInput = document.getElementById(prefix + 'KM REALIZADO');
+    var kmProximoInput = document.getElementById(prefix + 'KM PROXIMO CAMBIO');
+    var tipoMantSelect = document.getElementById(prefix + 'TIPO MANTENIMIENTO');
+    var tipoRepSelect = document.getElementById(prefix + 'TIPO REPARACIÓN');
 
     if (!kmRealizadoInput || !kmProximoInput) return;
 
-    const kmRealizado = parseFloat(kmRealizadoInput.value) || 0;
-    const tipoMant = tipoMantSelect ? tipoMantSelect.value : '';
-    const tipoRep = tipoRepSelect ? tipoRepSelect.value : '';
+    var kmRealizado = parseFloat(kmRealizadoInput.value) || 0;
+    var tipoMant = tipoMantSelect ? tipoMantSelect.value : '';
+    var tipoRep = tipoRepSelect ? tipoRepSelect.value : '';
 
-    let politica = 0;
+    var politica = 0;
     if (tipoMant && tipoRep) {
-        const config = mpConfigMP.find(c =>
-            c['TIPO MANTENIMIENTO'] === tipoMant &&
-            c['TIPO REPARACIÓN'] === tipoRep
-        );
+        var config = mpConfigMP.find(function(c) {
+            return c['TIPO MANTENIMIENTO'] === tipoMant && c['TIPO REPARACIÓN'] === tipoRep;
+        });
         if (config) {
             politica = parseFloat(config['POLITICA']) || 0;
         }
@@ -1838,56 +1811,56 @@ function toggleMantenimientoForm() {
 }
 
 function applyMantenimientoFilter() {
-    const filterInput = document.getElementById('filterInputMP');
-    const searchTerm = filterInput.value.toLowerCase().trim();
-    if (!searchTerm) mpFilteredRows = [...mpRows];
-    else mpFilteredRows = mpRows.filter(row => (row['PATENTE'] || '').toString().toLowerCase().includes(searchTerm));
+    var filterInput = document.getElementById('filterInputMP');
+    var searchTerm = filterInput.value.toLowerCase().trim();
+    if (!searchTerm) mpFilteredRows = mpRows.slice();
+    else mpFilteredRows = mpRows.filter(function(row) { return (row['PATENTE'] || '').toString().toLowerCase().indexOf(searchTerm) !== -1; });
     renderMantenimientosHistorial(document.getElementById('mantenimientos-content'));
 }
 
 function clearMantenimientoFilter() {
     document.getElementById('filterInputMP').value = '';
-    mpFilteredRows = [...mpRows];
+    mpFilteredRows = mpRows.slice();
     renderMantenimientosHistorial(document.getElementById('mantenimientos-content'));
 }
 
 async function handleAddMantenimiento(e) {
     e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
-    const data = {};
-    for (let [key, value] of formData.entries()) {
-        data[key] = value;
+    var form = e.target;
+    var formData = new FormData(form);
+    var data = {};
+    for (var pair of formData.entries()) {
+        data[pair[0]] = pair[1];
     }
 
     try {
-        const response = await fetch('/api/mantenimientos/add', {
+        var response = await fetch('/api/mantenimientos/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        const result = await response.json();
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Mantenimiento cargado correctamente', 'success');
             form.reset();
             mpIsFormVisible = false;
             await loadMantenimientosData();
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error: ${error.message}`, 'error');
+        showAlert('❌ Error: ' + error.message, 'error');
     }
 }
 
 function editMantenimiento(rowNumber) {
-    const row = mpRows.find(r => r._row_number === rowNumber);
+    var row = mpRows.find(function(r) { return r._row_number === rowNumber; });
     if (!row) { showAlert('No se encontró el registro', 'error'); return; }
 
     document.getElementById('editMantenimientoRowNumber').value = rowNumber;
     document.getElementById('editMantenimientoFields').innerHTML = generateMantenimientoFormFields(row, true);
 
-    setTimeout(() => recalcularKmProximo('edit'), 100);
+    setTimeout(function() { recalcularKmProximo('edit'); }, 100);
 
     document.getElementById('editMantenimientoModal').style.display = 'block';
 }
@@ -1896,259 +1869,245 @@ function closeEditMantenimientoModal() {
     document.getElementById('editMantenimientoModal').style.display = 'none';
 }
 
-document.getElementById('editMantenimientoForm').addEventListener('submit', async function(e) {
+async function submitEditMantenimiento(e) {
     e.preventDefault();
-    const rowNumber = parseInt(document.getElementById('editMantenimientoRowNumber').value);
-    const formData = new FormData(this);
-    const data = {};
-    for (let [key, value] of formData.entries()) {
-        data[key] = value;
+    var rowNumber = parseInt(document.getElementById('editMantenimientoRowNumber').value);
+    var formData = new FormData(e.target);
+    var data = {};
+    for (var pair of formData.entries()) {
+        data[pair[0]] = pair[1];
     }
 
     try {
-        const response = await fetch(`/api/mantenimientos/update/${rowNumber}`, {
+        var response = await fetch('/api/mantenimientos/update/' + rowNumber, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        const result = await response.json();
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Mantenimiento actualizado correctamente', 'success');
             closeEditMantenimientoModal();
             await loadMantenimientosData();
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error: ${error.message}`, 'error');
+        showAlert('❌ Error: ' + error.message, 'error');
     }
-});
+}
 
 async function deleteMantenimiento(rowNumber) {
     if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
     try {
-        const response = await fetch(`/api/mantenimientos/delete/${rowNumber}`, { method: 'DELETE' });
-        const result = await response.json();
+        var response = await fetch('/api/mantenimientos/delete/' + rowNumber, { method: 'DELETE' });
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Mantenimiento eliminado correctamente', 'success');
             await loadMantenimientosData();
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error al eliminar: ${error.message}`, 'error');
+        showAlert('❌ Error al eliminar: ' + error.message, 'error');
     }
 }
 
-// ==================== PROGRAMACIÓN MANTENIMIENTO PREVENTIVO ====================
-
-// Obtener el ODOMETRO actual desde el maestro (odometroPorPatente)
+/* ============================================================
+   PROGRAMACIÓN MANTENIMIENTO PREVENTIVO
+   ============================================================ */
 function getOdometroActual(patente) {
     if (!patente) return null;
-    const v = odometroPorPatente[patente];
+    var v = odometroPorPatente[patente];
     if (v === undefined || v === null || v === '') return null;
-    const n = parseFloat(String(v).replace(/[^\d.-]/g, ''));
+    var n = parseFloat(String(v).replace(/[^\d.-]/g, ''));
     return isNaN(n) ? null : n;
 }
 
-// Clasificar celda de PROXIMO MANTENIMIENTO KM
 function getProximoKmClass(row) {
-    const patente = (row['PATENTE'] || '').trim();
-    const proximoKmStr = (row['PROXIMO MANTENIMIENTO KM'] || '').trim();
+    var patente = (row['PATENTE'] || '').trim();
+    var proximoKmStr = (row['PROXIMO MANTENIMIENTO KM'] || '').trim();
     if (!patente || !proximoKmStr) return '';
-    const odom = getOdometroActual(patente);
-    const proxKm = parseFloat(proximoKmStr);
+    var odom = getOdometroActual(patente);
+    var proxKm = parseFloat(proximoKmStr);
     if (odom === null || isNaN(proxKm)) return '';
-    // Rojo si ODOMETRO >= PROXIMO KM, verde si no
     return odom >= proxKm ? 'cell-danger' : 'cell-ok';
 }
 
-// Clasificar celda de PROXIMO MANTENIMIENTO FECHA
 function getProximoFechaClass(row) {
-    const fechaStr = (row['PROXIMO MANTENIMIENTO FECHA'] || '').trim();
+    var fechaStr = (row['PROXIMO MANTENIMIENTO FECHA'] || '').trim();
     if (!fechaStr) return '';
-    const fecha = parseDate(fechaStr);
+    var fecha = parseDate(fechaStr);
     if (!fecha) return '';
-    const hoy = new Date();
+    var hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
     fecha.setHours(0, 0, 0, 0);
-    // Rojo si hoy >= fecha próximo, verde si no
     return hoy >= fecha ? 'cell-danger' : 'cell-ok';
 }
 
 function renderProgramacion(content) {
-    const displayColumns = progHeaders.filter(h => h !== '_row_number');
+    var displayColumns = progHeaders.filter(function(h) { return h !== '_row_number'; });
 
-    let html = `
-        <div class="toolbar">
-            <button class="btn btn-add" onclick="toggleProgramacionForm()">
-                ${progIsFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Programación'}
-            </button>
-            <div class="filter-group">
-                <label>🔍 Filtrar por PATENTE:</label>
-                <input type="text" id="filterInputProg" placeholder="Buscar..." oninput="applyProgramacionFilter()">
-                <button class="btn-clear" onclick="clearProgramacionFilter()">✖ Limpiar</button>
-            </div>
-            <span class="record-count">📊 Total: ${progFilteredRows.length} registros</span>
-        </div>
-    `;
+    var html = '<div class="toolbar">';
+    html += '<button type="button" class="btn btn-add" onclick="toggleProgramacionForm()">' + (progIsFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Programación') + '</button>';
+    html += '<div class="filter-group">';
+    html += '<label>🔍 Filtrar por PATENTE:</label>';
+    html += '<input type="text" id="filterInputProg" placeholder="Buscar..." oninput="applyProgramacionFilter()">';
+    html += '<button type="button" class="btn-clear" onclick="clearProgramacionFilter()">✖ Limpiar</button>';
+    html += '</div>';
+    html += '<span class="record-count">📊 Total: ' + progFilteredRows.length + ' registros</span>';
+    html += '</div>';
 
     if (progIsFormVisible) {
-        html += `
-        <div class="form-section visible" id="addProgramacionSection">
-            <h3>📅 Agregar programación de mantenimiento preventivo</h3>
-            <form id="addProgramacionForm">
-                <div class="form-row" id="addProgramacionFields">
-                    ${generateProgramacionFormFields({}, false, progPatentePrecargada)}
-                </div>
-                <button type="submit" class="btn">➕ Agregar Programación</button>
-                <button type="button" class="btn btn-cancel" onclick="toggleProgramacionForm()">Cancelar</button>
-            </form>
-        </div>
-        `;
+        html += '<div class="form-section visible" id="addProgramacionSection">';
+        html += '<h3>📅 Agregar programación de mantenimiento preventivo</h3>';
+        html += '<form id="addProgramacionForm">';
+        html += '<div class="form-row" id="addProgramacionFields">' + generateProgramacionFormFields({}, false, progPatentePrecargada) + '</div>';
+        html += '<button type="submit" class="btn">➕ Agregar Programación</button>';
+        html += '<button type="button" class="btn btn-cancel" onclick="toggleProgramacionForm()">Cancelar</button>';
+        html += '</form>';
+        html += '</div>';
     }
 
-    html += `<div class="table-wrapper"><div class="table-container"><table>`;
-    html += `<thead><tr>`;
-    displayColumns.forEach(col => html += `<th>${col}</th>`);
-    html += `<th>⚙️ Acciones</th></tr></thead><tbody>`;
+    html += '<div class="table-wrapper"><div class="table-container"><table>';
+    html += '<thead><tr>';
+    displayColumns.forEach(function(col) { html += '<th>' + col + '</th>'; });
+    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
 
     if (progFilteredRows.length === 0) {
-        html += `<tr><td colspan="${displayColumns.length + 1}" style="text-align: center; padding: 20px;">📭 No hay programaciones cargadas</td></tr>`;
+        html += '<tr><td colspan="' + (displayColumns.length + 1) + '" style="text-align: center; padding: 20px;">📭 No hay programaciones cargadas</td></tr>';
     } else {
-        progFilteredRows.forEach((row) => {
-            html += `<tr>`;
-            displayColumns.forEach(col => {
-                const val = row[col] || '';
-                let cellClass = '';
+        progFilteredRows.forEach(function(row) {
+            html += '<tr>';
+            displayColumns.forEach(function(col) {
+                var val = row[col] || '';
+                var cellClass = '';
                 if (col === 'PROXIMO MANTENIMIENTO KM') {
                     cellClass = getProximoKmClass(row);
                 } else if (col === 'PROXIMO MANTENIMIENTO FECHA') {
                     cellClass = getProximoFechaClass(row);
                 } else if (col === 'Estado') {
-                    const est = (val || 'En Proceso').toLowerCase().replace(/\s/g, '-');
-                    html += `<td><span class="estado-${est}">${val || 'En Proceso'}</span></td>`;
+                    var est = (val || 'En Proceso').toLowerCase().replace(/\s/g, '-');
+                    html += '<td><span class="estado-' + est + '">' + (val || 'En Proceso') + '</span></td>';
                     return;
                 }
                 if (cellClass) {
-                    html += `<td class="${cellClass}">${val}</td>`;
+                    html += '<td class="' + cellClass + '">' + val + '</td>';
                 } else {
-                    html += `<td>${val}</td>`;
+                    html += '<td>' + val + '</td>';
                 }
             });
-            html += `<td>
-                <div class="actions">
-                    <button class="btn btn-complete btn-sm" onclick="openTareaCompleta(${row._row_number})">✅ Tarea Completa</button>
-                    <button class="btn btn-success btn-sm" onclick="editProgramacion(${row._row_number})">✏️ Editar</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteProgramacion(${row._row_number})">🗑️ Eliminar</button>
-                </div>
-            </td>`;
-            html += `</tr>`;
+            html += '<td><div class="actions">';
+            html += '<button type="button" class="btn btn-complete btn-sm" onclick="openTareaCompleta(' + row._row_number + ')">✅ Tarea Completa</button>';
+            html += '<button type="button" class="btn btn-success btn-sm" onclick="editProgramacion(' + row._row_number + ')">✏️ Editar</button>';
+            html += '<button type="button" class="btn btn-danger btn-sm" onclick="deleteProgramacion(' + row._row_number + ')">🗑️ Eliminar</button>';
+            html += '</div></td>';
+            html += '</tr>';
         });
     }
 
-    html += `</tbody></table></div></div>`;
+    html += '</tbody></table></div></div>';
     content.innerHTML = html;
 
-    const form = document.getElementById('addProgramacionForm');
+    var form = document.getElementById('addProgramacionForm');
     if (form) form.addEventListener('submit', handleAddProgramacion);
 }
 
-function generateProgramacionFormFields(values = {}, isEdit = false, patentePrecargada = null) {
-    let html = '';
-    const displayCols = progHeaders.filter(h =>
-        h !== '_row_number' &&
-        h !== 'Marca Temporal' &&
-        h !== 'PROXIMO MANTENIMIENTO FECHA' &&
-        h !== 'PROXIMO MANTENIMIENTO KM' &&
-        h !== 'Estado'
-    );
-    const prefix = isEdit ? 'edit_prog_' : 'prog_';
+function generateProgramacionFormFields(values, isEdit, patentePrecargada) {
+    values = values || {};
+    isEdit = isEdit || false;
+    patentePrecargada = patentePrecargada || null;
+    var html = '';
+    var displayCols = progHeaders.filter(function(h) {
+        return h !== '_row_number' && h !== 'Marca Temporal' && h !== 'PROXIMO MANTENIMIENTO FECHA' && h !== 'PROXIMO MANTENIMIENTO KM' && h !== 'Estado';
+    });
+    var prefix = isEdit ? 'edit_prog_' : 'prog_';
 
-    displayCols.forEach(header => {
-        const value = values[header] || '';
-        const isDropdown = PROG_DROPDOWN_COLUMNS.includes(header);
-        const isDate = header.toUpperCase().includes('FECHA');
-        const isTextarea = header.toUpperCase().includes('DETALLE');
-        const isNumber = header.toUpperCase().includes('KM');
+    displayCols.forEach(function(header) {
+        var value = values[header] || '';
+        var isDropdown = PROG_DROPDOWN_COLUMNS.indexOf(header) !== -1;
+        var upper = header.toUpperCase();
+        var isDate = upper.indexOf('FECHA') !== -1;
+        var isTextarea = upper.indexOf('DETALLE') !== -1;
+        var isNumber = upper.indexOf('KM') !== -1;
 
-        html += `<div class="form-group">`;
-        html += `<label>${header}</label>`;
+        html += '<div class="form-group">';
+        html += '<label>' + header + '</label>';
 
         if (header === 'PATENTE') {
-            html += `<select id="${prefix}${header}" name="${header}" onchange="autocompletarKmDesdeOdometro('${isEdit ? 'edit' : 'add'}')">`;
-            html += `<option value="">-- Seleccionar --</option>`;
-            patentesCamionT2.forEach(opt => {
-                let selected = '';
+            html += '<select id="' + prefix + header + '" name="' + header + '" onchange="autocompletarKmDesdeOdometro(\'' + (isEdit ? 'edit' : 'add') + '\')">';
+            html += '<option value="">-- Seleccionar --</option>';
+            patentesCamionT2.forEach(function(opt) {
+                var selected = '';
                 if (value === opt) selected = ' selected';
                 else if (!value && patentePrecargada && patentePrecargada === opt) selected = ' selected';
-                html += `<option value="${opt}"${selected}>${opt}</option>`;
+                html += '<option value="' + opt + '"' + selected + '>' + opt + '</option>';
             });
-            html += `</select>`;
+            html += '</select>';
         } else if (header === 'TIPO MANTENIMIENTO') {
-            html += `<select id="${prefix}${header}" name="${header}">`;
-            html += `<option value="PREVENTIVO" selected>PREVENTIVO</option>`;
-            html += `</select>`;
+            html += '<select id="' + prefix + header + '" name="' + header + '">';
+            html += '<option value="PREVENTIVO" selected>PREVENTIVO</option>';
+            html += '</select>';
         } else if (header === 'TIPO REPARACIÓN') {
-            const tiposReparacion = [];
-            mpConfigMP.forEach(c => {
-                const tr = (c['TIPO REPARACIÓN'] || '').trim();
-                if (tr && !tiposReparacion.includes(tr)) tiposReparacion.push(tr);
+            var tiposReparacion = [];
+            mpConfigMP.forEach(function(c) {
+                var tr = (c['TIPO REPARACIÓN'] || '').trim();
+                if (tr && tiposReparacion.indexOf(tr) === -1) tiposReparacion.push(tr);
             });
             tiposReparacion.sort();
-            html += `<select id="${prefix}${header}" name="${header}" onchange="calcularProximoKm('${isEdit ? 'edit' : 'add'}')">`;
-            html += `<option value="">-- Seleccionar --</option>`;
-            tiposReparacion.forEach(opt => {
-                const selected = (value === opt) ? ' selected' : '';
-                html += `<option value="${opt}"${selected}>${opt}</option>`;
+            html += '<select id="' + prefix + header + '" name="' + header + '" onchange="calcularProximoKm(\'' + (isEdit ? 'edit' : 'add') + '\')">';
+            html += '<option value="">-- Seleccionar --</option>';
+            tiposReparacion.forEach(function(opt) {
+                var selected = (value === opt) ? ' selected' : '';
+                html += '<option value="' + opt + '"' + selected + '>' + opt + '</option>';
             });
-            html += `</select>`;
+            html += '</select>';
             if (tiposReparacion.length === 0) {
-                html += `<small style="color:#e53e3e;">⚠️ Configura TIPO REPARACIÓN en la pestaña Configuración → Configuración MP</small>`;
+                html += '<small style="color:#e53e3e;">⚠️ Configura TIPO REPARACIÓN en la pestaña Configuración → Configuración MP</small>';
             }
         } else if (isDropdown && mpDropdowns[header] && mpDropdowns[header].length > 0) {
-            html += `<select id="${prefix}${header}" name="${header}">`;
-            html += `<option value="">-- Seleccionar --</option>`;
-            mpDropdowns[header].forEach(opt => {
-                const selected = (value === opt) ? ' selected' : '';
-                html += `<option value="${opt}"${selected}>${opt}</option>`;
+            html += '<select id="' + prefix + header + '" name="' + header + '">';
+            html += '<option value="">-- Seleccionar --</option>';
+            mpDropdowns[header].forEach(function(opt) {
+                var selected = (value === opt) ? ' selected' : '';
+                html += '<option value="' + opt + '"' + selected + '>' + opt + '</option>';
             });
-            html += `</select>`;
+            html += '</select>';
         } else if (header === 'FECHA ULTIMO MANTENIMIENTO') {
-            let dateValue = value;
-            if (value && value.includes('/')) {
-                const parts = value.split('/');
+            var dateValue = value;
+            if (value && value.indexOf('/') !== -1) {
+                var parts = value.split('/');
                 if (parts.length === 3) {
-                    let year = parseInt(parts[2]);
+                    var year = parseInt(parts[2]);
                     if (year < 100) year += 2000;
-                    dateValue = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
                 }
             }
-            html += `<input type="date" id="${prefix}${header}" name="${header}" value="${dateValue}" onchange="calcularProximoMantenimiento('${isEdit ? 'edit' : 'add'}')">`;
-            html += `<small style="color:#666; display:block; margin-top:5px;" id="${prefix}proximo_label">📅 Próximo mantenimiento: se calcula 1 año después</small>`;
+            html += '<input type="date" id="' + prefix + header + '" name="' + header + '" value="' + dateValue + '" onchange="calcularProximoMantenimiento(\'' + (isEdit ? 'edit' : 'add') + '\')">';
+            html += '<small style="color:#666; display:block; margin-top:5px;" id="' + prefix + 'proximo_label">📅 Próximo mantenimiento: se calcula 1 año después</small>';
         } else if (header === 'KM ULTIMO MANTENIMIENTO') {
-            html += `<input type="text" id="${prefix}${header}" name="${header}" value="${value}" readonly style="background:#f0f0f0; cursor:not-allowed;">`;
-            html += `<small style="color:#666;">Se completa automáticamente desde la columna ODOMETRO de Camion T2 al seleccionar la patente</small>`;
+            html += '<input type="text" id="' + prefix + header + '" name="' + header + '" value="' + value + '" readonly style="background:#f0f0f0; cursor:not-allowed;">';
+            html += '<small style="color:#666;">Se completa automáticamente desde la columna ODOMETRO de Camion T2 al seleccionar la patente</small>';
         } else if (isTextarea) {
-            html += `<textarea id="${prefix}${header}" name="${header}" rows="3">${value}</textarea>`;
+            html += '<textarea id="' + prefix + header + '" name="' + header + '" rows="3">' + value + '</textarea>';
         } else if (isNumber) {
-            html += `<input type="number" step="1" id="${prefix}${header}" name="${header}" value="${value}">`;
+            html += '<input type="number" step="1" id="' + prefix + header + '" name="' + header + '" value="' + value + '">';
         } else {
-            html += `<input type="text" id="${prefix}${header}" name="${header}" value="${value}">`;
+            html += '<input type="text" id="' + prefix + header + '" name="' + header + '" value="' + value + '">';
         }
-        html += `</div>`;
+        html += '</div>';
     });
     return html;
 }
 
 function autocompletarKmDesdeOdometro(mode) {
-    const prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
-    const patenteSelect = document.getElementById(`${prefix}PATENTE`);
-    const kmInput = document.getElementById(`${prefix}KM ULTIMO MANTENIMIENTO`);
+    var prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
+    var patenteSelect = document.getElementById(prefix + 'PATENTE');
+    var kmInput = document.getElementById(prefix + 'KM ULTIMO MANTENIMIENTO');
 
     if (!patenteSelect || !kmInput) return;
 
-    const patente = patenteSelect.value;
+    var patente = patenteSelect.value;
     if (patente && odometroPorPatente[patente]) {
         kmInput.value = odometroPorPatente[patente];
     } else {
@@ -2159,51 +2118,51 @@ function autocompletarKmDesdeOdometro(mode) {
 }
 
 function calcularProximoMantenimiento(mode) {
-    const prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
-    const fechaInput = document.getElementById(`${prefix}FECHA ULTIMO MANTENIMIENTO`);
-    const label = document.getElementById(`${prefix}proximo_label`);
+    var prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
+    var fechaInput = document.getElementById(prefix + 'FECHA ULTIMO MANTENIMIENTO');
+    var label = document.getElementById(prefix + 'proximo_label');
 
     if (!fechaInput || !label) return;
 
-    const fechaVal = fechaInput.value;
+    var fechaVal = fechaInput.value;
     if (!fechaVal) {
         label.textContent = '📅 Próximo mantenimiento: se calcula 1 año después';
         return;
     }
 
-    const parts = fechaVal.split('-');
+    var parts = fechaVal.split('-');
     if (parts.length !== 3) return;
 
-    let year = parseInt(parts[0]);
-    let month = parseInt(parts[1]);
-    let day = parseInt(parts[2]);
+    var year = parseInt(parts[0]);
+    var month = parseInt(parts[1]);
+    var day = parseInt(parts[2]);
 
     year += 1;
-    let proximoStr = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+    var proximoStr = String(day).padStart(2, '0') + '/' + String(month).padStart(2, '0') + '/' + year;
 
-    label.textContent = `📅 Próximo mantenimiento: ${proximoStr}`;
+    label.textContent = '📅 Próximo mantenimiento: ' + proximoStr;
 }
 
 function calcularProximoKm(mode) {
-    const prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
-    const kmUltimoInput = document.getElementById(`${prefix}KM ULTIMO MANTENIMIENTO`);
-    const tipoRepSelect = document.getElementById(`${prefix}TIPO REPARACIÓN`);
+    var prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
+    var kmUltimoInput = document.getElementById(prefix + 'KM ULTIMO MANTENIMIENTO');
+    var tipoRepSelect = document.getElementById(prefix + 'TIPO REPARACIÓN');
 
     if (!kmUltimoInput || !tipoRepSelect) return;
 
-    const kmUltimo = parseFloat(kmUltimoInput.value) || 0;
-    const tipoRep = (tipoRepSelect.value || '').trim();
+    var kmUltimo = parseFloat(kmUltimoInput.value) || 0;
+    var tipoRep = (tipoRepSelect.value || '').trim();
 
-    let politica = 0;
+    var politica = 0;
     if (tipoRep) {
-        const config = mpConfigMP.find(c => (c['TIPO REPARACIÓN'] || '').trim() === tipoRep);
+        var config = mpConfigMP.find(function(c) { return (c['TIPO REPARACIÓN'] || '').trim() === tipoRep; });
         if (config) {
             politica = parseFloat(config['POLITICA']) || 0;
         }
     }
 
-    const grupo = kmUltimoInput.closest('.form-group');
-    let infoLabel = grupo ? grupo.querySelector('.proximo-km-info') : null;
+    var grupo = kmUltimoInput.closest('.form-group');
+    var infoLabel = grupo ? grupo.querySelector('.proximo-km-info') : null;
     if (!infoLabel && grupo) {
         infoLabel = document.createElement('small');
         infoLabel.className = 'proximo-km-info';
@@ -2214,9 +2173,9 @@ function calcularProximoKm(mode) {
     }
     if (infoLabel) {
         if (politica > 0 && kmUltimo > 0) {
-            infoLabel.textContent = `📊 Próximo KM: ${kmUltimo + politica} (KM Último ${kmUltimo} + Política ${politica})`;
+            infoLabel.textContent = '📊 Próximo KM: ' + (kmUltimo + politica) + ' (KM Último ' + kmUltimo + ' + Política ' + politica + ')';
         } else if (kmUltimo > 0) {
-            infoLabel.textContent = `📊 Próximo KM: ${kmUltimo} (sin política configurada para "${tipoRep}")`;
+            infoLabel.textContent = '📊 Próximo KM: ' + kmUltimo + ' (sin política configurada para "' + tipoRep + '")';
         } else {
             infoLabel.textContent = '';
         }
@@ -2232,35 +2191,35 @@ function toggleProgramacionForm() {
 }
 
 function applyProgramacionFilter() {
-    const filterInput = document.getElementById('filterInputProg');
-    const searchTerm = filterInput.value.toLowerCase().trim();
-    if (!searchTerm) progFilteredRows = [...progRows];
-    else progFilteredRows = progRows.filter(row => (row['PATENTE'] || '').toString().toLowerCase().includes(searchTerm));
+    var filterInput = document.getElementById('filterInputProg');
+    var searchTerm = filterInput.value.toLowerCase().trim();
+    if (!searchTerm) progFilteredRows = progRows.slice();
+    else progFilteredRows = progRows.filter(function(row) { return (row['PATENTE'] || '').toString().toLowerCase().indexOf(searchTerm) !== -1; });
     renderProgramacion(document.getElementById('mantenimientos-content'));
 }
 
 function clearProgramacionFilter() {
     document.getElementById('filterInputProg').value = '';
-    progFilteredRows = [...progRows];
+    progFilteredRows = progRows.slice();
     renderProgramacion(document.getElementById('mantenimientos-content'));
 }
 
 async function handleAddProgramacion(e) {
     e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
-    const data = {};
-    for (let [key, value] of formData.entries()) {
-        data[key] = value;
+    var form = e.target;
+    var formData = new FormData(form);
+    var data = {};
+    for (var pair of formData.entries()) {
+        data[pair[0]] = pair[1];
     }
 
     try {
-        const response = await fetch('/api/programacion/add', {
+        var response = await fetch('/api/programacion/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        const result = await response.json();
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Programación agregada correctamente', 'success');
             form.reset();
@@ -2268,21 +2227,21 @@ async function handleAddProgramacion(e) {
             progPatentePrecargada = null;
             await loadMantenimientosData();
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error: ${error.message}`, 'error');
+        showAlert('❌ Error: ' + error.message, 'error');
     }
 }
 
 function editProgramacion(rowNumber) {
-    const row = progRows.find(r => r._row_number === rowNumber);
+    var row = progRows.find(function(r) { return r._row_number === rowNumber; });
     if (!row) { showAlert('No se encontró el registro', 'error'); return; }
 
     document.getElementById('editProgramacionRowNumber').value = rowNumber;
     document.getElementById('editProgramacionFields').innerHTML = generateProgramacionFormFields(row, true);
 
-    setTimeout(() => {
+    setTimeout(function() {
         calcularProximoMantenimiento('edit');
         calcularProximoKm('edit');
     }, 100);
@@ -2294,58 +2253,59 @@ function closeEditProgramacionModal() {
     document.getElementById('editProgramacionModal').style.display = 'none';
 }
 
-document.getElementById('editProgramacionForm').addEventListener('submit', async function(e) {
+async function submitEditProgramacion(e) {
     e.preventDefault();
-    const rowNumber = parseInt(document.getElementById('editProgramacionRowNumber').value);
-    const formData = new FormData(this);
-    const data = {};
-    for (let [key, value] of formData.entries()) {
-        data[key] = value;
+    var rowNumber = parseInt(document.getElementById('editProgramacionRowNumber').value);
+    var formData = new FormData(e.target);
+    var data = {};
+    for (var pair of formData.entries()) {
+        data[pair[0]] = pair[1];
     }
 
     try {
-        const response = await fetch(`/api/programacion/update/${rowNumber}`, {
+        var response = await fetch('/api/programacion/update/' + rowNumber, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        const result = await response.json();
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Programación actualizada correctamente', 'success');
             closeEditProgramacionModal();
             await loadMantenimientosData();
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error: ${error.message}`, 'error');
+        showAlert('❌ Error: ' + error.message, 'error');
     }
-});
+}
 
 async function deleteProgramacion(rowNumber) {
     if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
     try {
-        const response = await fetch(`/api/programacion/delete/${rowNumber}`, { method: 'DELETE' });
-        const result = await response.json();
+        var response = await fetch('/api/programacion/delete/' + rowNumber, { method: 'DELETE' });
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Programación eliminada correctamente', 'success');
             await loadMantenimientosData();
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error al eliminar: ${error.message}`, 'error');
+        showAlert('❌ Error al eliminar: ' + error.message, 'error');
     }
-});
+}
 
-// ==================== TAREA COMPLETA ====================
-
+/* ============================================================
+   TAREA COMPLETA
+   ============================================================ */
 function openTareaCompleta(rowNumber) {
-    const row = progRows.find(r => r._row_number === rowNumber);
+    var row = progRows.find(function(r) { return r._row_number === rowNumber; });
     if (!row) { showAlert('No se encontró el registro', 'error'); return; }
     progRowSeleccionadaParaCompletar = row;
     document.getElementById('tareaCompletaMsg').textContent =
-        `¿Estás seguro de marcar como COMPLETO el mantenimiento de la patente ${row['PATENTE'] || ''}? Elegí si querés volver a programar otro mantenimiento.`;
+        '¿Estás seguro de marcar como COMPLETO el mantenimiento de la patente ' + (row['PATENTE'] || '') + '? Elegí si querés volver a programar otro mantenimiento.';
     document.getElementById('tareaCompletaModal').style.display = 'block';
 }
 
@@ -2356,136 +2316,127 @@ function closeTareaCompletaModal() {
 
 async function confirmarTareaCompletaProgramar() {
     if (!progRowSeleccionadaParaCompletar) return;
-    const row = progRowSeleccionadaParaCompletar;
+    var row = progRowSeleccionadaParaCompletar;
 
-    // 1. Marcar como Completo
     try {
-        const response = await fetch(`/api/programacion/completar/${row._row_number}`, {
+        var response = await fetch('/api/programacion/completar/' + row._row_number, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
-        const result = await response.json();
+        var result = await response.json();
         if (!result.success) {
-            showAlert(`❌ Error al marcar como completo: ${result.error}`, 'error');
+            showAlert('❌ Error al marcar como completo: ' + result.error, 'error');
             return;
         }
     } catch (error) {
-        showAlert(`❌ Error: ${error.message}`, 'error');
+        showAlert('❌ Error: ' + error.message, 'error');
         return;
     }
 
-    // 2. Cerrar modal y abrir formulario precargando la patente
-    const patente = row['PATENTE'] || '';
+    var patente = row['PATENTE'] || '';
     closeTareaCompletaModal();
 
     progIsFormVisible = true;
     progPatentePrecargada = patente;
 
+    mpCurrentView = 'programacion';
+    document.querySelectorAll('#tabsMantenimientos .tab').forEach(function(t) {
+        if (t.dataset.view === 'programacion') t.classList.add('active');
+        else t.classList.remove('active');
+    });
+
     await loadMantenimientosData();
 
-    // Asegurar que estamos en la vista de programación
-    mpCurrentView = 'programacion';
-    document.querySelectorAll('#tabsMantenimientos .tab').forEach(t => {
-        t.classList.toggle('active', t.dataset.view === 'programacion');
-    });
-    renderMantenimientosView();
-
-    showAlert(`✅ Tarea marcada como Completo. Programá el próximo mantenimiento para ${patente}`, 'success');
+    showAlert('✅ Tarea marcada como Completo. Programá el próximo mantenimiento para ' + patente, 'success');
 }
 
 async function confirmarTareaCompletaNoProgramar() {
     if (!progRowSeleccionadaParaCompletar) return;
-    const row = progRowSeleccionadaParaCompletar;
+    var row = progRowSeleccionadaParaCompletar;
 
     try {
-        const response = await fetch(`/api/programacion/completar/${row._row_number}`, {
+        var response = await fetch('/api/programacion/completar/' + row._row_number, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
-        const result = await response.json();
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Tarea marcada como Completo (no se programó otro mantenimiento)', 'success');
             closeTareaCompletaModal();
             await loadMantenimientosData();
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error: ${error.message}`, 'error');
+        showAlert('❌ Error: ' + error.message, 'error');
     }
 }
 
-// ==================== CONFIGURACIÓN MANTENIMIENTOS ====================
-
+/* ============================================================
+   CONFIGURACIÓN MANTENIMIENTOS
+   ============================================================ */
 function renderMantenimientosConfig(content) {
-    let html = `
-        <div class="config-section">
-            <h3>⚙️ Configuración de Desplegables</h3>
-            <p style="color:#666; margin-bottom:15px;">Configura las opciones para cada campo desplegable. Escribe una opción por línea.</p>
-            <div id="dropdownsConfigContainer">
-    `;
+    var html = '<div class="config-section">';
+    html += '<h3>⚙️ Configuración de Desplegables</h3>';
+    html += '<p style="color:#666; margin-bottom:15px;">Configura las opciones para cada campo desplegable. Escribe una opción por línea.</p>';
+    html += '<div id="dropdownsConfigContainer">';
 
-    MP_DROPDOWN_COLUMNS.forEach(col => {
-        const options = mpDropdowns[col] || [];
-        html += `
-            <div class="dropdown-config-item">
-                <label>📋 ${col}</label>
-                <textarea id="config_dropdown_${col}" placeholder="Escribe una opción por línea...">${options.join('\n')}</textarea>
-            </div>
-        `;
+    MP_DROPDOWN_COLUMNS.forEach(function(col) {
+        var options = mpDropdowns[col] || [];
+        html += '<div class="dropdown-config-item">';
+        html += '<label>📋 ' + col + '</label>';
+        html += '<textarea id="config_dropdown_' + col + '" placeholder="Escribe una opción por línea...">' + options.join('\n') + '</textarea>';
+        html += '</div>';
     });
 
-    html += `
-            </div>
-            <button class="btn btn-success" onclick="saveDropdowns()">💾 Guardar Desplegables</button>
-        </div>
+    html += '</div>';
+    html += '<button type="button" class="btn btn-success" onclick="saveDropdowns()">💾 Guardar Desplegables</button>';
+    html += '</div>';
 
-        <div class="config-section">
-            <h3>📅 Configuración de PATENTES (Camion T2)</h3>
-            <p style="color:#666; margin-bottom:15px;">Estas son las patentes traídas automáticamente desde la solapa "Camion T2" del maestro de flota. Se usan como desplegable en la Programación de Mantenimiento Preventivo. El ODOMETRO se toma automáticamente de la misma solapa.</p>
-            <div class="dropdown-config-item">
-                <label>🚛 PATENTES disponibles con ODOMETRO</label>
-                <div style="background:white; padding:10px; border:1px solid #e0e0e0; border-radius:4px; max-height:250px; overflow-y:auto; font-family:monospace; font-size:13px;">
-                    ${patentesCamionT2.length === 0 ? '<span style="color:#999;">No hay patentes cargadas en Camion T2</span>' : patentesCamionT2.map(p => `<div>• <b>${p}</b> — ODOMETRO: ${odometroPorPatente[p] || '(sin dato)'}</div>`).join('')}
-                </div>
-                <small style="color:#666; display:block; margin-top:8px;">ℹ️ Para modificar estas patentes y odómetros, editá la solapa "Camion T2" del maestro de flota.</small>
-            </div>
-        </div>
+    html += '<div class="config-section">';
+    html += '<h3>📅 Configuración de PATENTES (Camion T2)</h3>';
+    html += '<p style="color:#666; margin-bottom:15px;">Estas son las patentes traídas automáticamente desde la solapa "Camion T2" del maestro de flota. Se usan como desplegable en la Programación de Mantenimiento Preventivo. El ODOMETRO se toma automáticamente de la misma solapa.</p>';
+    html += '<div class="dropdown-config-item">';
+    html += '<label>🚛 PATENTES disponibles con ODOMETRO</label>';
+    html += '<div style="background:white; padding:10px; border:1px solid #e0e0e0; border-radius:4px; max-height:250px; overflow-y:auto; font-family:monospace; font-size:13px;">';
+    if (patentesCamionT2.length === 0) {
+        html += '<span style="color:#999;">No hay patentes cargadas en Camion T2</span>';
+    } else {
+        patentesCamionT2.forEach(function(p) {
+            html += '<div>• <b>' + p + '</b> — ODOMETRO: ' + (odometroPorPatente[p] || '(sin dato)') + '</div>';
+        });
+    }
+    html += '</div>';
+    html += '<small style="color:#666; display:block; margin-top:8px;">ℹ️ Para modificar estas patentes y odómetros, editá la solapa "Camion T2" del maestro de flota.</small>';
+    html += '</div>';
+    html += '</div>';
 
-        <div class="config-section">
-            <h3>🔧 Configuración MP (Políticas)</h3>
-            <p style="color:#666; margin-bottom:15px;">Configura las políticas para cada combinación de TIPO MANTENIMIENTO y TIPO REPARACIÓN. La POLITICA se suma a KM REALIZADO / KM ULTIMO MANTENIMIENTO para calcular el próximo KM.</p>
-            <table class="config-mp-table">
-                <thead>
-                    <tr>
-                        <th>TIPO MANTENIMIENTO</th>
-                        <th>TIPO REPARACIÓN</th>
-                        <th>POLITICA (KM)</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody id="configMPTableBody">
-    `;
+    html += '<div class="config-section">';
+    html += '<h3>🔧 Configuración MP (Políticas)</h3>';
+    html += '<p style="color:#666; margin-bottom:15px;">Configura las políticas para cada combinación de TIPO MANTENIMIENTO y TIPO REPARACIÓN. La POLITICA se suma a KM REALIZADO / KM ULTIMO MANTENIMIENTO para calcular el próximo KM.</p>';
+    html += '<table class="config-mp-table">';
+    html += '<thead><tr>';
+    html += '<th>TIPO MANTENIMIENTO</th>';
+    html += '<th>TIPO REPARACIÓN</th>';
+    html += '<th>POLITICA (KM)</th>';
+    html += '<th>Acción</th>';
+    html += '</tr></thead>';
+    html += '<tbody id="configMPTableBody">';
 
-    mpConfigMP.forEach((row, index) => {
-        html += `
-            <tr>
-                <td><input type="text" id="config_mp_tm_${index}" value="${row['TIPO MANTENIMIENTO'] || ''}"></td>
-                <td><input type="text" id="config_mp_tr_${index}" value="${row['TIPO REPARACIÓN'] || ''}"></td>
-                <td><input type="number" id="config_mp_pol_${index}" value="${row['POLITICA'] || ''}"></td>
-                <td><button class="btn-remove-row" onclick="removeConfigMPRow(${index})">🗑️</button></td>
-            </tr>
-        `;
+    mpConfigMP.forEach(function(row, index) {
+        html += '<tr>';
+        html += '<td><input type="text" id="config_mp_tm_' + index + '" value="' + (row['TIPO MANTENIMIENTO'] || '') + '"></td>';
+        html += '<td><input type="text" id="config_mp_tr_' + index + '" value="' + (row['TIPO REPARACIÓN'] || '') + '"></td>';
+        html += '<td><input type="number" id="config_mp_pol_' + index + '" value="' + (row['POLITICA'] || '') + '"></td>';
+        html += '<td><button type="button" class="btn-remove-row" onclick="removeConfigMPRow(' + index + ')">🗑️</button></td>';
+        html += '</tr>';
     });
 
-    html += `
-                </tbody>
-            </table>
-            <button class="btn-add-row" onclick="addConfigMPRow()">➕ Agregar Fila</button>
-            <br><br>
-            <button class="btn btn-success" onclick="saveConfigMP()">💾 Guardar Configuración MP</button>
-        </div>
-    `;
+    html += '</tbody></table>';
+    html += '<button type="button" class="btn-add-row" onclick="addConfigMPRow()">➕ Agregar Fila</button>';
+    html += '<br><br>';
+    html += '<button type="button" class="btn btn-success" onclick="saveConfigMP()">💾 Guardar Configuración MP</button>';
+    html += '</div>';
 
     content.innerHTML = html;
 }
@@ -2501,11 +2452,11 @@ function removeConfigMPRow(index) {
 }
 
 async function saveDropdowns() {
-    const dropdowns = {};
-    MP_DROPDOWN_COLUMNS.forEach(col => {
-        const textarea = document.getElementById(`config_dropdown_${col}`);
+    var dropdowns = {};
+    MP_DROPDOWN_COLUMNS.forEach(function(col) {
+        var textarea = document.getElementById('config_dropdown_' + col);
         if (textarea) {
-            const lines = textarea.value.split('\n').map(l => l.trim()).filter(l => l !== '');
+            var lines = textarea.value.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l !== ''; });
             if (lines.length > 0) {
                 dropdowns[col] = lines;
             }
@@ -2513,33 +2464,33 @@ async function saveDropdowns() {
     });
 
     try {
-        const response = await fetch('/api/mantenimientos/dropdowns', {
+        var response = await fetch('/api/mantenimientos/dropdowns', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ dropdowns })
+            body: JSON.stringify({ dropdowns: dropdowns })
         });
-        const result = await response.json();
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Desplegables guardados correctamente', 'success');
             await loadMantenimientosData();
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error: ${error.message}`, 'error');
+        showAlert('❌ Error: ' + error.message, 'error');
     }
 }
 
 async function saveConfigMP() {
-    const rows = [];
-    mpConfigMP.forEach((row, index) => {
-        const tm = document.getElementById(`config_mp_tm_${index}`);
-        const tr = document.getElementById(`config_mp_tr_${index}`);
-        const pol = document.getElementById(`config_mp_pol_${index}`);
+    var rows = [];
+    mpConfigMP.forEach(function(row, index) {
+        var tm = document.getElementById('config_mp_tm_' + index);
+        var tr = document.getElementById('config_mp_tr_' + index);
+        var pol = document.getElementById('config_mp_pol_' + index);
         if (tm && tr && pol) {
-            const tmVal = tm.value.trim();
-            const trVal = tr.value.trim();
-            const polVal = pol.value.trim();
+            var tmVal = tm.value.trim();
+            var trVal = tr.value.trim();
+            var polVal = pol.value.trim();
             if (tmVal !== '' || trVal !== '') {
                 rows.push({
                     'TIPO MANTENIMIENTO': tmVal,
@@ -2551,75 +2502,77 @@ async function saveConfigMP() {
     });
 
     try {
-        const response = await fetch('/api/mantenimientos/config_mp', {
+        var response = await fetch('/api/mantenimientos/config_mp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rows })
+            body: JSON.stringify({ rows: rows })
         });
-        const result = await response.json();
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Configuración MP guardada correctamente', 'success');
             await loadMantenimientosData();
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error: ${error.message}`, 'error');
+        showAlert('❌ Error: ' + error.message, 'error');
     }
 }
 
-// ==================== EDICIÓN (CONTROL DE DOCUMENTACIÓN) ====================
-
+/* ============================================================
+   EDICIÓN (CONTROL DE DOCUMENTACIÓN)
+   ============================================================ */
 function editRow(sheetName, rowNumber) {
-    const row = allRows.find(r => r._row_number === rowNumber);
+    var row = allRows.find(function(r) { return r._row_number === rowNumber; });
     if (!row) { showAlert('No se encontró el documento', 'error'); return; }
 
     editContextModule = 'docs';
     currentEditRow = row;
-    const headersForEdit = currentHeaders;
-    const displayColumns = getDisplayColumns(sheetName);
-    const photoCols = getPhotoColumns(headersForEdit);
-    const dateColsRequiringPhoto = getDateColumnsRequiringPhoto(sheetName);
+    var headersForEdit = currentHeaders;
+    var displayColumns = getDisplayColumns(sheetName);
+    var photoCols = getPhotoColumns(headersForEdit);
+    var dateColsRequiringPhoto = getDateColumnsRequiringPhoto(sheetName);
 
     document.getElementById('editSheetName').value = sheetName;
     document.getElementById('editRowNumber').value = rowNumber;
 
-    let html = '';
-    displayColumns.forEach(header => {
+    var html = '';
+    displayColumns.forEach(function(header) {
         if (header === 'Marca Temporal') return;
-        if (photoCols.includes(header)) return;
+        if (photoCols.indexOf(header) !== -1) return;
 
-        const value = row[header] || '';
-        const isDate = header.toUpperCase().includes('FECHA') || header.toUpperCase().includes('VENCIMIENTO') || header.toUpperCase().includes('VENC');
-        const isTextarea = header.toUpperCase().includes('OBSERVACION') || header.toUpperCase().includes('COMENTARIO');
-        const requiresPhoto = dateColsRequiringPhoto.includes(header);
+        var value = row[header] || '';
+        var upper = header.toUpperCase();
+        var isDate = upper.indexOf('FECHA') !== -1 || upper.indexOf('VENCIMIENTO') !== -1 || upper.indexOf('VENC') !== -1;
+        var isTextarea = upper.indexOf('OBSERVACION') !== -1 || upper.indexOf('COMENTARIO') !== -1;
+        var requiresPhoto = dateColsRequiringPhoto.indexOf(header) !== -1;
 
-        html += `<div class="form-group">`;
-        html += `<label>${header}`;
-        if (requiresPhoto) html += ` <span class="photo-required">(requiere foto)</span>`;
-        html += `</label>`;
+        html += '<div class="form-group">';
+        html += '<label>' + header;
+        if (requiresPhoto) html += ' <span class="photo-required">(requiere foto)</span>';
+        html += '</label>';
 
         if (isTextarea) {
-            html += `<textarea id="edit_${header}" name="${header}" rows="2">${value}</textarea>`;
+            html += '<textarea id="edit_' + header + '" name="' + header + '" rows="2">' + value + '</textarea>';
         } else if (isDate) {
-            let dateValue = value;
-            if (value && value.includes('/')) {
-                const parts = value.split('/');
+            var dateValue = value;
+            if (value && value.indexOf('/') !== -1) {
+                var parts = value.split('/');
                 if (parts.length === 3) {
-                    let year = parseInt(parts[2]);
+                    var year = parseInt(parts[2]);
                     if (year < 100) year += 2000;
-                    dateValue = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
                 }
             }
-            html += `<input type="date" id="edit_${header}" name="${header}" value="${dateValue}">`;
+            html += '<input type="date" id="edit_' + header + '" name="' + header + '" value="' + dateValue + '">';
         } else {
-            html += `<input type="text" id="edit_${header}" name="${header}" value="${value}">`;
+            html += '<input type="text" id="edit_' + header + '" name="' + header + '" value="' + value + '">';
         }
-        html += `</div>`;
+        html += '</div>';
     });
     document.getElementById('editFormFields').innerHTML = html;
 
-    let photoHtml = generatePhotoFieldsForEdit(headersForEdit, row, false);
+    var photoHtml = generatePhotoFieldsForEdit(headersForEdit, row, false);
     document.getElementById('editPhotoFields').innerHTML = photoHtml;
 
     document.getElementById('editModal').style.display = 'block';
@@ -2629,34 +2582,23 @@ function closeEditModal() {
     document.getElementById('editModal').style.display = 'none';
 }
 
-window.onclick = function(event) {
-    const modal = document.getElementById('editModal');
-    if (event.target == modal) modal.style.display = 'none';
-    const modalMP = document.getElementById('editMantenimientoModal');
-    if (event.target == modalMP) modalMP.style.display = 'none';
-    const modalProg = document.getElementById('editProgramacionModal');
-    if (event.target == modalProg) modalProg.style.display = 'none';
-    const modalTC = document.getElementById('tareaCompletaModal');
-    if (event.target == modalTC) modalTC.style.display = 'none';
-}
-
-document.getElementById('editForm').addEventListener('submit', async function(e) {
+async function submitEditForm(e) {
     e.preventDefault();
 
-    const sheetName = document.getElementById('editSheetName').value;
-    const rowNumber = parseInt(document.getElementById('editRowNumber').value);
-    const formData = new FormData(this);
+    var sheetName = document.getElementById('editSheetName').value;
+    var rowNumber = parseInt(document.getElementById('editRowNumber').value);
+    var formData = new FormData(e.target);
 
     if (editContextModule !== 'master') {
-        const dateCols = getDateColumnsRequiringPhoto(sheetName);
-        let missingPhotos = [];
+        var dateCols = getDateColumnsRequiringPhoto(sheetName);
+        var missingPhotos = [];
 
-        dateCols.forEach(dateCol => {
-            const dateValue = formData.get(dateCol);
+        dateCols.forEach(function(dateCol) {
+            var dateValue = formData.get(dateCol);
             if (dateValue && dateValue.trim() !== '') {
-                const photoInput = document.getElementById(`edit_foto_${dateCol}`);
-                let hasNewFile = photoInput && photoInput.files && photoInput.files.length > 0;
-                const existingPhoto = formData.get(`${dateCol}_FOTO`);
+                var photoInput = document.getElementById('edit_foto_' + dateCol);
+                var hasNewFile = photoInput && photoInput.files && photoInput.files.length > 0;
+                var existingPhoto = formData.get(dateCol + '_FOTO');
                 if (!hasNewFile && !existingPhoto) {
                     missingPhotos.push(dateCol);
                 }
@@ -2664,51 +2606,51 @@ document.getElementById('editForm').addEventListener('submit', async function(e)
         });
 
         if (missingPhotos.length > 0) {
-            showAlert(`⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ${missingPhotos.join(', ')}`, 'error');
+            showAlert('⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ' + missingPhotos.join(', '), 'error');
             return;
         }
     }
 
-    let hasPhoto = false;
-    const photoCols = getPhotoColumns(currentHeaders);
+    var hasPhoto = false;
+    var photoCols = getPhotoColumns(currentHeaders);
 
-    photoCols.forEach(col => {
-        const docName = col.replace('_FOTO', '');
-        const fileInput = document.getElementById(`edit_foto_${docName}`);
+    photoCols.forEach(function(col) {
+        var docName = col.replace('_FOTO', '');
+        var fileInput = document.getElementById('edit_foto_' + docName);
         if (fileInput && fileInput.files && fileInput.files.length > 0) {
             hasPhoto = true;
-            formData.append(`foto_${docName}`, fileInput.files[0]);
+            formData.append('foto_' + docName, fileInput.files[0]);
         }
     });
 
-    const keysToDelete = [];
-    for (let key of formData.keys()) {
-        if (key.startsWith('edit_foto_')) keysToDelete.push(key);
+    var keysToDelete = [];
+    for (var key of formData.keys()) {
+        if (key.indexOf('edit_foto_') === 0) keysToDelete.push(key);
     }
-    keysToDelete.forEach(key => formData.delete(key));
+    keysToDelete.forEach(function(key) { formData.delete(key); });
 
     try {
-        let response;
+        var response;
         if (hasPhoto) {
-            response = await fetch(`/api/update_with_photo/${encodeURIComponent(sheetName)}/${rowNumber}`, {
+            response = await fetch('/api/update_with_photo/' + encodeURIComponent(sheetName) + '/' + rowNumber, {
                 method: 'POST',
                 body: formData
             });
         } else {
-            const jsonData = {};
-            for (let [key, value] of formData.entries()) {
-                if (!key.startsWith('foto_') && key !== 'sheetName' && key !== 'rowNumber') {
-                    jsonData[key] = value;
+            var jsonData = {};
+            for (var pair of formData.entries()) {
+                if (pair[0].indexOf('foto_') !== 0 && pair[0] !== 'sheetName' && pair[0] !== 'rowNumber') {
+                    jsonData[pair[0]] = pair[1];
                 }
             }
-            response = await fetch(`/api/update/${encodeURIComponent(sheetName)}/${rowNumber}`, {
+            response = await fetch('/api/update/' + encodeURIComponent(sheetName) + '/' + rowNumber, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(jsonData)
             });
         }
 
-        const result = await response.json();
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Documento actualizado correctamente', 'success');
             closeEditModal();
@@ -2718,66 +2660,154 @@ document.getElementById('editForm').addEventListener('submit', async function(e)
                 await loadSheetData(sheetName);
             }
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error al actualizar: ${error.message}`, 'error');
+        showAlert('❌ Error al actualizar: ' + error.message, 'error');
     }
-});
+}
 
 async function deleteRow(sheetName, rowNumber) {
     if (!confirm('¿Estás seguro de que deseas eliminar este documento?')) return;
     try {
-        const response = await fetch(`/api/delete/${encodeURIComponent(sheetName)}/${rowNumber}`, { method: 'DELETE' });
-        const result = await response.json();
+        var response = await fetch('/api/delete/' + encodeURIComponent(sheetName) + '/' + rowNumber, { method: 'DELETE' });
+        var result = await response.json();
         if (result.success) {
             showAlert('✅ Documento eliminado correctamente', 'success');
             await loadSheetData(sheetName);
         } else {
-            showAlert(`❌ Error: ${result.error}`, 'error');
+            showAlert('❌ Error: ' + result.error, 'error');
         }
     } catch (error) {
-        showAlert(`❌ Error al eliminar: ${error.message}`, 'error');
+        showAlert('❌ Error al eliminar: ' + error.message, 'error');
     }
 }
 
-// Configurar tabs
-document.querySelectorAll('#tabsDocs .tab').forEach(tab => {
-    tab.addEventListener('click', function() {
-        document.querySelectorAll('#tabsDocs .tab').forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        currentSheet = this.dataset.sheet;
-        isFormVisible = false;
-        loadSheetData(currentSheet);
-    });
-});
+/* ============================================================
+   EXPONER FUNCIONES GLOBALES (para onclick inline)
+   ============================================================ */
+window.showHome = showHome;
+window.showModule = showModule;
+window.toggleForm = toggleForm;
+window.applyFilter = applyFilter;
+window.clearFilter = clearFilter;
+window.editRow = editRow;
+window.deleteRow = deleteRow;
+window.closeEditModal = closeEditModal;
 
-document.querySelectorAll('#tabsMaster .tab').forEach(tab => {
-    tab.addEventListener('click', function() {
-        document.querySelectorAll('#tabsMaster .tab').forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        masterCurrentSheet = this.dataset.sheet;
-        masterIsFormVisible = false;
-        loadMasterData(masterCurrentSheet);
-    });
-});
+window.toggleMasterForm = toggleMasterForm;
+window.applyMasterFilter = applyMasterFilter;
+window.clearMasterFilter = clearMasterFilter;
+window.editMasterRow = editMasterRow;
+window.deleteMasterRow = deleteMasterRow;
 
-document.querySelectorAll('#tabsMantenimientos .tab').forEach(tab => {
-    tab.addEventListener('click', function() {
-        document.querySelectorAll('#tabsMantenimientos .tab').forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        mpCurrentView = this.dataset.view;
-        if (mpCurrentView === 'config') {
-            renderMantenimientosView();
-        } else if (mpCurrentView === 'programacion') {
-            renderMantenimientosView();
-        } else {
-            loadMantenimientosData();
-        }
-    });
-});
+window.applyHistoryFilter = applyHistoryFilter;
+window.clearHistoryFilter = clearHistoryFilter;
+window.updateHistoryStatus = updateHistoryStatus;
+window.deleteHistoryRow = deleteHistoryRow;
 
-showHome();
+window.toggleMantenimientoForm = toggleMantenimientoForm;
+window.applyMantenimientoFilter = applyMantenimientoFilter;
+window.clearMantenimientoFilter = clearMantenimientoFilter;
+window.editMantenimiento = editMantenimiento;
+window.deleteMantenimiento = deleteMantenimiento;
+window.closeEditMantenimientoModal = closeEditMantenimientoModal;
+window.recalcularKmProximo = recalcularKmProximo;
+
+window.toggleProgramacionForm = toggleProgramacionForm;
+window.applyProgramacionFilter = applyProgramacionFilter;
+window.clearProgramacionFilter = clearProgramacionFilter;
+window.editProgramacion = editProgramacion;
+window.deleteProgramacion = deleteProgramacion;
+window.closeEditProgramacionModal = closeEditProgramacionModal;
+window.autocompletarKmDesdeOdometro = autocompletarKmDesdeOdometro;
+window.calcularProximoMantenimiento = calcularProximoMantenimiento;
+window.calcularProximoKm = calcularProximoKm;
+
+window.openTareaCompleta = openTareaCompleta;
+window.closeTareaCompletaModal = closeTareaCompletaModal;
+window.confirmarTareaCompletaProgramar = confirmarTareaCompletaProgramar;
+window.confirmarTareaCompletaNoProgramar = confirmarTareaCompletaNoProgramar;
+
+window.addConfigMPRow = addConfigMPRow;
+window.removeConfigMPRow = removeConfigMPRow;
+window.saveDropdowns = saveDropdowns;
+window.saveConfigMP = saveConfigMP;
+
+window.previewPhoto = previewPhoto;
+
+/* ============================================================
+   INICIALIZACIÓN (DOMContentLoaded)
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', function() {
+    // Tabs de Control de Documentación
+    var tabsDocs = document.querySelectorAll('#tabsDocs .tab');
+    tabsDocs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            tabsDocs.forEach(function(t) { t.classList.remove('active'); });
+            this.classList.add('active');
+            currentSheet = this.dataset.sheet;
+            isFormVisible = false;
+            loadSheetData(currentSheet);
+        });
+    });
+
+    // Tabs de Maestro de Flota
+    var tabsMaster = document.querySelectorAll('#tabsMaster .tab');
+    tabsMaster.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            tabsMaster.forEach(function(t) { t.classList.remove('active'); });
+            this.classList.add('active');
+            masterCurrentSheet = this.dataset.sheet;
+            masterIsFormVisible = false;
+            loadMasterData(masterCurrentSheet);
+        });
+    });
+
+    // Tabs de Mantenimientos
+    var tabsMP = document.querySelectorAll('#tabsMantenimientos .tab');
+    tabsMP.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            tabsMP.forEach(function(t) { t.classList.remove('active'); });
+            this.classList.add('active');
+            mpCurrentView = this.dataset.view;
+            if (mpCurrentView === 'config') {
+                renderMantenimientosView();
+            } else if (mpCurrentView === 'programacion') {
+                renderMantenimientosView();
+            } else {
+                loadMantenimientosData();
+            }
+        });
+    });
+
+    // Submit de forms de modales
+    var editForm = document.getElementById('editForm');
+    if (editForm) editForm.addEventListener('submit', submitEditForm);
+
+    var editMantForm = document.getElementById('editMantenimientoForm');
+    if (editMantForm) editMantForm.addEventListener('submit', submitEditMantenimiento);
+
+    var editProgForm = document.getElementById('editProgramacionForm');
+    if (editProgForm) editProgForm.addEventListener('submit', submitEditProgramacion);
+
+    // Cerrar modales al clickear fuera
+    var modales = ['editModal', 'editMantenimientoModal', 'editProgramacionModal', 'tareaCompletaModal'];
+    modales.forEach(function(modalId) {
+        var modal = document.getElementById(modalId);
+        if (!modal) return;
+        modal.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+                if (modalId === 'tareaCompletaModal') {
+                    progRowSeleccionadaParaCompletar = null;
+                }
+            }
+        });
+    });
+
+    showHome();
+});
 </script>
 </body>
 </html>
