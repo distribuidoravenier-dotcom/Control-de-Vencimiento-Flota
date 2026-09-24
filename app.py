@@ -32,7 +32,8 @@ PROG_HEADERS = [
     'PROXIMO MANTENIMIENTO KM',
     'TIPO MANTENIMIENTO',
     'TIPO REPARACIÓN',
-    'DETALLE REPARACIÓN'
+    'DETALLE REPARACIÓN',
+    'Estado'
 ]
 
 SHEETS = {
@@ -45,7 +46,6 @@ SHEETS = {
 
 HISTORY_SHEET = 'Historial de Vencimiento de Documentación'
 
-# Configuración de columnas de fecha por hoja (para detección de vencimientos)
 DATE_COLUMNS_CONFIG = {
     'Camion T1': ['VENC VTV', 'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO',
                   'POLIZA DE SEGUROS', 'SEGURO DE ACCIDENTES PERSONALES', 'CLAUSULA DE NO REPETICION',
@@ -55,7 +55,6 @@ DATE_COLUMNS_CONFIG = {
     'Choferes y Ayudantes': ['VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA']
 }
 
-# Campo identificador por hoja
 ID_FIELD_CONFIG = {
     'Camion T1': 'PATENTE',
     'Camion T2': 'PATENTE',
@@ -67,7 +66,6 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-12345')
 CORS(app)
 
 def get_google_creds():
-    """Obtiene credenciales de Service Account para Google APIs"""
     try:
         if 'GOOGLE_APPLICATION_CREDENTIALS_JSON' in os.environ:
             creds_json = json.loads(os.environ['GOOGLE_APPLICATION_CREDENTIALS_JSON'])
@@ -92,7 +90,6 @@ def get_google_creds():
         raise
 
 def get_all_data(sheet_name, spreadsheet_id=None):
-    """Obtiene todos los datos de una hoja incluyendo headers y filas"""
     try:
         creds = get_google_creds()
         service = build('sheets', 'v4', credentials=creds)
@@ -129,7 +126,6 @@ def get_all_data(sheet_name, spreadsheet_id=None):
         return {'headers': [], 'rows': []}
 
 def update_row(sheet_name, row_number, values, spreadsheet_id=None):
-    """Actualiza una fila completa en Google Sheets"""
     try:
         creds = get_google_creds()
         service = build('sheets', 'v4', credentials=creds)
@@ -163,7 +159,6 @@ def update_row(sheet_name, row_number, values, spreadsheet_id=None):
         return False
 
 def update_row_partial(sheet_name, row_number, column_updates):
-    """Actualiza celdas específicas de una fila en Google Sheets"""
     try:
         creds = get_google_creds()
         service = build('sheets', 'v4', credentials=creds)
@@ -201,8 +196,35 @@ def update_row_partial(sheet_name, row_number, column_updates):
         print(f"Error updating row partial: {err}")
         return False
 
+def update_prog_estado(row_number, estado):
+    """Actualiza sólo la columna Estado en la hoja de programación"""
+    try:
+        creds = get_google_creds()
+        service = build('sheets', 'v4', credentials=creds)
+        sheet = service.spreadsheets()
+
+        data = get_all_data(SHEET_PROGRAMACION_MP, SPREADSHEET_ID_MP)
+        headers = data.get('headers', [])
+
+        if 'Estado' not in headers:
+            return False
+
+        col_idx = headers.index('Estado')
+        col_letter = chr(65 + col_idx) if col_idx < 26 else 'Z'
+
+        sheet.values().update(
+            spreadsheetId=SPREADSHEET_ID_MP,
+            range=f"'{SHEET_PROGRAMACION_MP}'!{col_letter}{row_number}",
+            valueInputOption='RAW',
+            body={'values': [[estado]]}
+        ).execute()
+
+        return True
+    except HttpError as err:
+        print(f"Error en update_prog_estado: {err}")
+        return False
+
 def delete_row(sheet_name, row_number, spreadsheet_id=None):
-    """Elimina una fila de Google Sheets"""
     try:
         creds = get_google_creds()
         service = build('sheets', 'v4', credentials=creds)
@@ -210,9 +232,7 @@ def delete_row(sheet_name, row_number, spreadsheet_id=None):
 
         sid = spreadsheet_id or SPREADSHEET_ID
 
-        spreadsheet = service.spreadsheets().get(
-            spreadsheetId=sid
-        ).execute()
+        spreadsheet = service.spreadsheets().get(spreadsheetId=sid).execute()
 
         sheet_id = None
         for s in spreadsheet.get('sheets', []):
@@ -236,10 +256,7 @@ def delete_row(sheet_name, row_number, spreadsheet_id=None):
 
         body = {'requests': requests}
 
-        result = sheet.batchUpdate(
-            spreadsheetId=sid,
-            body=body
-        ).execute()
+        result = sheet.batchUpdate(spreadsheetId=sid, body=body).execute()
 
         return True
 
@@ -248,7 +265,6 @@ def delete_row(sheet_name, row_number, spreadsheet_id=None):
         return False
 
 def add_row_to_sheet(sheet_name, values, spreadsheet_id=None):
-    """Agrega una nueva fila a Google Sheets"""
     try:
         creds = get_google_creds()
         service = build('sheets', 'v4', credentials=creds)
@@ -262,9 +278,7 @@ def add_row_to_sheet(sheet_name, values, spreadsheet_id=None):
         while len(values) < num_columns:
             values.append('')
 
-        body = {
-            'values': [values[:num_columns]]
-        }
+        body = {'values': [values[:num_columns]]}
 
         result = sheet.values().append(
             spreadsheetId=sid,
@@ -281,7 +295,6 @@ def add_row_to_sheet(sheet_name, values, spreadsheet_id=None):
         return False
 
 def ensure_sheet_exists(sheet_name, spreadsheet_id=None, headers=None):
-    """Crea la hoja si no existe y opcionalmente escribe headers"""
     try:
         creds = get_google_creds()
         service = build('sheets', 'v4', credentials=creds)
@@ -316,7 +329,6 @@ def ensure_sheet_exists(sheet_name, spreadsheet_id=None, headers=None):
         return False
 
 def upload_file_to_drive(file_content, filename, folder_id):
-    """Sube un archivo a Google Drive"""
     try:
         creds = get_google_creds()
         service = build('drive', 'v3', credentials=creds)
@@ -345,7 +357,6 @@ def upload_file_to_drive(file_content, filename, folder_id):
         return None
 
 def parse_date(date_str):
-    """Parsea una fecha en formatos comunes (dd/mm/yyyy, yyyy-mm-dd)"""
     if not date_str:
         return None
     date_str = str(date_str).strip()
@@ -381,8 +392,6 @@ def parse_date(date_str):
     return None
 
 def get_politica_por_tipo_reparacion(tipo_reparacion):
-    """Busca en Configuracion MP la POLITICA para un TIPO REPARACIÓN dado.
-    Devuelve el primer valor encontrado o 0 si no hay coincidencia."""
     try:
         config_data = get_all_data(SHEET_CONFIG_MP, SPREADSHEET_ID_MP)
         for row in config_data.get('rows', []):
@@ -399,9 +408,6 @@ def get_politica_por_tipo_reparacion(tipo_reparacion):
         return 0
 
 def check_and_register_expirations():
-    """Recorre las hojas de documentos, detecta vencimientos dentro de 30 días
-    y los registra en la hoja de historial si no existen ya.
-    Optimizado: usa batch append para evitar timeout."""
     try:
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         limit_date = today + timedelta(days=30)
@@ -480,9 +486,7 @@ def check_and_register_expirations():
                 service = build('sheets', 'v4', credentials=creds)
                 sheet = service.spreadsheets()
 
-                body = {
-                    'values': new_rows
-                }
+                body = {'values': new_rows}
 
                 sheet.values().append(
                     spreadsheetId=SPREADSHEET_ID,
@@ -504,18 +508,15 @@ def check_and_register_expirations():
 
 @app.route('/')
 def index():
-    """Página principal"""
     return render_template('index.html', sheets=SHEETS)
 
 @app.route('/api/sheet/<sheet_name>')
 def get_sheet(sheet_name):
-    """API para obtener datos de una hoja"""
     data = get_all_data(sheet_name)
     return jsonify(data)
 
 @app.route('/api/history')
 def get_history():
-    """API para obtener el historial de vencimientos (ejecuta detección automática)"""
     try:
         check_and_register_expirations()
         data = get_all_data(HISTORY_SHEET)
@@ -526,64 +527,40 @@ def get_history():
 
 @app.route('/api/history/update_status/<int:row_number>', methods=['POST'])
 def update_history_status(row_number):
-    """Actualiza el estado de un registro del historial"""
     try:
         data = request.json
         new_status = data.get('estado', '')
 
         if new_status not in ['En Proceso', 'Completo', 'Vencido', 'Notificado']:
-            return jsonify({
-                'success': False,
-                'error': 'Estado no válido'
-            }), 400
+            return jsonify({'success': False, 'error': 'Estado no válido'}), 400
 
         success = update_row_partial(HISTORY_SHEET, row_number, {'ESTADO': new_status})
 
         if success:
-            return jsonify({
-                'success': True,
-                'message': 'Estado actualizado correctamente'
-            })
+            return jsonify({'success': True, 'message': 'Estado actualizado correctamente'})
         else:
-            return jsonify({
-                'success': False,
-                'error': 'Error al actualizar el estado'
-            }), 500
+            return jsonify({'success': False, 'error': 'Error al actualizar el estado'}), 500
 
     except Exception as e:
         print(f"Error en update_history_status: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/history/delete/<int:row_number>', methods=['DELETE'])
 def delete_history_row(row_number):
-    """Elimina un registro del historial"""
     try:
         success = delete_row(HISTORY_SHEET, row_number)
 
         if success:
-            return jsonify({
-                'success': True,
-                'message': 'Registro eliminado correctamente'
-            })
+            return jsonify({'success': True, 'message': 'Registro eliminado correctamente'})
         else:
-            return jsonify({
-                'success': False,
-                'error': 'Error al eliminar el registro'
-            }), 500
+            return jsonify({'success': False, 'error': 'Error al eliminar el registro'}), 500
 
     except Exception as e:
         print(f"Error en delete_history_row: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/add', methods=['POST'])
 def add_document():
-    """API para agregar un nuevo documento"""
     try:
         sheet_name = request.form.get('sheet_name')
 
@@ -622,11 +599,7 @@ def add_document():
                     filename = f"{identificador} - {doc_name}{file_extension}"
                     file_content = foto.read()
 
-                    file_id = upload_file_to_drive(
-                        file_content,
-                        filename,
-                        DRIVE_FOLDER_ID
-                    )
+                    file_id = upload_file_to_drive(file_content, filename, DRIVE_FOLDER_ID)
 
                     if file_id:
                         drive_url = f"https://drive.google.com/file/d/{file_id}/view"
@@ -639,26 +612,16 @@ def add_document():
         success = add_row_to_sheet(sheet_name, row_values)
 
         if success:
-            return jsonify({
-                'success': True,
-                'message': 'Documento agregado correctamente'
-            })
+            return jsonify({'success': True, 'message': 'Documento agregado correctamente'})
         else:
-            return jsonify({
-                'success': False,
-                'error': 'Error al guardar en Google Sheets'
-            }), 500
+            return jsonify({'success': False, 'error': 'Error al guardar en Google Sheets'}), 500
 
     except Exception as e:
         print(f"Error en add_document: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/update/<sheet_name>/<int:row_number>', methods=['POST'])
 def update_document(sheet_name, row_number):
-    """Actualiza un documento existente (solo datos)"""
     try:
         data = request.json
 
@@ -677,26 +640,16 @@ def update_document(sheet_name, row_number):
         success = update_row(sheet_name, row_number, row_values)
 
         if success:
-            return jsonify({
-                'success': True,
-                'message': 'Documento actualizado correctamente'
-            })
+            return jsonify({'success': True, 'message': 'Documento actualizado correctamente'})
         else:
-            return jsonify({
-                'success': False,
-                'error': 'Error al actualizar en Google Sheets'
-            }), 500
+            return jsonify({'success': False, 'error': 'Error al actualizar en Google Sheets'}), 500
 
     except Exception as e:
         print(f"Error en update_document: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/update_with_photo/<sheet_name>/<int:row_number>', methods=['POST'])
 def update_document_with_photo(sheet_name, row_number):
-    """Actualiza un documento existente con múltiples fotos"""
     try:
         form_data = {}
         for key in request.form:
@@ -721,11 +674,7 @@ def update_document_with_photo(sheet_name, row_number):
                     filename = f"{identificador} - {doc_name}{file_extension}"
                     file_content = foto.read()
 
-                    file_id = upload_file_to_drive(
-                        file_content,
-                        filename,
-                        DRIVE_FOLDER_ID
-                    )
+                    file_id = upload_file_to_drive(file_content, filename, DRIVE_FOLDER_ID)
 
                     if file_id:
                         drive_url = f"https://drive.google.com/file/d/{file_id}/view"
@@ -755,52 +704,32 @@ def update_document_with_photo(sheet_name, row_number):
         success = update_row(sheet_name, row_number, row_values)
 
         if success:
-            return jsonify({
-                'success': True,
-                'message': 'Documento actualizado correctamente'
-            })
+            return jsonify({'success': True, 'message': 'Documento actualizado correctamente'})
         else:
-            return jsonify({
-                'success': False,
-                'error': 'Error al actualizar en Google Sheets'
-            }), 500
+            return jsonify({'success': False, 'error': 'Error al actualizar en Google Sheets'}), 500
 
     except Exception as e:
         print(f"Error en update_document_with_photo: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/delete/<sheet_name>/<int:row_number>', methods=['DELETE'])
 def delete_document(sheet_name, row_number):
-    """Elimina un documento"""
     try:
         success = delete_row(sheet_name, row_number)
 
         if success:
-            return jsonify({
-                'success': True,
-                'message': 'Documento eliminado correctamente'
-            })
+            return jsonify({'success': True, 'message': 'Documento eliminado correctamente'})
         else:
-            return jsonify({
-                'success': False,
-                'error': 'Error al eliminar el documento'
-            }), 500
+            return jsonify({'success': False, 'error': 'Error al eliminar el documento'}), 500
 
     except Exception as e:
         print(f"Error en delete_document: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # ==================== MANTENIMIENTOS ====================
 
 @app.route('/api/mantenimientos/config', methods=['GET'])
 def get_mantenimiento_config():
-    """Obtiene la configuración completa de mantenimientos: dropdowns y políticas MP"""
     try:
         ensure_sheet_exists(SHEET_CONFIG_DROPDOWNS, SPREADSHEET_ID_MP)
 
@@ -808,8 +737,6 @@ def get_mantenimiento_config():
         config_mp_data = get_all_data(SHEET_CONFIG_MP, SPREADSHEET_ID_MP)
         hist_data = get_all_data(SHEET_HISTORIAL_MP, SPREADSHEET_ID_MP)
 
-        # PATENTES disponibles desde Camion T2 del spreadsheet original
-        # También obtenemos el ODOMETRO por patente (para KM ULTIMO MANTENIMIENTO)
         camion_t2_data = get_all_data('Camion T2', SPREADSHEET_ID)
         patentes_camion_t2 = []
         odometro_por_patente = {}
@@ -823,7 +750,6 @@ def get_mantenimiento_config():
                     odometro_por_patente[patente] = odometro
         patentes_camion_t2.sort()
 
-        # Programación de mantenimiento preventivo
         ensure_sheet_exists(
             SHEET_PROGRAMACION_MP,
             SPREADSHEET_ID_MP,
@@ -848,7 +774,6 @@ def get_mantenimiento_config():
 
 @app.route('/api/mantenimientos/dropdowns', methods=['POST'])
 def save_mantenimiento_dropdowns():
-    """Guarda la configuración de desplegables"""
     try:
         data = request.json
         dropdowns = data.get('dropdowns', {})
@@ -894,7 +819,6 @@ def save_mantenimiento_dropdowns():
 
 @app.route('/api/mantenimientos/config_mp', methods=['POST'])
 def save_config_mp():
-    """Guarda la configuración MP (TIPO MANTENIMIENTO, TIPO REPARACIÓN, POLITICA)"""
     try:
         data = request.json
         rows = data.get('rows', [])
@@ -934,7 +858,6 @@ def save_config_mp():
 
 @app.route('/api/mantenimientos/add', methods=['POST'])
 def add_mantenimiento():
-    """Agrega un nuevo registro de mantenimiento"""
     try:
         data = request.json
         sheet_name = SHEET_HISTORIAL_MP
@@ -961,7 +884,6 @@ def add_mantenimiento():
 
 @app.route('/api/mantenimientos/update/<int:row_number>', methods=['POST'])
 def update_mantenimiento(row_number):
-    """Actualiza un registro de mantenimiento"""
     try:
         data = request.json
         sheet_name = SHEET_HISTORIAL_MP
@@ -985,7 +907,6 @@ def update_mantenimiento(row_number):
 
 @app.route('/api/mantenimientos/delete/<int:row_number>', methods=['DELETE'])
 def delete_mantenimiento(row_number):
-    """Elimina un registro de mantenimiento"""
     try:
         success = delete_row(SHEET_HISTORIAL_MP, row_number, SPREADSHEET_ID_MP)
 
@@ -1001,7 +922,6 @@ def delete_mantenimiento(row_number):
 
 @app.route('/api/programacion/add', methods=['POST'])
 def add_programacion():
-    """Agrega un nuevo registro de programación de mantenimiento preventivo"""
     try:
         data = request.json
         sheet_name = SHEET_PROGRAMACION_MP
@@ -1018,10 +938,8 @@ def add_programacion():
         if not headers:
             return jsonify({'success': False, 'error': 'La hoja Programación no tiene encabezados'}), 500
 
-        # Marca Temporal automática
         marca_temporal = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        # Calcular PROXIMO MANTENIMIENTO FECHA = FECHA ULTIMO MANTENIMIENTO + 1 año
         fecha_ultimo = data.get('FECHA ULTIMO MANTENIMIENTO', '')
         proximo_fecha = ''
         parsed = parse_date(fecha_ultimo)
@@ -1029,11 +947,9 @@ def add_programacion():
             try:
                 proximo = parsed.replace(year=parsed.year + 1)
             except ValueError:
-                # 29 de febrero en año no bisiesto -> 28 de febrero
                 proximo = parsed.replace(year=parsed.year + 1, day=28)
             proximo_fecha = proximo.strftime('%d/%m/%Y')
 
-        # Calcular PROXIMO MANTENIMIENTO KM = KM ULTIMO MANTENIMIENTO + POLITICA (según TIPO REPARACIÓN)
         tipo_reparacion = (data.get('TIPO REPARACIÓN') or '').strip()
         km_ultimo_str = (data.get('KM ULTIMO MANTENIMIENTO') or '').strip()
         politica = get_politica_por_tipo_reparacion(tipo_reparacion) if tipo_reparacion else 0
@@ -1054,8 +970,9 @@ def add_programacion():
             elif header == 'PROXIMO MANTENIMIENTO KM':
                 row_values.append(proximo_km)
             elif header == 'TIPO MANTENIMIENTO':
-                # Forzar siempre PREVENTIVO
                 row_values.append('PREVENTIVO')
+            elif header == 'Estado':
+                row_values.append('En Proceso')
             else:
                 row_values.append(str(data.get(header, '')))
 
@@ -1071,7 +988,6 @@ def add_programacion():
 
 @app.route('/api/programacion/update/<int:row_number>', methods=['POST'])
 def update_programacion(row_number):
-    """Actualiza un registro de programación"""
     try:
         data = request.json
         sheet_name = SHEET_PROGRAMACION_MP
@@ -1079,7 +995,6 @@ def update_programacion(row_number):
         sheet_data = get_all_data(sheet_name, SPREADSHEET_ID_MP)
         headers = sheet_data.get('headers', [])
 
-        # Recalcular PROXIMO MANTENIMIENTO FECHA = FECHA ULTIMO MANTENIMIENTO + 1 año
         fecha_ultimo = data.get('FECHA ULTIMO MANTENIMIENTO', '')
         proximo_fecha = ''
         parsed = parse_date(fecha_ultimo)
@@ -1090,7 +1005,6 @@ def update_programacion(row_number):
                 proximo = parsed.replace(year=parsed.year + 1, day=28)
             proximo_fecha = proximo.strftime('%d/%m/%Y')
 
-        # Recalcular PROXIMO MANTENIMIENTO KM = KM ULTIMO MANTENIMIENTO + POLITICA (según TIPO REPARACIÓN)
         tipo_reparacion = (data.get('TIPO REPARACIÓN') or '').strip()
         km_ultimo_str = (data.get('KM ULTIMO MANTENIMIENTO') or '').strip()
         politica = get_politica_por_tipo_reparacion(tipo_reparacion) if tipo_reparacion else 0
@@ -1102,13 +1016,13 @@ def update_programacion(row_number):
             except ValueError:
                 proximo_km = ''
 
-        # Preservar Marca Temporal original (no la modificamos al editar)
         current_row = None
         for row in sheet_data.get('rows', []):
             if row.get('_row_number') == row_number:
                 current_row = row
                 break
         marca_temporal = current_row.get('Marca Temporal', '') if current_row else ''
+        estado_actual = current_row.get('Estado', 'En Proceso') if current_row else 'En Proceso'
 
         row_values = []
         for header in headers:
@@ -1119,8 +1033,10 @@ def update_programacion(row_number):
             elif header == 'PROXIMO MANTENIMIENTO KM':
                 row_values.append(proximo_km)
             elif header == 'TIPO MANTENIMIENTO':
-                # Forzar siempre PREVENTIVO
                 row_values.append('PREVENTIVO')
+            elif header == 'Estado':
+                # Preservar el estado actual salvo que venga explícito
+                row_values.append(str(data.get('Estado', estado_actual)))
             else:
                 row_values.append(str(data.get(header, '')))
 
@@ -1136,7 +1052,6 @@ def update_programacion(row_number):
 
 @app.route('/api/programacion/delete/<int:row_number>', methods=['DELETE'])
 def delete_programacion(row_number):
-    """Elimina un registro de programación"""
     try:
         success = delete_row(SHEET_PROGRAMACION_MP, row_number, SPREADSHEET_ID_MP)
 
@@ -1146,6 +1061,20 @@ def delete_programacion(row_number):
             return jsonify({'success': False, 'error': 'Error al eliminar'}), 500
     except Exception as e:
         print(f"Error en delete_programacion: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/programacion/completar/<int:row_number>', methods=['POST'])
+def completar_programacion(row_number):
+    """Marca la programación como Completo (Estado = 'Completo')"""
+    try:
+        success = update_prog_estado(row_number, 'Completo')
+
+        if success:
+            return jsonify({'success': True, 'message': 'Programación marcada como Completo'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al actualizar el estado'}), 500
+    except Exception as e:
+        print(f"Error en completar_programacion: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
