@@ -2347,7 +2347,7 @@ async function confirmarTareaCompletaProgramar() {
     var patente = row['PATENTE'] || '';
     var rowNum = row._row_number;
 
-    // 1. Marcar como Completo en el backend
+    // 1. Marcar la tarea actual como Completo en el backend
     try {
         var response = await fetch('/api/programacion/completar/' + rowNum, {
             method: 'POST',
@@ -2363,34 +2363,45 @@ async function confirmarTareaCompletaProgramar() {
         return;
     }
 
-    // 2. Cerrar el modal manualmente (sin resetear progRowSeleccionadaParaCompletar)
-    document.getElementById('tareaCompletaModal').style.display = 'none';
-    progRowSeleccionadaParaCompletar = null;
+    // 2. Armar automáticamente los datos de la nueva programación,
+    //    en base a la tarea que se acaba de completar
+    var hoy = new Date();
+    var hoyStr = String(hoy.getDate()).padStart(2, '0') + '/' + String(hoy.getMonth() + 1).padStart(2, '0') + '/' + hoy.getFullYear();
+    var kmActual = odometroPorPatente[patente] || row['KM ULTIMO MANTENIMIENTO'] || '';
 
-    // 3. Preparar estado para abrir el formulario precargado
-    mpCurrentView = 'programacion';
-    progIsFormVisible = true;
-    progPatentePrecargada = patente;
+    var nuevaProgramacion = {
+        'PATENTE': patente,
+        'FECHA ULTIMO MANTENIMIENTO': hoyStr,
+        'KM ULTIMO MANTENIMIENTO': kmActual,
+        'TIPO REPARACIÓN': row['TIPO REPARACIÓN'] || '',
+        'DETALLE REPARACIÓN': row['DETALLE REPARACIÓN'] || ''
+    };
 
-    // 4. Cambiar tab activa visualmente
-    document.querySelectorAll('#tabsMantenimientos .tab').forEach(function(t) {
-        if (t.dataset.view === 'programacion') t.classList.add('active');
-        else t.classList.remove('active');
-    });
+    // 3. Crear la nueva programación automáticamente (sin pasar por el formulario)
+    try {
+        var addResponse = await fetch('/api/programacion/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(nuevaProgramacion)
+        });
+        var addResult = await addResponse.json();
+        if (!addResult.success) {
+            showAlert('⚠️ Se marcó como completo, pero hubo un error al programar la nueva tarea: ' + addResult.error, 'error');
+            closeTareaCompletaModal();
+            await loadMantenimientosData();
+            return;
+        }
+    } catch (error) {
+        showAlert('⚠️ Se marcó como completo, pero hubo un error al programar la nueva tarea: ' + error.message, 'error');
+        closeTareaCompletaModal();
+        await loadMantenimientosData();
+        return;
+    }
 
-    // 5. Recargar datos SIN re-renderizar para no perder el estado del form
-    await reloadMantenimientosDataSinRender();
-
-    // 6. Ahora sí renderizar la vista (con el form abierto y la patente precargada)
-    renderMantenimientosView();
-
-    // 7. Scroll al formulario
-    setTimeout(function() {
-        var formSection = document.getElementById('addProgramacionSection');
-        if (formSection) formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 200);
-
-    showAlert('✅ Tarea marcada como Completo. Programá el próximo mantenimiento para ' + patente, 'success');
+    // 4. Cerrar el modal y refrescar la tabla, que ya va a mostrar la nueva tarea programada
+    closeTareaCompletaModal();
+    showAlert('✅ Tarea marcada como Completo y nuevo mantenimiento programado para ' + patente + '. Podés ajustar los datos con "✏️ Editar" si hace falta.', 'success');
+    await loadMantenimientosData();
 }
 
 async function confirmarTareaCompletaNoProgramar() {
