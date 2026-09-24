@@ -29,8 +29,10 @@ PROG_HEADERS = [
     'FECHA ULTIMO MANTENIMIENTO',
     'PROXIMO MANTENIMIENTO FECHA',
     'KM ULTIMO MANTENIMIENTO',
+    'PROXIMO MANTENIMIENTO KM',
     'TIPO MANTENIMIENTO',
-    'OBSERVACIONES'
+    'TIPO REPARACIÓN',
+    'DETALLE REPARACIÓN'
 ]
 
 SHEETS = {
@@ -377,6 +379,24 @@ def parse_date(date_str):
                 pass
 
     return None
+
+def get_politica_por_tipo_reparacion(tipo_reparacion):
+    """Busca en Configuracion MP la POLITICA para un TIPO REPARACIÓN dado.
+    Devuelve el primer valor encontrado o 0 si no hay coincidencia."""
+    try:
+        config_data = get_all_data(SHEET_CONFIG_MP, SPREADSHEET_ID_MP)
+        for row in config_data.get('rows', []):
+            tr = (row.get('TIPO REPARACIÓN') or '').strip()
+            if tr and tr == tipo_reparacion.strip():
+                pol = (row.get('POLITICA') or '').strip()
+                try:
+                    return float(pol)
+                except ValueError:
+                    return 0
+        return 0
+    except Exception as e:
+        print(f"Error en get_politica_por_tipo_reparacion: {e}")
+        return 0
 
 def check_and_register_expirations():
     """Recorre las hojas de documentos, detecta vencimientos dentro de 30 días
@@ -798,7 +818,6 @@ def get_mantenimiento_config():
             if patente:
                 if patente not in patentes_camion_t2:
                     patentes_camion_t2.append(patente)
-                # Guardar odómetro (si hay múltiples filas con misma patente, guarda la última encontrada)
                 odometro = (row.get('ODOMETRO') or '').strip()
                 if odometro:
                     odometro_por_patente[patente] = odometro
@@ -1014,12 +1033,29 @@ def add_programacion():
                 proximo = parsed.replace(year=parsed.year + 1, day=28)
             proximo_fecha = proximo.strftime('%d/%m/%Y')
 
+        # Calcular PROXIMO MANTENIMIENTO KM = KM ULTIMO MANTENIMIENTO + POLITICA (según TIPO REPARACIÓN)
+        tipo_reparacion = (data.get('TIPO REPARACIÓN') or '').strip()
+        km_ultimo_str = (data.get('KM ULTIMO MANTENIMIENTO') or '').strip()
+        politica = get_politica_por_tipo_reparacion(tipo_reparacion) if tipo_reparacion else 0
+        proximo_km = ''
+        if km_ultimo_str:
+            try:
+                km_ultimo = float(km_ultimo_str)
+                proximo_km = str(int(km_ultimo + politica)) if politica else str(int(km_ultimo))
+            except ValueError:
+                proximo_km = ''
+
         row_values = []
         for header in headers:
             if header == 'Marca Temporal':
                 row_values.append(marca_temporal)
             elif header == 'PROXIMO MANTENIMIENTO FECHA':
                 row_values.append(proximo_fecha)
+            elif header == 'PROXIMO MANTENIMIENTO KM':
+                row_values.append(proximo_km)
+            elif header == 'TIPO MANTENIMIENTO':
+                # Forzar siempre PREVENTIVO
+                row_values.append('PREVENTIVO')
             else:
                 row_values.append(str(data.get(header, '')))
 
@@ -1054,6 +1090,18 @@ def update_programacion(row_number):
                 proximo = parsed.replace(year=parsed.year + 1, day=28)
             proximo_fecha = proximo.strftime('%d/%m/%Y')
 
+        # Recalcular PROXIMO MANTENIMIENTO KM = KM ULTIMO MANTENIMIENTO + POLITICA (según TIPO REPARACIÓN)
+        tipo_reparacion = (data.get('TIPO REPARACIÓN') or '').strip()
+        km_ultimo_str = (data.get('KM ULTIMO MANTENIMIENTO') or '').strip()
+        politica = get_politica_por_tipo_reparacion(tipo_reparacion) if tipo_reparacion else 0
+        proximo_km = ''
+        if km_ultimo_str:
+            try:
+                km_ultimo = float(km_ultimo_str)
+                proximo_km = str(int(km_ultimo + politica)) if politica else str(int(km_ultimo))
+            except ValueError:
+                proximo_km = ''
+
         # Preservar Marca Temporal original (no la modificamos al editar)
         current_row = None
         for row in sheet_data.get('rows', []):
@@ -1068,6 +1116,11 @@ def update_programacion(row_number):
                 row_values.append(marca_temporal)
             elif header == 'PROXIMO MANTENIMIENTO FECHA':
                 row_values.append(proximo_fecha)
+            elif header == 'PROXIMO MANTENIMIENTO KM':
+                row_values.append(proximo_km)
+            elif header == 'TIPO MANTENIMIENTO':
+                # Forzar siempre PREVENTIVO
+                row_values.append('PREVENTIVO')
             else:
                 row_values.append(str(data.get(header, '')))
 
