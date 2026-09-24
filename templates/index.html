@@ -901,7 +901,7 @@ const photoMapping = {
 const MP_DROPDOWN_COLUMNS = ['PATENTE', 'TIPO MANTENIMIENTO', 'CONCEPTO GENERAL', 'TIPO REPARACIÓN', 'PROVEEDOR'];
 
 // Columnas de programación que deben ser desplegables
-const PROG_DROPDOWN_COLUMNS = ['PATENTE', 'TIPO MANTENIMIENTO'];
+const PROG_DROPDOWN_COLUMNS = ['PATENTE', 'TIPO MANTENIMIENTO', 'TIPO REPARACIÓN'];
 
 function showAlert(message, type = 'success') {
 const container = document.getElementById('alert-container');
@@ -2187,14 +2187,21 @@ if (form) form.addEventListener('submit', handleAddProgramacion);
 
 function generateProgramacionFormFields(values = {}, isEdit = false) {
 let html = '';
-const displayCols = progHeaders.filter(h => h !== '_row_number' && h !== 'Marca Temporal' && h !== 'PROXIMO MANTENIMIENTO FECHA');
+// Excluimos los campos que se calculan/autocompletan solos:
+// Marca Temporal, PROXIMO MANTENIMIENTO FECHA, PROXIMO MANTENIMIENTO KM
+const displayCols = progHeaders.filter(h =>
+h !== '_row_number' &&
+h !== 'Marca Temporal' &&
+h !== 'PROXIMO MANTENIMIENTO FECHA' &&
+h !== 'PROXIMO MANTENIMIENTO KM'
+);
 const prefix = isEdit ? 'edit_prog_' : 'prog_';
 
 displayCols.forEach(header => {
 const value = values[header] || '';
 const isDropdown = PROG_DROPDOWN_COLUMNS.includes(header);
 const isDate = header.toUpperCase().includes('FECHA');
-const isTextarea = header.toUpperCase().includes('OBSERVACION');
+const isTextarea = header.toUpperCase().includes('DETALLE');
 const isNumber = header.toUpperCase().includes('KM');
 
 html += `<div class="form-group">`;
@@ -2208,6 +2215,29 @@ const selected = (value === opt) ? ' selected' : '';
 html += `<option value="${opt}"${selected}>${opt}</option>`;
 });
 html += `</select>`;
+} else if (header === 'TIPO MANTENIMIENTO') {
+// Solo PREVENTIVO, fijo
+html += `<select id="${prefix}${header}" name="${header}">`;
+html += `<option value="PREVENTIVO" selected>PREVENTIVO</option>`;
+html += `</select>`;
+} else if (header === 'TIPO REPARACIÓN') {
+// Dropdown con las opciones de TIPO REPARACIÓN de Configuracion MP
+const tiposReparacion = [];
+mpConfigMP.forEach(c => {
+const tr = (c['TIPO REPARACIÓN'] || '').trim();
+if (tr && !tiposReparacion.includes(tr)) tiposReparacion.push(tr);
+});
+tiposReparacion.sort();
+html += `<select id="${prefix}${header}" name="${header}" onchange="calcularProximoKm('${isEdit ? 'edit' : 'add'}')">`;
+html += `<option value="">-- Seleccionar --</option>`;
+tiposReparacion.forEach(opt => {
+const selected = (value === opt) ? ' selected' : '';
+html += `<option value="${opt}"${selected}>${opt}</option>`;
+});
+html += `</select>`;
+if (tiposReparacion.length === 0) {
+html += `<small style="color:#e53e3e;">⚠️ Configura TIPO REPARACIÓN en la pestaña Configuración → Configuración MP</small>`;
+}
 } else if (isDropdown && mpDropdowns[header] && mpDropdowns[header].length > 0) {
 html += `<select id="${prefix}${header}" name="${header}">`;
 html += `<option value="">-- Seleccionar --</option>`;
@@ -2215,11 +2245,6 @@ mpDropdowns[header].forEach(opt => {
 const selected = (value === opt) ? ' selected' : '';
 html += `<option value="${opt}"${selected}>${opt}</option>`;
 });
-html += `</select>`;
-} else if (isDropdown) {
-html += `<select id="${prefix}${header}" name="${header}">`;
-html += `<option value="">-- Sin opciones configuradas --</option>`;
-if (value) html += `<option value="${value}" selected>${value}</option>`;
 html += `</select>`;
 } else if (header === 'FECHA ULTIMO MANTENIMIENTO') {
 let dateValue = value;
@@ -2233,14 +2258,11 @@ dateValue = `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
 }
 html += `<input type="date" id="${prefix}${header}" name="${header}" value="${dateValue}" onchange="calcularProximoMantenimiento('${isEdit ? 'edit' : 'add'}')">`;
 html += `<small style="color:#666; display:block; margin-top:5px;" id="${prefix}proximo_label">📅 Próximo mantenimiento: se calcula 1 año después</small>`;
-} else if (header === 'PROXIMO MANTENIMIENTO FECHA') {
-// No se muestra en el formulario, se calcula automáticamente
-return;
 } else if (header === 'KM ULTIMO MANTENIMIENTO') {
-html += `<input type="text" id="${prefix}${header}" name="${header}" value="${value}" readonly style="background:#f0f0f0; cursor:not-allowed;">`;
+html += `<input type="text" id="${prefix}${header}" name="${header}" value="${value}" readonly style="background:#f0f0f0; cursor:not-allowed;" onchange="calcularProximoKm('${isEdit ? 'edit' : 'add'}')">`;
 html += `<small style="color:#666;">Se completa automáticamente desde la columna ODOMETRO de Camion T2 al seleccionar la patente</small>`;
 } else if (isTextarea) {
-html += `<textarea id="${prefix}${header}" name="${header}" rows="2">${value}</textarea>`;
+html += `<textarea id="${prefix}${header}" name="${header}" rows="3">${value}</textarea>`;
 } else if (isNumber) {
 html += `<input type="number" step="1" id="${prefix}${header}" name="${header}" value="${value}">`;
 } else {
@@ -2264,6 +2286,9 @@ kmInput.value = odometroPorPatente[patente];
 } else {
 kmInput.value = '';
 }
+
+// Recalcular próximo KM automáticamente
+calcularProximoKm(mode);
 }
 
 function calcularProximoMantenimiento(mode) {
@@ -2290,6 +2315,47 @@ year += 1;
 let proximoStr = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
 
 label.textContent = `📅 Próximo mantenimiento: ${proximoStr}`;
+}
+
+function calcularProximoKm(mode) {
+const prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
+const kmUltimoInput = document.getElementById(`${prefix}KM ULTIMO MANTENIMIENTO`);
+const tipoRepSelect = document.getElementById(`${prefix}TIPO REPARACIÓN`);
+const label = document.getElementById(`${prefix}proximo_km_label`);
+
+if (!kmUltimoInput || !tipoRepSelect) return;
+
+const kmUltimo = parseFloat(kmUltimoInput.value) || 0;
+const tipoRep = (tipoRepSelect.value || '').trim();
+
+let politica = 0;
+if (tipoRep) {
+const config = mpConfigMP.find(c => (c['TIPO REPARACIÓN'] || '').trim() === tipoRep);
+if (config) {
+politica = parseFloat(config['POLITICA']) || 0;
+}
+}
+
+// Actualizar el label informativo
+const grupo = kmUltimoInput.closest('.form-group');
+let infoLabel = grupo ? grupo.querySelector('.proximo-km-info') : null;
+if (!infoLabel && grupo) {
+infoLabel = document.createElement('small');
+infoLabel.className = 'proximo-km-info';
+infoLabel.style.color = '#666';
+infoLabel.style.display = 'block';
+infoLabel.style.marginTop = '5px';
+grupo.appendChild(infoLabel);
+}
+if (infoLabel) {
+if (politica > 0 && kmUltimo > 0) {
+infoLabel.textContent = `📊 Próximo KM: ${kmUltimo + politica} (KM Último ${kmUltimo} + Política ${politica})`;
+} else if (kmUltimo > 0) {
+infoLabel.textContent = `📊 Próximo KM: ${kmUltimo} (sin política configurada para "${tipoRep}")`;
+} else {
+infoLabel.textContent = '';
+}
+}
 }
 
 function toggleProgramacionForm() {
@@ -2349,6 +2415,7 @@ document.getElementById('editProgramacionFields').innerHTML = generateProgramaci
 
 setTimeout(() => {
 calcularProximoMantenimiento('edit');
+calcularProximoKm('edit');
 }, 100);
 
 document.getElementById('editProgramacionModal').style.display = 'block';
@@ -2441,7 +2508,7 @@ html += `
 
                <div class="config-section">
                    <h3>🔧 Configuración MP (Políticas)</h3>
-                   <p style="color:#666; margin-bottom:15px;">Configura las políticas para cada combinación de TIPO MANTENIMIENTO y TIPO REPARACIÓN. La POLITICA se suma a KM REALIZADO para calcular KM PROXIMO CAMBIO.</p>
+                   <p style="color:#666; margin-bottom:15px;">Configura las políticas para cada combinación de TIPO MANTENIMIENTO y TIPO REPARACIÓN. La POLITICA se suma a KM REALIZADO / KM ULTIMO MANTENIMIENTO para calcular el próximo KM.</p>
                    <table class="config-mp-table">
                        <thead>
                            <tr>
