@@ -22,7 +22,7 @@ SHEET_CONFIG_MP = 'Configuracion MP'
 SHEET_CONFIG_DROPDOWNS = 'Configuracion Desplegables'
 SHEET_PROGRAMACION_MP = 'Programacion Mantenimiento Preventivo'
 
-# Headers de la hoja de Programación (se crean automáticamente)
+# Headers de la hoja de Programación
 PROG_HEADERS = [
     'Marca Temporal',
     'PATENTE',
@@ -122,7 +122,7 @@ def get_all_data(sheet_name, spreadsheet_id=None):
         return {'headers': headers, 'rows': rows}
 
     except HttpError as err:
-        print(f"Error getting sheet data: {err}")
+        print(f"Error getting sheet data [{sheet_name}]: {err}")
         return {'headers': [], 'rows': []}
 
 def update_row(sheet_name, row_number, values, spreadsheet_id=None):
@@ -141,11 +141,9 @@ def update_row(sheet_name, row_number, values, spreadsheet_id=None):
 
         last_col = chr(64 + num_columns) if num_columns <= 26 else 'Z'
 
-        body = {
-            'values': [values[:num_columns]]
-        }
+        body = {'values': [values[:num_columns]]}
 
-        result = sheet.values().update(
+        sheet.values().update(
             spreadsheetId=sid,
             range=f"'{sheet_name}'!A{row_number}:{last_col}{row_number}",
             valueInputOption='RAW',
@@ -180,10 +178,7 @@ def update_row_partial(sheet_name, row_number, column_updates):
         if not requests:
             return False
 
-        body = {
-            'valueInputOption': 'RAW',
-            'data': requests
-        }
+        body = {'valueInputOption': 'RAW', 'data': requests}
 
         sheet.values().batchUpdate(
             spreadsheetId=SPREADSHEET_ID,
@@ -197,7 +192,6 @@ def update_row_partial(sheet_name, row_number, column_updates):
         return False
 
 def update_prog_estado(row_number, estado):
-    """Actualiza sólo la columna Estado en la hoja de programación"""
     try:
         creds = get_google_creds()
         service = build('sheets', 'v4', credentials=creds)
@@ -207,6 +201,7 @@ def update_prog_estado(row_number, estado):
         headers = data.get('headers', [])
 
         if 'Estado' not in headers:
+            print(f"⚠️ 'Estado' no está en los headers de la hoja: {headers}")
             return False
 
         col_idx = headers.index('Estado')
@@ -256,7 +251,7 @@ def delete_row(sheet_name, row_number, spreadsheet_id=None):
 
         body = {'requests': requests}
 
-        result = sheet.batchUpdate(spreadsheetId=sid, body=body).execute()
+        sheet.batchUpdate(spreadsheetId=sid, body=body).execute()
 
         return True
 
@@ -280,7 +275,7 @@ def add_row_to_sheet(sheet_name, values, spreadsheet_id=None):
 
         body = {'values': [values[:num_columns]]}
 
-        result = sheet.values().append(
+        sheet.values().append(
             spreadsheetId=sid,
             range=f"'{sheet_name}'!A:Z",
             valueInputOption='RAW',
@@ -295,6 +290,10 @@ def add_row_to_sheet(sheet_name, values, spreadsheet_id=None):
         return False
 
 def ensure_sheet_exists(sheet_name, spreadsheet_id=None, headers=None):
+    """
+    Crea la hoja si no existe Y escribe/actualiza los headers.
+    Si la hoja existe pero los headers no coinciden, los reescribe.
+    """
     try:
         creds = get_google_creds()
         service = build('sheets', 'v4', credentials=creds)
@@ -310,6 +309,7 @@ def ensure_sheet_exists(sheet_name, spreadsheet_id=None, headers=None):
                 break
 
         if not exists:
+            print(f"📄 Creando hoja '{sheet_name}'...")
             requests = [{
                 'addSheet': {
                     'properties': {'title': sheet_name}
@@ -323,9 +323,40 @@ def ensure_sheet_exists(sheet_name, spreadsheet_id=None, headers=None):
                     valueInputOption='RAW',
                     body={'values': [headers]}
                 ).execute()
+            print(f"✅ Hoja '{sheet_name}' creada con headers: {headers}")
+        else:
+            # Verificar/actualizar headers
+            if headers:
+                try:
+                    result = sheet.values().get(
+                        spreadsheetId=sid,
+                        range=f"'{sheet_name}'!A1:Z1"
+                    ).execute()
+                    current_headers = result.get('values', [[]])[0] if result.get('values') else []
+                    
+                    # Si los headers están vacíos o difieren, los reescribimos
+                    if not current_headers or current_headers != headers:
+                        print(f"⚠️ Headers de '{sheet_name}' no coinciden. Actualizando...")
+                        print(f"   Actuales: {current_headers}")
+                        print(f"   Esperados: {headers}")
+                        # Limpiar toda la hoja y reescribir headers
+                        sheet.values().clear(
+                            spreadsheetId=sid,
+                            range=f"'{sheet_name}'!A:Z"
+                        ).execute()
+                        sheet.values().update(
+                            spreadsheetId=sid,
+                            range=f"'{sheet_name}'!A1",
+                            valueInputOption='RAW',
+                            body={'values': [headers]}
+                        ).execute()
+                        print(f"✅ Headers actualizados en '{sheet_name}'")
+                except HttpError as err:
+                    print(f"⚠️ No se pudo verificar headers de '{sheet_name}': {err}")
+
         return True
     except HttpError as err:
-        print(f"Error ensuring sheet: {err}")
+        print(f"❌ Error ensuring sheet '{sheet_name}': {err}")
         return False
 
 def upload_file_to_drive(file_content, filename, folder_id):
@@ -731,12 +762,28 @@ def delete_document(sheet_name, row_number):
 @app.route('/api/mantenimientos/config', methods=['GET'])
 def get_mantenimiento_config():
     try:
+        print("=" * 60)
+        print("🔍 GET /api/mantenimientos/config")
+        print("=" * 60)
+
+        # Asegurar y actualizar headers de las hojas
         ensure_sheet_exists(SHEET_CONFIG_DROPDOWNS, SPREADSHEET_ID_MP)
+        ensure_sheet_exists(SHEET_CONFIG_MP, SPREADSHEET_ID_MP)
+        ensure_sheet_exists(
+            SHEET_PROGRAMACION_MP,
+            SPREADSHEET_ID_MP,
+            headers=PROG_HEADERS
+        )
 
         dropdown_data = get_all_data(SHEET_CONFIG_DROPDOWNS, SPREADSHEET_ID_MP)
         config_mp_data = get_all_data(SHEET_CONFIG_MP, SPREADSHEET_ID_MP)
         hist_data = get_all_data(SHEET_HISTORIAL_MP, SPREADSHEET_ID_MP)
 
+        print(f"📋 Headers dropdowns: {dropdown_data.get('headers', [])}")
+        print(f"📋 Headers config_mp: {config_mp_data.get('headers', [])}")
+        print(f"📋 Headers historial: {hist_data.get('headers', [])}")
+
+        # PATENTES + ODOMETRO desde Camion T2
         camion_t2_data = get_all_data('Camion T2', SPREADSHEET_ID)
         patentes_camion_t2 = []
         odometro_por_patente = {}
@@ -749,13 +796,20 @@ def get_mantenimiento_config():
                 if odometro:
                     odometro_por_patente[patente] = odometro
         patentes_camion_t2.sort()
+        print(f"🚛 Patentes Camion T2: {patentes_camion_t2}")
+        print(f"🛣️ Odómetros: {odometro_por_patente}")
 
-        ensure_sheet_exists(
-            SHEET_PROGRAMACION_MP,
-            SPREADSHEET_ID_MP,
-            headers=PROG_HEADERS
-        )
+        # Programación
         programacion_data = get_all_data(SHEET_PROGRAMACION_MP, SPREADSHEET_ID_MP)
+        print(f"📋 Headers programación: {programacion_data.get('headers', [])}")
+        print(f"📋 Filas programación: {len(programacion_data.get('rows', []))}")
+
+        # Si los headers de programación vinieron vacíos, forzar creación con headers correctos
+        if not programacion_data.get('headers'):
+            print("⚠️ Headers de programación vacíos. Recreando con headers esperados...")
+            ensure_sheet_exists(SHEET_PROGRAMACION_MP, SPREADSHEET_ID_MP, headers=PROG_HEADERS)
+            programacion_data = get_all_data(SHEET_PROGRAMACION_MP, SPREADSHEET_ID_MP)
+            print(f"📋 Headers después de recrear: {programacion_data.get('headers', [])}")
 
         return jsonify({
             'success': True,
@@ -769,7 +823,9 @@ def get_mantenimiento_config():
             'programacion_rows': programacion_data.get('rows', [])
         })
     except Exception as e:
-        print(f"Error en get_mantenimiento_config: {e}")
+        print(f"❌ Error en get_mantenimiento_config: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/mantenimientos/dropdowns', methods=['POST'])
@@ -926,11 +982,7 @@ def add_programacion():
         data = request.json
         sheet_name = SHEET_PROGRAMACION_MP
 
-        ensure_sheet_exists(
-            sheet_name,
-            SPREADSHEET_ID_MP,
-            headers=PROG_HEADERS
-        )
+        ensure_sheet_exists(sheet_name, SPREADSHEET_ID_MP, headers=PROG_HEADERS)
 
         sheet_data = get_all_data(sheet_name, SPREADSHEET_ID_MP)
         headers = sheet_data.get('headers', [])
@@ -1035,7 +1087,6 @@ def update_programacion(row_number):
             elif header == 'TIPO MANTENIMIENTO':
                 row_values.append('PREVENTIVO')
             elif header == 'Estado':
-                # Preservar el estado actual salvo que venga explícito
                 row_values.append(str(data.get('Estado', estado_actual)))
             else:
                 row_values.append(str(data.get(header, '')))
@@ -1065,7 +1116,6 @@ def delete_programacion(row_number):
 
 @app.route('/api/programacion/completar/<int:row_number>', methods=['POST'])
 def completar_programacion(row_number):
-    """Marca la programación como Completo (Estado = 'Completo')"""
     try:
         success = update_prog_estado(row_number, 'Completo')
 
