@@ -1,2813 +1,1082 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistema de Gestión de Documentación</title>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+import os
+import io
+import json
+from datetime import datetime, timedelta
+from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
+from googleapiclient.errors import HttpError
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    padding: 20px;
+app = Flask(__name__)
+
+# Configuración
+SPREADSHEET_ID = '1h12aEo5pwGl_5dl6VZjemuqL_3hA_yauaFMDpVItdB0'
+DRIVE_FOLDER_ID = '1dGN_0wVCIb30gzF7_kn6ciG0Y3U2VMAs'
+
+# Configuración Mantenimientos
+SPREADSHEET_ID_MP = '1ZCgxrjf84jAlc6F8KsiuvFXkZ2qwbUEHfDAHwnfDhzg'
+SHEET_HISTORIAL_MP = 'Historial Mantenimientos'
+SHEET_CONFIG_MP = 'Configuracion MP'
+SHEET_CONFIG_DROPDOWNS = 'Configuracion Desplegables'
+SHEET_PROGRAMACION_MP = 'Programacion Mantenimiento Preventivo'
+
+# Headers de la hoja de Programación (se crean automáticamente)
+PROG_HEADERS = [
+    'Marca Temporal',
+    'PATENTE',
+    'FECHA ULTIMO MANTENIMIENTO',
+    'PROXIMO MANTENIMIENTO FECHA',
+    'KM ULTIMO MANTENIMIENTO',
+    'PROXIMO MANTENIMIENTO KM',
+    'TIPO MANTENIMIENTO',
+    'TIPO REPARACIÓN',
+    'DETALLE REPARACIÓN',
+    'Estado'
+]
+
+SHEETS = {
+    'Camion T1': 'Camion T1',
+    'Camion T2': 'Camion T2',
+    'Autoelevadores': 'Autoelevadores',
+    'Choferes y Ayudantes': 'Choferes y Ayudantes',
+    'Historial de Vencimiento de Documentación': 'Historial de Vencimiento de Documentación'
 }
 
-.container {
-    max-width: 1400px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    padding: 30px;
-}
-
-h1 { color: #333; margin-bottom: 10px; text-align: center; }
-.subtitle { text-align: center; color: #666; margin-bottom: 30px; }
-
-.tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-
-.tab {
-    padding: 10px 20px;
-    background: #f0f0f0;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s;
-}
-
-.tab:hover { background: #e0e0e0; transform: translateY(-2px); }
-.tab.active { background: #667eea; color: white; }
-
-.toolbar {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    align-items: center;
-    background: #f8f9fa;
-    padding: 15px;
-    border-radius: 8px;
-}
-
-.toolbar .btn { margin: 0; }
-
-.filter-group {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-    flex: 1;
-}
-
-.filter-group label { font-weight: 600; color: #333; white-space: nowrap; }
-
-.filter-group input {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 14px;
-    flex: 1;
-    min-width: 200px;
-}
-
-.filter-group input:focus { outline: none; border-color: #667eea; }
-
-.btn-clear {
-    background: #e53e3e;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s;
-}
-
-.btn-clear:hover { background: #c53030; }
-
-.form-section {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    display: none;
-}
-
-.form-section.visible { display: block; }
-
-.form-group { margin-bottom: 15px; }
-
-.form-group label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 5px;
-    color: #333;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 14px;
-}
-
-.form-group input[type="file"] { padding: 8px; }
-.form-group textarea { resize: vertical; min-height: 60px; }
-
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-.btn {
-    background: #667eea;
-    color: white;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s;
-    font-size: 14px;
-}
-
-.btn:hover {
-    background: #5a67d8;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-}
-
-.btn-danger { background: #e53e3e; }
-.btn-danger:hover { background: #c53030; }
-.btn-success { background: #38a169; }
-.btn-success:hover { background: #2f855a; }
-.btn-sm { padding: 5px 10px; font-size: 12px; }
-.btn-add { background: #38a169; }
-.btn-add:hover { background: #2f855a; }
-.btn-cancel { background: #718096; }
-.btn-cancel:hover { background: #4a5568; }
-.btn-complete { background: #ed8936; }
-.btn-complete:hover { background: #c05621; }
-
-.table-container { overflow-x: auto; margin-top: 10px; }
-.table-wrapper { position: relative; overflow: auto; max-height: 550px; }
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-}
-
-th {
-    background: #667eea;
-    color: white;
-    padding: 10px 8px;
-    text-align: left;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    white-space: nowrap;
-}
-
-td {
-    padding: 8px;
-    border-bottom: 1px solid #e0e0e0;
-    vertical-align: middle;
-}
-
-tr:hover { background: #f8f9fa; }
-
-.estado-en-proceso {
-    background-color: #fefcbf !important;
-    color: #744210;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 4px;
-    display: inline-block;
-}
-
-.estado-completo {
-    background-color: #c6f6d5 !important;
-    color: #22543d;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 4px;
-    display: inline-block;
-}
-
-.status-ok {
-    background-color: #c6f6d5 !important;
-    color: #22543d;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 4px;
-    display: inline-block;
-}
-
-.status-warning {
-    background-color: #fefcbf !important;
-    color: #744210;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 4px;
-    display: inline-block;
-}
-
-.status-danger {
-    background-color: #fed7d7 !important;
-    color: #742a2a;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 4px;
-    display: inline-block;
-}
-
-.date-ok { background-color: #c6f6d5 !important; color: #22543d; font-weight: 600; }
-.date-warning { background-color: #fefcbf !important; color: #744210; font-weight: 600; }
-.date-danger { background-color: #fed7d7 !important; color: #742a2a; font-weight: 600; }
-
-.cell-ok {
-    background-color: #c6f6d5 !important;
-    color: #22543d;
-    font-weight: 700;
-    text-align: center;
-}
-
-.cell-danger {
-    background-color: #fed7d7 !important;
-    color: #742a2a;
-    font-weight: 700;
-    text-align: center;
-    animation: pulse-red 1.5s infinite;
-}
-
-@keyframes pulse-red {
-    0%, 100% { background-color: #fed7d7; }
-    50% { background-color: #fc8181; }
-}
-
-.file-link { color: #667eea; text-decoration: none; }
-.file-link:hover { text-decoration: underline; }
-
-.photo-thumb {
-    max-width: 40px;
-    max-height: 40px;
-    border-radius: 4px;
-    cursor: pointer;
-    border: 1px solid #ddd;
-    object-fit: cover;
-}
-
-.photo-thumb:hover { border-color: #667eea; transform: scale(1.05); }
-.photo-group { display: flex; gap: 5px; flex-wrap: wrap; }
-
-.loading { text-align: center; padding: 20px; color: #666; }
-
-.alert {
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-}
-
-.alert-success { background: #c6f6d5; color: #22543d; border: 1px solid #9ae6b4; }
-.alert-error { background: #fed7d7; color: #742a2a; border: 1px solid #fc8181; }
-
-.required { color: #e53e3e; }
-.actions { display: flex; gap: 5px; flex-wrap: wrap; flex-direction: column; }
-
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-.modal-content {
-    background-color: white;
-    margin: 5% auto;
-    padding: 30px;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 800px;
-    position: relative;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.modal-close {
-    position: absolute;
-    right: 20px;
-    top: 10px;
-    font-size: 30px;
-    cursor: pointer;
-    color: #999;
-}
-
-.modal-close:hover { color: #333; }
-
-.record-count { color: #666; font-size: 14px; margin-left: 10px; }
-
-.photo-preview {
-    max-width: 100px;
-    max-height: 100px;
-    border-radius: 8px;
-    border: 2px solid #667eea;
-    margin-top: 5px;
-}
-
-.photo-upload-group {
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 10px;
-    background: #fafafa;
-}
-
-.photo-upload-group label { font-weight: 600; color: #333; }
-
-.photo-upload-group .current-photo-thumb {
-    max-width: 60px;
-    max-height: 60px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    margin-top: 5px;
-}
-
-.photo-required {
-    color: #e53e3e;
-    font-size: 12px;
-    font-weight: normal;
-    margin-left: 5px;
-}
-
-.home-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 25px;
-    padding: 60px 20px;
-}
-
-.home-btn {
-    width: 100%;
-    max-width: 420px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 30px;
-    border-radius: 12px;
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    transition: all 0.3s;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
-}
-
-.home-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4); }
-
-.home-btn.master-btn { background: linear-gradient(135deg, #38a169 0%, #2f855a 100%); }
-.home-btn.master-btn:hover { box-shadow: 0 10px 25px rgba(56, 161, 105, 0.4); }
-
-.home-btn.history-btn { background: linear-gradient(135deg, #ed8936 0%, #c05621 100%); }
-.home-btn.history-btn:hover { box-shadow: 0 10px 25px rgba(237, 137, 54, 0.4); }
-
-.home-btn.mp-btn { background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%); }
-.home-btn.mp-btn:hover { box-shadow: 0 10px 25px rgba(49, 130, 206, 0.4); }
-
-.back-home-btn {
-    background: #718096;
-    color: white;
-    border: none;
-    padding: 8px 18px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    margin-bottom: 15px;
-    transition: all 0.3s;
-}
-
-.back-home-btn:hover { background: #4a5568; }
-
-.status-select {
-    padding: 5px 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    min-width: 110px;
-}
-
-.status-select.en-proceso { background: #fefcbf; color: #744210; border-color: #f6e05e; }
-.status-select.completo { background: #c6f6d5; color: #22543d; border-color: #9ae6b4; }
-.status-select.vencido { background: #fed7d7; color: #742a2a; border-color: #fc8181; }
-.status-select.notificado { background: #bee3f8; color: #2a4365; border-color: #90cdf4; }
-
-.config-section {
-    background: #f8f9fa;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-}
-
-.config-section h3 { margin-bottom: 15px; color: #333; }
-
-.dropdown-config-item {
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    padding: 12px;
-    margin-bottom: 12px;
-}
-
-.dropdown-config-item label {
-    font-weight: 700;
-    color: #667eea;
-    display: block;
-    margin-bottom: 8px;
-}
-
-.dropdown-config-item textarea {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 13px;
-    resize: vertical;
-    min-height: 60px;
-    font-family: monospace;
-}
-
-.config-mp-table { width: 100%; border-collapse: collapse; }
-
-.config-mp-table th {
-    background: #667eea;
-    color: white;
-    padding: 8px;
-    font-size: 13px;
-}
-
-.config-mp-table td { padding: 5px; border-bottom: 1px solid #e0e0e0; }
-
-.config-mp-table input {
-    width: 100%;
-    padding: 6px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 13px;
-}
-
-.btn-remove-row {
-    background: #e53e3e;
-    color: white;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-}
-
-.btn-add-row {
-    background: #38a169;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 13px;
-    margin-top: 10px;
-    font-weight: 600;
-}
-
-.confirm-modal-content {
-    max-width: 500px;
-    text-align: center;
-}
-
-.confirm-modal-content h2 {
-    margin-bottom: 15px;
-    color: #333;
-}
-
-.confirm-modal-content p {
-    color: #666;
-    margin-bottom: 20px;
-    font-size: 15px;
-}
-
-.confirm-buttons {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-@media (max-width: 768px) {
-    .form-row { grid-template-columns: 1fr; }
-    .tabs { flex-direction: column; }
-    .tab { width: 100%; }
-    .modal-content { margin: 10% auto; padding: 20px; width: 95%; }
-    table { font-size: 11px; }
-    th, td { padding: 5px; }
-    .toolbar { flex-direction: column; }
-    .filter-group { width: 100%; }
-    .filter-group input { min-width: 100px; }
-    .photo-thumb { max-width: 30px; max-height: 30px; }
-}
-</style>
-</head>
-<body>
-<div class="container">
-<h1>🚛 Sistema de Gestión de Documentación</h1>
-<p class="subtitle">Control de vencimientos de documentación</p>
-
-<div id="alert-container"></div>
-
-<div id="homeScreen" class="home-screen">
-<button type="button" class="home-btn master-btn" onclick="showModule('master')">🗂️ Maestro de Flota</button>
-<button type="button" class="home-btn" onclick="showModule('docs')">📋 Control de Documentación</button>
-<button type="button" class="home-btn history-btn" onclick="showModule('history')">📊 Historial de Vencimiento de Documentación</button>
-<button type="button" class="home-btn mp-btn" onclick="showModule('mantenimientos')">🔧 Carga de Mantenimientos</button>
-</div>
-
-<div id="docsModule" style="display:none;">
-<button type="button" class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
-
-<div class="tabs" id="tabsDocs">
-<button type="button" class="tab active" data-sheet="Camion T1">🚚 Camión T1</button>
-<button type="button" class="tab" data-sheet="Camion T2">🚛 Camión T2</button>
-<button type="button" class="tab" data-sheet="Autoelevadores">🏗️ Autoelevadores</button>
-<button type="button" class="tab" data-sheet="Choferes y Ayudantes">👨‍✈️ Choferes y Ayudantes</button>
-</div>
-
-<div id="tab-content"></div>
-</div>
-
-<div id="masterModule" style="display:none;">
-<button type="button" class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
-
-<div class="tabs" id="tabsMaster">
-<button type="button" class="tab active" data-sheet="Camion T1">🚚 Camión T1</button>
-<button type="button" class="tab" data-sheet="Camion T2">🚛 Camión T2</button>
-<button type="button" class="tab" data-sheet="Autoelevadores">🏗️ Autoelevadores</button>
-<button type="button" class="tab" data-sheet="Choferes y Ayudantes">👨‍✈️ Choferes y Ayudantes</button>
-</div>
-
-<div id="master-tab-content"></div>
-</div>
-
-<div id="historyModule" style="display:none;">
-<button type="button" class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
-<div id="history-content"></div>
-</div>
-
-<div id="mantenimientosModule" style="display:none;">
-<button type="button" class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
-
-<div class="tabs" id="tabsMantenimientos">
-<button type="button" class="tab active" data-view="historial">🔧 Historial Mantenimientos</button>
-<button type="button" class="tab" data-view="programacion">📅 Programación Mantenimiento Preventivo</button>
-<button type="button" class="tab" data-view="config">⚙️ Configuración</button>
-</div>
-
-<div id="mantenimientos-content"></div>
-</div>
-</div>
-
-<div id="editModal" class="modal">
-<div class="modal-content">
-<span class="modal-close" onclick="closeEditModal()">&times;</span>
-<h2>✏️ Editar Documento</h2>
-<form id="editForm" enctype="multipart/form-data">
-<input type="hidden" id="editSheetName">
-<input type="hidden" id="editRowNumber">
-<div id="editFormFields"></div>
-<div id="editPhotoFields"></div>
-<button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
-</form>
-</div>
-</div>
-
-<div id="editMantenimientoModal" class="modal">
-<div class="modal-content">
-<span class="modal-close" onclick="closeEditMantenimientoModal()">&times;</span>
-<h2>✏️ Editar Mantenimiento</h2>
-<form id="editMantenimientoForm">
-<input type="hidden" id="editMantenimientoRowNumber">
-<div id="editMantenimientoFields"></div>
-<button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
-</form>
-</div>
-</div>
-
-<div id="editProgramacionModal" class="modal">
-<div class="modal-content">
-<span class="modal-close" onclick="closeEditProgramacionModal()">&times;</span>
-<h2>✏️ Editar Programación</h2>
-<form id="editProgramacionForm">
-<input type="hidden" id="editProgramacionRowNumber">
-<div id="editProgramacionFields"></div>
-<button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
-</form>
-</div>
-</div>
-
-<div id="tareaCompletaModal" class="modal">
-<div class="modal-content confirm-modal-content">
-<span class="modal-close" onclick="closeTareaCompletaModal()">&times;</span>
-<h2>✅ Tarea Completa</h2>
-<p id="tareaCompletaMsg">¿Estás seguro de marcar esta tarea como completa?</p>
-<div class="confirm-buttons">
-<button type="button" class="btn btn-success" onclick="confirmarTareaCompletaProgramar()">✅ Sí, volver a programar</button>
-<button type="button" class="btn btn-cancel" onclick="confirmarTareaCompletaNoProgramar()">🚫 No volver a programar</button>
-</div>
-<br>
-<button type="button" class="btn btn-danger btn-sm" style="margin-top:10px;" onclick="closeTareaCompletaModal()">Cancelar</button>
-</div>
-</div>
-
-<script>
-/* ============================================================
-   VARIABLES GLOBALES
-   ============================================================ */
-var currentSheet = 'Camion T1';
-var dataCache = {};
-var currentHeaders = [];
-var allRows = [];
-var filteredRows = [];
-var isFormVisible = false;
-var currentEditRow = null;
-var editContextModule = 'docs';
-
-var masterCurrentSheet = 'Camion T1';
-var masterDataCache = {};
-var masterCurrentHeaders = [];
-var masterAllRows = [];
-var masterFilteredRows = [];
-var masterIsFormVisible = false;
-
-var historyAllRows = [];
-var historyFilteredRows = [];
-var historyHeaders = [];
-
-var mpCurrentView = 'historial';
-var mpHeaders = [];
-var mpRows = [];
-var mpFilteredRows = [];
-var mpIsFormVisible = false;
-var mpDropdowns = {};
-var mpConfigMP = [];
-var mpConfigLoaded = false;
-
-var progHeaders = [];
-var progRows = [];
-var progFilteredRows = [];
-var progIsFormVisible = false;
-var patentesCamionT2 = [];
-var odometroPorPatente = {};
-var progRowSeleccionadaParaCompletar = null;
-var progPatentePrecargada = null;
-
-var columnConfig = {
-    'Camion T1': [
-        'PATENTE', 'PROPIETARIO', 'MAIL', 'CIA SEGURO', 'VENC VTV',
-        'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO',
-        'POLIZA DE SEGUROS', 'SEGURO DE ACCIDENTES PERSONALES',
-        'CLAUSULA DE NO REPETICION', 'INDUCCION DE CMQ',
-        'CAPACITACION DE MANEJO DEFENSIVO'
-    ],
-    'Camion T2': [
-        'PATENTE', 'CIA SEGURO', 'AÑO', 'VENC VTV', 'VENC SEGURO',
-        'UTA', 'EXTINTOR', 'BOTIQUIN'
-    ],
-    'Autoelevadores': [
-        'CODIGO DE AE', 'CIA SEGURO', 'AÑO', 'VENC SEGURO', 'EXTINTOR'
-    ],
-    'Choferes y Ayudantes': [
-        'APELLIDO Y NOMBRE', 'CONTRATACION', 'Mail',
-        'VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA'
-    ]
-};
-
-var dateColumnsConfig = {
-    'Camion T1': ['VENC VTV', 'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO', 'POLIZA DE SEGUROS',
-        'SEGURO DE ACCIDENTES PERSONALES', 'CLAUSULA DE NO REPETICION', 'INDUCCION DE CMQ',
-        'CAPACITACION DE MANEJO DEFENSIVO'
-    ],
+HISTORY_SHEET = 'Historial de Vencimiento de Documentación'
+
+DATE_COLUMNS_CONFIG = {
+    'Camion T1': ['VENC VTV', 'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO',
+                  'POLIZA DE SEGUROS', 'SEGURO DE ACCIDENTES PERSONALES', 'CLAUSULA DE NO REPETICION',
+                  'INDUCCION DE CMQ', 'CAPACITACION DE MANEJO DEFENSIVO'],
     'Camion T2': ['VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN'],
     'Autoelevadores': ['VENC SEGURO', 'EXTINTOR'],
     'Choferes y Ayudantes': ['VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA']
-};
+}
 
-var filterFields = {
+ID_FIELD_CONFIG = {
     'Camion T1': 'PATENTE',
     'Camion T2': 'PATENTE',
     'Autoelevadores': 'CODIGO DE AE',
     'Choferes y Ayudantes': 'APELLIDO Y NOMBRE'
-};
-
-var MP_DROPDOWN_COLUMNS = ['PATENTE', 'TIPO MANTENIMIENTO', 'CONCEPTO GENERAL', 'TIPO REPARACIÓN', 'PROVEEDOR'];
-var PROG_DROPDOWN_COLUMNS = ['PATENTE', 'TIPO MANTENIMIENTO', 'TIPO REPARACIÓN'];
-
-/* ============================================================
-   UTILIDADES
-   ============================================================ */
-function showAlert(message, type) {
-    type = type || 'success';
-    var container = document.getElementById('alert-container');
-    if (!container) return;
-    var alert = document.createElement('div');
-    alert.className = 'alert alert-' + type;
-    alert.textContent = message;
-    container.appendChild(alert);
-    setTimeout(function() { alert.remove(); }, 5000);
 }
 
-function parseDate(dateStr) {
-    if (!dateStr) return null;
-    dateStr = String(dateStr).trim();
-    if (dateStr === '') return null;
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-12345')
+CORS(app)
 
-    if (dateStr.indexOf('/') !== -1) {
-        var parts = dateStr.split('/');
-        if (parts.length === 3) {
-            var day = parseInt(parts[0]);
-            var month = parseInt(parts[1]) - 1;
-            var year = parseInt(parts[2]);
-            if (year < 100) year += 2000;
-            if (!isNaN(day) && !isNaN(month) && !isNaN(year) && day > 0 && month >= 0 && day <= 31 && month <= 11) {
-                return new Date(year, month, day);
-            }
+def get_google_creds():
+    try:
+        if 'GOOGLE_APPLICATION_CREDENTIALS_JSON' in os.environ:
+            creds_json = json.loads(os.environ['GOOGLE_APPLICATION_CREDENTIALS_JSON'])
+            creds = service_account.Credentials.from_service_account_info(
+                creds_json,
+                scopes=[
+                    'https://www.googleapis.com/auth/spreadsheets',
+                    'https://www.googleapis.com/auth/drive'
+                ]
+            )
+        else:
+            creds = service_account.Credentials.from_service_account_file(
+                'credentials.json',
+                scopes=[
+                    'https://www.googleapis.com/auth/spreadsheets',
+                    'https://www.googleapis.com/auth/drive'
+                ]
+            )
+        return creds
+    except Exception as e:
+        print(f"Error al obtener credenciales: {e}")
+        raise
+
+def get_all_data(sheet_name, spreadsheet_id=None):
+    try:
+        creds = get_google_creds()
+        service = build('sheets', 'v4', credentials=creds)
+        sheet = service.spreadsheets()
+
+        sid = spreadsheet_id or SPREADSHEET_ID
+
+        result = sheet.values().get(
+            spreadsheetId=sid,
+            range=f"'{sheet_name}'!A:Z"
+        ).execute()
+
+        values = result.get('values', [])
+        if not values:
+            return {'headers': [], 'rows': []}
+
+        headers = values[0] if values else []
+        rows = []
+
+        for i, row in enumerate(values[1:], start=2):
+            row_data = {}
+            for j, header in enumerate(headers):
+                if j < len(row):
+                    row_data[header] = row[j]
+                else:
+                    row_data[header] = ''
+            row_data['_row_number'] = i
+            rows.append(row_data)
+
+        return {'headers': headers, 'rows': rows}
+
+    except HttpError as err:
+        print(f"Error getting sheet data: {err}")
+        return {'headers': [], 'rows': []}
+
+def update_row(sheet_name, row_number, values, spreadsheet_id=None):
+    try:
+        creds = get_google_creds()
+        service = build('sheets', 'v4', credentials=creds)
+        sheet = service.spreadsheets()
+
+        sid = spreadsheet_id or SPREADSHEET_ID
+
+        data = get_all_data(sheet_name, sid)
+        num_columns = len(data.get('headers', []))
+
+        while len(values) < num_columns:
+            values.append('')
+
+        last_col = chr(64 + num_columns) if num_columns <= 26 else 'Z'
+
+        body = {
+            'values': [values[:num_columns]]
         }
-    }
 
-    if (dateStr.indexOf('-') !== -1) {
-        var parts2 = dateStr.split('-');
-        if (parts2.length === 3) {
-            var year2 = parseInt(parts2[0]);
-            var month2 = parseInt(parts2[1]) - 1;
-            var day2 = parseInt(parts2[2]);
-            if (!isNaN(year2) && !isNaN(month2) && !isNaN(day2) && day2 > 0 && month2 >= 0 && day2 <= 31 && month2 <= 11) {
-                return new Date(year2, month2, day2);
-            }
+        result = sheet.values().update(
+            spreadsheetId=sid,
+            range=f"'{sheet_name}'!A{row_number}:{last_col}{row_number}",
+            valueInputOption='RAW',
+            body=body
+        ).execute()
+
+        return True
+
+    except HttpError as err:
+        print(f"Error updating row: {err}")
+        return False
+
+def update_row_partial(sheet_name, row_number, column_updates):
+    try:
+        creds = get_google_creds()
+        service = build('sheets', 'v4', credentials=creds)
+        sheet = service.spreadsheets()
+
+        data = get_all_data(sheet_name)
+        headers = data.get('headers', [])
+
+        requests = []
+        for col_name, value in column_updates.items():
+            if col_name in headers:
+                col_idx = headers.index(col_name)
+                col_letter = chr(65 + col_idx) if col_idx < 26 else 'Z'
+                requests.append({
+                    'range': f"'{sheet_name}'!{col_letter}{row_number}",
+                    'values': [[value]]
+                })
+
+        if not requests:
+            return False
+
+        body = {
+            'valueInputOption': 'RAW',
+            'data': requests
         }
-    }
 
-    var date = new Date(dateStr);
-    if (!isNaN(date.getTime())) return date;
-    return null;
-}
+        sheet.values().batchUpdate(
+            spreadsheetId=SPREADSHEET_ID,
+            body=body
+        ).execute()
 
-function getDateStatus(dateStr) {
-    if (!dateStr) return { class: '', text: '' };
-    var expDate = parseDate(dateStr);
-    if (!expDate) return { class: '', text: '' };
-    var today = new Date();
-    today.setHours(0, 0, 0, 0);
-    expDate.setHours(0, 0, 0, 0);
-    var diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-    if (diffDays < 0) return { class: 'date-danger', text: 'VENCIDO' };
-    else if (diffDays >= 0 && diffDays <= 30) return { class: 'date-warning', text: diffDays + ' días' };
-    else return { class: 'date-ok', text: diffDays + ' días' };
-}
+        return True
 
-function getRowStatus(row, sheetName) {
-    var dateColumns = dateColumnsConfig[sheetName] || [];
-    var hasDate = false, anyExpired = false, anyWarning = false;
-    dateColumns.forEach(function(col) {
-        if (row[col]) {
-            hasDate = true;
-            var status = getDateStatus(row[col]);
-            if (status.class === 'date-danger') anyExpired = true;
-            else if (status.class === 'date-warning') anyWarning = true;
-        }
-    });
-    if (!hasDate) return { class: 'status-ok', text: '✅ Sin fechas' };
-    if (anyExpired) return { class: 'status-danger', text: '🔴 VENCIDO' };
-    else if (anyWarning) return { class: 'status-warning', text: '🟡 Cerca de vencimiento' };
-    else return { class: 'status-ok', text: '✅ OK' };
-}
+    except HttpError as err:
+        print(f"Error updating row partial: {err}")
+        return False
 
-function getDisplayColumns(sheetName) {
-    var columns = columnConfig[sheetName] || [];
-    return columns.concat(['Marca Temporal']);
-}
+def update_prog_estado(row_number, estado):
+    """Actualiza sólo la columna Estado en la hoja de programación"""
+    try:
+        creds = get_google_creds()
+        service = build('sheets', 'v4', credentials=creds)
+        sheet = service.spreadsheets()
 
-function getAllColumns(headers) {
-    return headers.filter(function(h) { return h !== '_row_number' && h.indexOf('_FOTO') === -1; });
-}
+        data = get_all_data(SHEET_PROGRAMACION_MP, SPREADSHEET_ID_MP)
+        headers = data.get('headers', [])
 
-function isPhotoUrl(value) {
-    if (!value) return false;
-    return value.indexOf('http') === 0 && (value.indexOf('drive') !== -1 || value.indexOf('docs') !== -1 || value.indexOf('google') !== -1);
-}
+        if 'Estado' not in headers:
+            return False
 
-function getPhotoColumns(headers) {
-    return headers.filter(function(h) { return h.indexOf('_FOTO') !== -1; });
-}
+        col_idx = headers.index('Estado')
+        col_letter = chr(65 + col_idx) if col_idx < 26 else 'Z'
 
-function getDateColumnsRequiringPhoto(sheetName) {
-    return dateColumnsConfig[sheetName] || [];
-}
+        sheet.values().update(
+            spreadsheetId=SPREADSHEET_ID_MP,
+            range=f"'{SHEET_PROGRAMACION_MP}'!{col_letter}{row_number}",
+            valueInputOption='RAW',
+            body={'values': [[estado]]}
+        ).execute()
 
-/* ============================================================
-   NAVEGACIÓN
-   ============================================================ */
-function showHome() {
-    document.getElementById('homeScreen').style.display = 'flex';
-    document.getElementById('docsModule').style.display = 'none';
-    document.getElementById('masterModule').style.display = 'none';
-    document.getElementById('historyModule').style.display = 'none';
-    document.getElementById('mantenimientosModule').style.display = 'none';
-}
+        return True
+    except HttpError as err:
+        print(f"Error en update_prog_estado: {err}")
+        return False
 
-function showModule(module) {
-    document.getElementById('homeScreen').style.display = 'none';
-    if (module === 'docs') {
-        document.getElementById('docsModule').style.display = 'block';
-        document.getElementById('masterModule').style.display = 'none';
-        document.getElementById('historyModule').style.display = 'none';
-        document.getElementById('mantenimientosModule').style.display = 'none';
-        loadSheetData(currentSheet);
-    } else if (module === 'master') {
-        document.getElementById('masterModule').style.display = 'block';
-        document.getElementById('docsModule').style.display = 'none';
-        document.getElementById('historyModule').style.display = 'none';
-        document.getElementById('mantenimientosModule').style.display = 'none';
-        loadMasterData(masterCurrentSheet);
-    } else if (module === 'history') {
-        document.getElementById('historyModule').style.display = 'block';
-        document.getElementById('docsModule').style.display = 'none';
-        document.getElementById('masterModule').style.display = 'none';
-        document.getElementById('mantenimientosModule').style.display = 'none';
-        loadHistoryData();
-    } else if (module === 'mantenimientos') {
-        document.getElementById('mantenimientosModule').style.display = 'block';
-        document.getElementById('docsModule').style.display = 'none';
-        document.getElementById('masterModule').style.display = 'none';
-        document.getElementById('historyModule').style.display = 'none';
-        loadMantenimientosData();
-    }
-}
+def delete_row(sheet_name, row_number, spreadsheet_id=None):
+    try:
+        creds = get_google_creds()
+        service = build('sheets', 'v4', credentials=creds)
+        sheet = service.spreadsheets()
 
-/* ============================================================
-   FORMULARIOS GENÉRICOS
-   ============================================================ */
-function generateFormFields(headers, excludeFields, values, isMaster) {
-    excludeFields = excludeFields || ['_row_number', 'Marca Temporal'];
-    values = values || {};
-    isMaster = isMaster || false;
-    var html = '';
-    var photoCols = getPhotoColumns(headers);
-    var dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
+        sid = spreadsheet_id or SPREADSHEET_ID
 
-    headers.forEach(function(header) {
-        if (excludeFields.indexOf(header) !== -1) return;
-        if (photoCols.indexOf(header) !== -1) return;
+        spreadsheet = service.spreadsheets().get(spreadsheetId=sid).execute()
 
-        var upper = header.toUpperCase();
-        var isDate = upper.indexOf('FECHA') !== -1 || upper.indexOf('VENCIMIENTO') !== -1 || upper.indexOf('VENC') !== -1;
-        var isTextarea = upper.indexOf('OBSERVACION') !== -1 || upper.indexOf('COMENTARIO') !== -1;
-        var value = values[header] || '';
-        var requiresPhoto = dateColsRequiringPhoto.indexOf(header) !== -1;
+        sheet_id = None
+        for s in spreadsheet.get('sheets', []):
+            if s['properties']['title'] == sheet_name:
+                sheet_id = s['properties']['sheetId']
+                break
 
-        html += '<div class="form-group">';
-        html += '<label>' + header;
-        if (requiresPhoto && !isMaster) {
-            html += ' <span class="photo-required">(requiere foto)</span>';
-        }
-        html += '</label>';
+        if sheet_id is None:
+            return False
 
-        if (isTextarea) {
-            html += '<textarea id="field_' + header + '" name="' + header + '" rows="2">' + value + '</textarea>';
-        } else if (isDate) {
-            var dateValue = value;
-            if (value && value.indexOf('/') !== -1) {
-                var parts = value.split('/');
-                if (parts.length === 3) {
-                    var year = parseInt(parts[2]);
-                    if (year < 100) year += 2000;
-                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
+        requests = [{
+            'deleteDimension': {
+                'range': {
+                    'sheetId': sheet_id,
+                    'dimension': 'ROWS',
+                    'startIndex': row_number - 1,
+                    'endIndex': row_number
                 }
             }
-            html += '<input type="date" id="field_' + header + '" name="' + header + '" value="' + dateValue + '">';
-        } else {
-            html += '<input type="text" id="field_' + header + '" name="' + header + '" value="' + value + '">';
-        }
-        html += '</div>';
-    });
-    return html;
-}
+        }]
 
-function generatePhotoFields(headers, values, isMaster, prefix) {
-    values = values || {};
-    isMaster = isMaster || false;
-    prefix = prefix || '';
-    var html = '';
-    var photoCols = getPhotoColumns(headers);
-    var dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
+        body = {'requests': requests}
 
-    if (photoCols.length === 0) return html;
+        result = sheet.batchUpdate(spreadsheetId=sid, body=body).execute()
 
-    html += '<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">';
-    html += '<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>';
-    html += '<p style="color:#666; font-size:14px; margin-bottom:15px;">Sube las fotos de los documentos. Las fotos son obligatorias para los documentos con fecha.</p>';
+        return True
 
-    photoCols.forEach(function(col) {
-        var docName = col.replace('_FOTO', '');
-        var photoUrl = values[col] || '';
-        var fileInputId = prefix + 'foto_' + docName;
-        var isRequired = dateColsRequiringPhoto.indexOf(docName) !== -1 && !isMaster;
+    except HttpError as err:
+        print(f"Error deleting row: {err}")
+        return False
 
-        html += '<div class="photo-upload-group">';
-        html += '<label for="' + fileInputId + '">📷 ' + docName + ':';
-        if (isRequired) {
-            html += ' <span class="photo-required">(OBLIGATORIA)</span>';
-        }
-        html += '</label>';
+def add_row_to_sheet(sheet_name, values, spreadsheet_id=None):
+    try:
+        creds = get_google_creds()
+        service = build('sheets', 'v4', credentials=creds)
+        sheet = service.spreadsheets()
 
-        if (photoUrl && isPhotoUrl(photoUrl)) {
-            var fileId = photoUrl;
-            if (photoUrl.indexOf('file/d/') !== -1) {
-                var match = photoUrl.match(/file\/d\/([^\/]+)/);
-                if (match) fileId = match[1];
-            }
-            html += '<br><img src="https://drive.google.com/thumbnail?id=' + fileId + '&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">';
-            html += '<br><small style="color:#666;">Foto actual - <a href="' + photoUrl + '" target="_blank">Ver en Drive</a></small>';
-            html += '<br><small style="color:#888;">Si quieres reemplazarla, selecciona una nueva foto.</small>';
-        } else {
-            html += '<br><small style="color:#999;">No hay foto cargada</small>';
-        }
+        sid = spreadsheet_id or SPREADSHEET_ID
 
-        html += '<br><input type="file" id="' + fileInputId + '" name="' + fileInputId + '" accept="image/*" onchange="previewPhoto(event, \'' + fileInputId + '\')"';
-        if (isRequired && !photoUrl) {
-            html += ' required';
-        }
-        html += '>';
-        html += '<div id="preview_' + fileInputId + '"></div>';
-        html += '</div>';
-    });
+        data = get_all_data(sheet_name, sid)
+        num_columns = len(data.get('headers', []))
 
-    html += '</div>';
-    return html;
-}
+        while len(values) < num_columns:
+            values.append('')
 
-function previewPhoto(event, inputId) {
-    var file = event.target.files[0];
-    var preview = document.getElementById('preview_' + inputId);
-    if (!preview) return;
-    if (file) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            preview.innerHTML = '<img src="' + e.target.result + '" class="photo-preview" alt="Nueva foto">';
-        };
-        reader.readAsDataURL(file);
-    } else {
-        preview.innerHTML = '';
-    }
-}
+        body = {'values': [values[:num_columns]]}
 
-function validateRequiredPhotos(sheetName, formData, isMaster) {
-    if (isMaster) return true;
-    var dateCols = getDateColumnsRequiringPhoto(sheetName);
-    var missingPhotos = [];
+        result = sheet.values().append(
+            spreadsheetId=sid,
+            range=f"'{sheet_name}'!A:Z",
+            valueInputOption='RAW',
+            insertDataOption='INSERT_ROWS',
+            body=body
+        ).execute()
 
-    dateCols.forEach(function(dateCol) {
-        var dateValue = formData.get(dateCol);
-        if (dateValue && dateValue.trim() !== '') {
-            var photoInput = document.getElementById('foto_' + dateCol);
-            if (photoInput) {
-                var hasFile = photoInput.files && photoInput.files.length > 0;
-                var existingPhoto = formData.get(dateCol + '_FOTO');
-                if (!hasFile && !existingPhoto) {
-                    missingPhotos.push(dateCol);
+        return True
+
+    except HttpError as err:
+        print(f"Error adding row: {err}")
+        return False
+
+def ensure_sheet_exists(sheet_name, spreadsheet_id=None, headers=None):
+    try:
+        creds = get_google_creds()
+        service = build('sheets', 'v4', credentials=creds)
+        sheet = service.spreadsheets()
+
+        sid = spreadsheet_id or SPREADSHEET_ID
+
+        spreadsheet = service.spreadsheets().get(spreadsheetId=sid).execute()
+        exists = False
+        for s in spreadsheet.get('sheets', []):
+            if s['properties']['title'] == sheet_name:
+                exists = True
+                break
+
+        if not exists:
+            requests = [{
+                'addSheet': {
+                    'properties': {'title': sheet_name}
                 }
-            } else {
-                var existingPhoto2 = formData.get(dateCol + '_FOTO');
-                if (!existingPhoto2) {
-                    missingPhotos.push(dateCol);
-                }
-            }
-        }
-    });
+            }]
+            sheet.batchUpdate(spreadsheetId=sid, body={'requests': requests}).execute()
+            if headers:
+                sheet.values().update(
+                    spreadsheetId=sid,
+                    range=f"'{sheet_name}'!A1",
+                    valueInputOption='RAW',
+                    body={'values': [headers]}
+                ).execute()
+        return True
+    except HttpError as err:
+        print(f"Error ensuring sheet: {err}")
+        return False
 
-    if (missingPhotos.length > 0) {
-        showAlert('⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ' + missingPhotos.join(', '), 'error');
-        return false;
-    }
-    return true;
-}
+def upload_file_to_drive(file_content, filename, folder_id):
+    try:
+        creds = get_google_creds()
+        service = build('drive', 'v3', credentials=creds)
 
-/* ============================================================
-   CONTROL DE DOCUMENTACIÓN
-   ============================================================ */
-async function loadSheetData(sheetName) {
-    var content = document.getElementById('tab-content');
-    content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
-    try {
-        var response = await fetch('/api/sheet/' + encodeURIComponent(sheetName));
-        var data = await response.json();
-        dataCache[sheetName] = data;
-        currentHeaders = data.headers || [];
-        allRows = data.rows || [];
-        filteredRows = allRows.slice();
-        renderTable(sheetName);
-    } catch (error) {
-        content.innerHTML = '<div class="alert alert-error">❌ Error al cargar datos: ' + error.message + '</div>';
-    }
-}
-
-function renderTable(sheetName) {
-    var content = document.getElementById('tab-content');
-    var displayColumns = getDisplayColumns(sheetName);
-    var filterField = filterFields[sheetName] || 'PATENTE';
-    var dateColumns = dateColumnsConfig[sheetName] || [];
-    var photoCols = getPhotoColumns(currentHeaders);
-
-    var html = '<div class="toolbar">';
-    html += '<button type="button" class="btn btn-add" onclick="toggleForm()">' + (isFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Nuevo') + '</button>';
-    html += '<div class="filter-group">';
-    html += '<label>🔍 Filtrar por ' + filterField + ':</label>';
-    html += '<input type="text" id="filterInput" placeholder="Buscar..." oninput="applyFilter(\'' + sheetName + '\')">';
-    html += '<button type="button" class="btn-clear" onclick="clearFilter()">✖ Limpiar</button>';
-    html += '</div>';
-    html += '<span class="record-count">📊 Total: ' + filteredRows.length + ' registros</span>';
-    html += '</div>';
-
-    html += '<div class="form-section ' + (isFormVisible ? 'visible' : '') + '" id="addFormSection">';
-    html += '<h3>📄 Agregar nuevo documento</h3>';
-    html += '<form id="addForm" enctype="multipart/form-data">';
-    html += '<div class="form-row" id="addFormFields">' + generateFormFields(currentHeaders, ['_row_number', 'Marca Temporal'], {}, false) + '</div>';
-    html += generatePhotoFields(currentHeaders, {}, false, '');
-    html += '<input type="hidden" name="sheet_name" value="' + sheetName + '">';
-    html += '<button type="submit" class="btn">➕ Agregar Documento</button>';
-    html += '<button type="button" class="btn btn-cancel" onclick="toggleForm()">Cancelar</button>';
-    html += '</form>';
-    html += '</div>';
-
-    html += '<div class="table-wrapper"><div class="table-container"><table>';
-    html += '<thead><tr><th>📊 Estado</th>';
-    displayColumns.forEach(function(col) { html += '<th>' + col + '</th>'; });
-    if (photoCols.length > 0) html += '<th>📸 Fotos</th>';
-    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
-
-    if (filteredRows.length === 0) {
-        var colSpan = displayColumns.length + (photoCols.length > 0 ? 2 : 1) + 1;
-        html += '<tr><td colspan="' + colSpan + '" style="text-align: center; padding: 20px;">📭 No hay documentos</td></tr>';
-    } else {
-        filteredRows.forEach(function(row) {
-            html += '<tr>';
-            var rowStatus = getRowStatus(row, sheetName);
-            html += '<td><span class="' + rowStatus.class + '">' + rowStatus.text + '</span></td>';
-
-            displayColumns.forEach(function(col) {
-                var value = row[col] || '';
-                var cellClass = '';
-                if (dateColumns.indexOf(col) !== -1 && value) {
-                    var dateStatus = getDateStatus(value);
-                    if (dateStatus.class) cellClass = ' class="' + dateStatus.class + '"';
-                }
-                html += '<td' + cellClass + '>' + value + '</td>';
-            });
-
-            if (photoCols.length > 0) {
-                html += '<td><div class="photo-group">';
-                var hasPhoto = false;
-                photoCols.forEach(function(col) {
-                    var photoUrl = row[col] || '';
-                    if (photoUrl && isPhotoUrl(photoUrl)) {
-                        hasPhoto = true;
-                        var fileId = photoUrl;
-                        if (photoUrl.indexOf('file/d/') !== -1) {
-                            var match = photoUrl.match(/file\/d\/([^\/]+)/);
-                            if (match) fileId = match[1];
-                        }
-                        var docName = col.replace('_FOTO', '');
-                        html += '<a href="' + photoUrl + '" target="_blank" title="' + docName + '">';
-                        html += '<img src="https://drive.google.com/thumbnail?id=' + fileId + '&sz=w80-h80" class="photo-thumb" onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E\'">';
-                        html += '</a>';
-                    }
-                });
-                if (!hasPhoto) html += '<span style="color:#999;font-size:11px;">Sin fotos</span>';
-                html += '</div></td>';
-            }
-
-            html += '<td><div class="actions">';
-            html += '<button type="button" class="btn btn-success btn-sm" onclick="editRow(\'' + sheetName + '\', ' + row._row_number + ')">✏️ Editar</button>';
-            html += '<button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(\'' + sheetName + '\', ' + row._row_number + ')">🗑️ Eliminar</button>';
-            html += '</div></td>';
-            html += '</tr>';
-        });
-    }
-
-    html += '</tbody></table></div></div>';
-    content.innerHTML = html;
-
-    var form = document.getElementById('addForm');
-    if (form) form.addEventListener('submit', handleAddDocument);
-}
-
-function toggleForm() {
-    isFormVisible = !isFormVisible;
-    renderTable(currentSheet);
-}
-
-function applyFilter(sheetName) {
-    var filterInput = document.getElementById('filterInput');
-    var searchTerm = filterInput.value.toLowerCase().trim();
-    var filterField = filterFields[sheetName] || 'PATENTE';
-    if (!searchTerm) filteredRows = allRows.slice();
-    else filteredRows = allRows.filter(function(row) { return (row[filterField] || '').toString().toLowerCase().indexOf(searchTerm) !== -1; });
-    renderTable(sheetName);
-}
-
-function clearFilter() {
-    document.getElementById('filterInput').value = '';
-    filteredRows = allRows.slice();
-    renderTable(currentSheet);
-}
-
-async function handleAddDocument(e) {
-    e.preventDefault();
-    var form = e.target;
-    var formData = new FormData(form);
-    var sheetName = formData.get('sheet_name');
-
-    if (!validateRequiredPhotos(sheetName, formData, false)) return;
-
-    try {
-        var response = await fetch('/api/add', { method: 'POST', body: formData });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Documento agregado correctamente', 'success');
-            form.reset();
-            isFormVisible = false;
-            await loadSheetData(sheetName);
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al enviar el formulario: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   MAESTRO DE FLOTA
-   ============================================================ */
-async function loadMasterData(sheetName) {
-    var content = document.getElementById('master-tab-content');
-    content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
-    try {
-        var response = await fetch('/api/sheet/' + encodeURIComponent(sheetName));
-        var data = await response.json();
-        masterDataCache[sheetName] = data;
-        masterCurrentHeaders = data.headers || [];
-        masterAllRows = data.rows || [];
-        masterFilteredRows = masterAllRows.slice();
-        renderMasterTable(sheetName);
-    } catch (error) {
-        content.innerHTML = '<div class="alert alert-error">❌ Error al cargar datos: ' + error.message + '</div>';
-    }
-}
-
-function renderMasterTable(sheetName) {
-    var content = document.getElementById('master-tab-content');
-    var displayColumns = getAllColumns(masterCurrentHeaders);
-    var filterField = filterFields[sheetName] || 'PATENTE';
-    var dateColumns = dateColumnsConfig[sheetName] || [];
-    var photoCols = getPhotoColumns(masterCurrentHeaders);
-
-    var html = '<div class="toolbar">';
-    html += '<button type="button" class="btn btn-add" onclick="toggleMasterForm()">' + (masterIsFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Nuevo') + '</button>';
-    html += '<div class="filter-group">';
-    html += '<label>🔍 Filtrar por ' + filterField + ':</label>';
-    html += '<input type="text" id="filterInputMaster" placeholder="Buscar..." oninput="applyMasterFilter(\'' + sheetName + '\')">';
-    html += '<button type="button" class="btn-clear" onclick="clearMasterFilter()">✖ Limpiar</button>';
-    html += '</div>';
-    html += '<span class="record-count">📊 Total: ' + masterFilteredRows.length + ' registros</span>';
-    html += '</div>';
-
-    html += '<div class="form-section ' + (masterIsFormVisible ? 'visible' : '') + '" id="addFormSectionMaster">';
-    html += '<h3>📄 Agregar nuevo registro</h3>';
-    html += '<form id="addFormMaster" enctype="multipart/form-data">';
-    html += '<div class="form-row" id="addFormFieldsMaster">' + generateFormFields(masterCurrentHeaders, ['_row_number', 'Marca Temporal'], {}, true) + '</div>';
-    html += generatePhotoFields(masterCurrentHeaders, {}, true, '');
-    html += '<input type="hidden" name="sheet_name" value="' + sheetName + '">';
-    html += '<button type="submit" class="btn">➕ Agregar Registro</button>';
-    html += '<button type="button" class="btn btn-cancel" onclick="toggleMasterForm()">Cancelar</button>';
-    html += '</form>';
-    html += '</div>';
-
-    html += '<div class="table-wrapper"><div class="table-container"><table>';
-    html += '<thead><tr><th>📊 Estado</th>';
-    displayColumns.forEach(function(col) { html += '<th>' + col + '</th>'; });
-    if (photoCols.length > 0) html += '<th>📸 Fotos</th>';
-    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
-
-    if (masterFilteredRows.length === 0) {
-        var colSpan = displayColumns.length + (photoCols.length > 0 ? 2 : 1) + 1;
-        html += '<tr><td colspan="' + colSpan + '" style="text-align: center; padding: 20px;">📭 No hay registros</td></tr>';
-    } else {
-        masterFilteredRows.forEach(function(row) {
-            html += '<tr>';
-            var rowStatus = getRowStatus(row, sheetName);
-            html += '<td><span class="' + rowStatus.class + '">' + rowStatus.text + '</span></td>';
-
-            displayColumns.forEach(function(col) {
-                var value = row[col] || '';
-                var cellClass = '';
-                if (dateColumns.indexOf(col) !== -1 && value) {
-                    var dateStatus = getDateStatus(value);
-                    if (dateStatus.class) cellClass = ' class="' + dateStatus.class + '"';
-                }
-                html += '<td' + cellClass + '>' + value + '</td>';
-            });
-
-            if (photoCols.length > 0) {
-                html += '<td><div class="photo-group">';
-                var hasPhoto = false;
-                photoCols.forEach(function(col) {
-                    var photoUrl = row[col] || '';
-                    if (photoUrl && isPhotoUrl(photoUrl)) {
-                        hasPhoto = true;
-                        var fileId = photoUrl;
-                        if (photoUrl.indexOf('file/d/') !== -1) {
-                            var match = photoUrl.match(/file\/d\/([^\/]+)/);
-                            if (match) fileId = match[1];
-                        }
-                        var docName = col.replace('_FOTO', '');
-                        html += '<a href="' + photoUrl + '" target="_blank" title="' + docName + '">';
-                        html += '<img src="https://drive.google.com/thumbnail?id=' + fileId + '&sz=w80-h80" class="photo-thumb" onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E\'">';
-                        html += '</a>';
-                    }
-                });
-                if (!hasPhoto) html += '<span style="color:#999;font-size:11px;">Sin fotos</span>';
-                html += '</div></td>';
-            }
-
-            html += '<td><div class="actions">';
-            html += '<button type="button" class="btn btn-success btn-sm" onclick="editMasterRow(\'' + sheetName + '\', ' + row._row_number + ')">✏️ Editar</button>';
-            html += '<button type="button" class="btn btn-danger btn-sm" onclick="deleteMasterRow(\'' + sheetName + '\', ' + row._row_number + ')">🗑️ Eliminar</button>';
-            html += '</div></td>';
-            html += '</tr>';
-        });
-    }
-
-    html += '</tbody></table></div></div>';
-    content.innerHTML = html;
-
-    var form = document.getElementById('addFormMaster');
-    if (form) form.addEventListener('submit', handleAddMasterDocument);
-}
-
-function toggleMasterForm() {
-    masterIsFormVisible = !masterIsFormVisible;
-    renderMasterTable(masterCurrentSheet);
-}
-
-function applyMasterFilter(sheetName) {
-    var filterInput = document.getElementById('filterInputMaster');
-    var searchTerm = filterInput.value.toLowerCase().trim();
-    var filterField = filterFields[sheetName] || 'PATENTE';
-    if (!searchTerm) masterFilteredRows = masterAllRows.slice();
-    else masterFilteredRows = masterAllRows.filter(function(row) { return (row[filterField] || '').toString().toLowerCase().indexOf(searchTerm) !== -1; });
-    renderMasterTable(sheetName);
-}
-
-function clearMasterFilter() {
-    document.getElementById('filterInputMaster').value = '';
-    masterFilteredRows = masterAllRows.slice();
-    renderMasterTable(masterCurrentSheet);
-}
-
-async function handleAddMasterDocument(e) {
-    e.preventDefault();
-    var form = e.target;
-    var formData = new FormData(form);
-    var sheetName = formData.get('sheet_name');
-    try {
-        var response = await fetch('/api/add', { method: 'POST', body: formData });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Registro agregado correctamente', 'success');
-            form.reset();
-            masterIsFormVisible = false;
-            await loadMasterData(sheetName);
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al enviar el formulario: ' + error.message, 'error');
-    }
-}
-
-function editMasterRow(sheetName, rowNumber) {
-    var row = masterAllRows.find(function(r) { return r._row_number === rowNumber; });
-    if (!row) { showAlert('No se encontró el registro', 'error'); return; }
-
-    editContextModule = 'master';
-    currentEditRow = row;
-    var headersForEdit = masterCurrentHeaders;
-    var photoCols = getPhotoColumns(headersForEdit);
-
-    document.getElementById('editSheetName').value = sheetName;
-    document.getElementById('editRowNumber').value = rowNumber;
-
-    var html = '';
-    var displayCols = getAllColumns(headersForEdit);
-
-    displayCols.forEach(function(header) {
-        if (header === 'Marca Temporal') return;
-        if (photoCols.indexOf(header) !== -1) return;
-
-        var value = row[header] || '';
-        var upper = header.toUpperCase();
-        var isDate = upper.indexOf('FECHA') !== -1 || upper.indexOf('VENCIMIENTO') !== -1 || upper.indexOf('VENC') !== -1;
-        var isTextarea = upper.indexOf('OBSERVACION') !== -1 || upper.indexOf('COMENTARIO') !== -1;
-
-        html += '<div class="form-group">';
-        html += '<label>' + header + '</label>';
-        if (isTextarea) {
-            html += '<textarea id="edit_' + header + '" name="' + header + '" rows="2">' + value + '</textarea>';
-        } else if (isDate) {
-            var dateValue = value;
-            if (value && value.indexOf('/') !== -1) {
-                var parts = value.split('/');
-                if (parts.length === 3) {
-                    var year = parseInt(parts[2]);
-                    if (year < 100) year += 2000;
-                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
-                }
-            }
-            html += '<input type="date" id="edit_' + header + '" name="' + header + '" value="' + dateValue + '">';
-        } else {
-            html += '<input type="text" id="edit_' + header + '" name="' + header + '" value="' + value + '">';
-        }
-        html += '</div>';
-    });
-    document.getElementById('editFormFields').innerHTML = html;
-
-    var photoHtml = generatePhotoFieldsForEdit(headersForEdit, row, true);
-    document.getElementById('editPhotoFields').innerHTML = photoHtml;
-
-    document.getElementById('editModal').style.display = 'block';
-}
-
-function generatePhotoFieldsForEdit(headers, values, isMaster) {
-    values = values || {};
-    isMaster = isMaster || false;
-    var html = '';
-    var photoCols = getPhotoColumns(headers);
-    var dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
-
-    if (photoCols.length === 0) {
-        html += '<p style="color:#999; font-style:italic;">No hay campos de foto configurados para este documento.</p>';
-        return html;
-    }
-
-    html += '<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">';
-    html += '<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>';
-    html += '<p style="color:#666; font-size:14px; margin-bottom:15px;">Las fotos son obligatorias para los documentos con fecha. Si ya tienes una foto, no es necesario subirla de nuevo.</p>';
-
-    photoCols.forEach(function(col) {
-        var docName = col.replace('_FOTO', '');
-        var photoUrl = values[col] || '';
-        var fileInputId = 'edit_foto_' + docName;
-        var isRequired = dateColsRequiringPhoto.indexOf(docName) !== -1 && !isMaster;
-
-        html += '<div class="photo-upload-group">';
-        html += '<label for="' + fileInputId + '">📷 ' + docName + ':';
-        if (isRequired) {
-            html += ' <span class="photo-required">(OBLIGATORIA)</span>';
-        }
-        html += '</label>';
-
-        if (photoUrl && isPhotoUrl(photoUrl)) {
-            var fileId = photoUrl;
-            if (photoUrl.indexOf('file/d/') !== -1) {
-                var match = photoUrl.match(/file\/d\/([^\/]+)/);
-                if (match) fileId = match[1];
-            }
-            html += '<br><img src="https://drive.google.com/thumbnail?id=' + fileId + '&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">';
-            html += '<br><small style="color:#666;">Foto actual - <a href="' + photoUrl + '" target="_blank">Ver en Drive</a></small>';
-            html += '<br><small style="color:#888;">Si quieres reemplazarla, selecciona una nueva foto.</small>';
-        } else {
-            html += '<br><small style="color:#999;">No hay foto cargada</small>';
+        file_metadata = {
+            'name': filename,
+            'parents': [folder_id]
         }
 
-        html += '<br><input type="file" id="' + fileInputId + '" name="' + fileInputId + '" accept="image/*" onchange="previewPhoto(event, \'' + fileInputId + '\')"';
-        if (isRequired && !photoUrl) {
-            html += ' required';
-        }
-        html += '>';
-        html += '<div id="preview_' + fileInputId + '"></div>';
-        html += '</div>';
-    });
-
-    html += '</div>';
-    return html;
-}
-
-async function deleteMasterRow(sheetName, rowNumber) {
-    if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
-    try {
-        var response = await fetch('/api/delete/' + encodeURIComponent(sheetName) + '/' + rowNumber, { method: 'DELETE' });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Registro eliminado correctamente', 'success');
-            await loadMasterData(sheetName);
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al eliminar: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   HISTORIAL DE VENCIMIENTO
-   ============================================================ */
-async function loadHistoryData() {
-    var content = document.getElementById('history-content');
-    content.innerHTML = '<div class="loading">🔄 Cargando historial y detectando vencimientos...</div>';
-    try {
-        var response = await fetch('/api/history');
-        var text = await response.text();
-        if (!text || text.trim() === '') {
-            throw new Error('El servidor devolvió una respuesta vacía.');
-        }
-        var data;
-        try {
-            data = JSON.parse(text);
-        } catch (parseErr) {
-            throw new Error('Respuesta no válida del servidor: ' + text.substring(0, 200));
-        }
-        if (!response.ok) {
-            throw new Error(data.error || 'Error HTTP ' + response.status);
-        }
-        historyHeaders = data.headers || [];
-        historyAllRows = data.rows || [];
-        historyFilteredRows = historyAllRows.slice();
-        if (historyHeaders.length === 0) {
-            content.innerHTML = '<div class="alert alert-error">⚠️ La hoja "Historial de Vencimiento de Documentación" no existe o está vacía.<br>Creala en tu Google Spreadsheet con los encabezados: <b>FECHA | TIPO | DESCRIPCION | FECHA VENCIMIENTO | ESTADO</b></div>';
-            return;
-        }
-        renderHistoryTable();
-    } catch (error) {
-        content.innerHTML = '<div class="alert alert-error">❌ Error al cargar historial: ' + error.message + '</div>';
-    }
-}
-
-function renderHistoryTable() {
-    var content = document.getElementById('history-content');
-
-    var html = '<div class="toolbar">';
-    html += '<div class="filter-group">';
-    html += '<label>🔍 Filtrar:</label>';
-    html += '<input type="text" id="filterInputHistory" placeholder="Buscar por tipo, descripción o estado..." oninput="applyHistoryFilter()">';
-    html += '<button type="button" class="btn-clear" onclick="clearHistoryFilter()">✖ Limpiar</button>';
-    html += '</div>';
-    html += '<span class="record-count">📊 Total: ' + historyFilteredRows.length + ' registros</span>';
-    html += '</div>';
-
-    html += '<div class="table-wrapper"><div class="table-container"><table>';
-    html += '<thead><tr>';
-    historyHeaders.forEach(function(col) {
-        if (col !== '_row_number') html += '<th>' + col + '</th>';
-    });
-    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
-
-    if (historyFilteredRows.length === 0) {
-        var colSpan = historyHeaders.filter(function(h) { return h !== '_row_number'; }).length + 1;
-        html += '<tr><td colspan="' + colSpan + '" style="text-align: center; padding: 20px;">📭 No hay registros en el historial</td></tr>';
-    } else {
-        historyFilteredRows.forEach(function(row) {
-            html += '<tr>';
-            historyHeaders.forEach(function(col) {
-                if (col === '_row_number') return;
-                var value = row[col] || '';
-
-                if (col === 'FECHA' || col === 'FECHA VENCIMIENTO') {
-                    var cellClass = '';
-                    if (col === 'FECHA VENCIMIENTO' && value) {
-                        var dateStatus = getDateStatus(value);
-                        if (dateStatus.class) cellClass = ' class="' + dateStatus.class + '"';
-                    }
-                    html += '<td' + cellClass + '>' + value + '</td>';
-                } else if (col === 'ESTADO') {
-                    var estado = value || 'En Proceso';
-                    var estadoClass = estado.toLowerCase().replace(/\s/g, '-');
-                    html += '<td><select class="status-select ' + estadoClass + '" onchange="updateHistoryStatus(' + row._row_number + ', this.value)">';
-                    html += '<option value="En Proceso" ' + (estado === 'En Proceso' ? 'selected' : '') + '>En Proceso</option>';
-                    html += '<option value="Completo" ' + (estado === 'Completo' ? 'selected' : '') + '>Completo</option>';
-                    html += '<option value="Vencido" ' + (estado === 'Vencido' ? 'selected' : '') + '>Vencido</option>';
-                    html += '<option value="Notificado" ' + (estado === 'Notificado' ? 'selected' : '') + '>Notificado</option>';
-                    html += '</select></td>';
-                } else {
-                    html += '<td>' + value + '</td>';
-                }
-            });
-
-            html += '<td><button type="button" class="btn btn-danger btn-sm" onclick="deleteHistoryRow(' + row._row_number + ')">🗑️ Eliminar</button></td>';
-            html += '</tr>';
-        });
-    }
-
-    html += '</tbody></table></div></div>';
-    content.innerHTML = html;
-}
-
-function applyHistoryFilter() {
-    var filterInput = document.getElementById('filterInputHistory');
-    var searchTerm = filterInput.value.toLowerCase().trim();
-    if (!searchTerm) {
-        historyFilteredRows = historyAllRows.slice();
-    } else {
-        historyFilteredRows = historyAllRows.filter(function(row) {
-            var tipo = (row['TIPO'] || '').toLowerCase();
-            var desc = (row['DESCRIPCION'] || '').toLowerCase();
-            var estado = (row['ESTADO'] || '').toLowerCase();
-            return tipo.indexOf(searchTerm) !== -1 || desc.indexOf(searchTerm) !== -1 || estado.indexOf(searchTerm) !== -1;
-        });
-    }
-    renderHistoryTable();
-}
-
-function clearHistoryFilter() {
-    document.getElementById('filterInputHistory').value = '';
-    historyFilteredRows = historyAllRows.slice();
-    renderHistoryTable();
-}
-
-async function updateHistoryStatus(rowNumber, newStatus) {
-    try {
-        var response = await fetch('/api/history/update_status/' + rowNumber, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ estado: newStatus })
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Estado actualizado correctamente', 'success');
-            var row = historyAllRows.find(function(r) { return r._row_number === rowNumber; });
-            if (row) row['ESTADO'] = newStatus;
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al actualizar estado: ' + error.message, 'error');
-    }
-}
-
-async function deleteHistoryRow(rowNumber) {
-    if (!confirm('¿Estás seguro de que deseas eliminar este registro del historial?')) return;
-    try {
-        var response = await fetch('/api/history/delete/' + rowNumber, { method: 'DELETE' });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Registro eliminado correctamente', 'success');
-            await loadHistoryData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al eliminar: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   MANTENIMIENTOS
-   ============================================================ */
-async function loadMantenimientosData() {
-    var content = document.getElementById('mantenimientos-content');
-    content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
-    try {
-        var response = await fetch('/api/mantenimientos/config');
-        var data = await response.json();
-        if (data.success) {
-            mpHeaders = data.historial_headers || [];
-            mpRows = data.historial_rows || [];
-            mpFilteredRows = mpRows.slice();
-            mpDropdowns = parseDropdowns(data.dropdowns);
-            mpConfigMP = parseConfigMP(data.config_mp);
-            mpConfigLoaded = true;
-
-            progHeaders = data.programacion_headers || [];
-            progRows = data.programacion_rows || [];
-            progFilteredRows = progRows.slice();
-            patentesCamionT2 = data.patentes_camion_t2 || [];
-            odometroPorPatente = data.odometro_por_patente || {};
-
-            renderMantenimientosView();
-        } else {
-            content.innerHTML = '<div class="alert alert-error">❌ Error: ' + data.error + '</div>';
-        }
-    } catch (error) {
-        content.innerHTML = '<div class="alert alert-error">❌ Error al cargar datos: ' + error.message + '</div>';
-    }
-}
-
-function parseDropdowns(dropdownData) {
-    var result = {};
-    if (!dropdownData || !dropdownData.headers || dropdownData.headers.length === 0) return result;
-
-    var headers = dropdownData.headers || [];
-    var rowsRaw = dropdownData.rows || [];
-
-    headers.forEach(function(fieldName) {
-        var options = [];
-        rowsRaw.forEach(function(rowObj) {
-            var val = rowObj[fieldName];
-            if (val && String(val).trim() !== '') options.push(String(val).trim());
-        });
-        if (options.length > 0) {
-            result[fieldName] = options;
-        }
-    });
-
-    return result;
-}
-
-function parseConfigMP(configData) {
-    var result = [];
-    if (!configData || !configData.rows || configData.rows.length === 0) return result;
-
-    configData.rows.forEach(function(row) {
-        result.push({
-            'TIPO MANTENIMIENTO': row['TIPO MANTENIMIENTO'] || '',
-            'TIPO REPARACIÓN': row['TIPO REPARACIÓN'] || '',
-            'POLITICA': row['POLITICA'] || ''
-        });
-    });
-    return result;
-}
-
-function renderMantenimientosView() {
-    var content = document.getElementById('mantenimientos-content');
-    if (mpCurrentView === 'historial') {
-        renderMantenimientosHistorial(content);
-    } else if (mpCurrentView === 'programacion') {
-        renderProgramacion(content);
-    } else {
-        renderMantenimientosConfig(content);
-    }
-}
-
-function renderMantenimientosHistorial(content) {
-    var displayColumns = mpHeaders.filter(function(h) { return h !== '_row_number'; });
-
-    var html = '<div class="toolbar">';
-    html += '<button type="button" class="btn btn-add" onclick="toggleMantenimientoForm()">' + (mpIsFormVisible ? '❌ Ocultar Formulario' : '➕ Cargar Mantenimiento') + '</button>';
-    html += '<div class="filter-group">';
-    html += '<label>🔍 Filtrar por PATENTE:</label>';
-    html += '<input type="text" id="filterInputMP" placeholder="Buscar..." oninput="applyMantenimientoFilter()">';
-    html += '<button type="button" class="btn-clear" onclick="clearMantenimientoFilter()">✖ Limpiar</button>';
-    html += '</div>';
-    html += '<span class="record-count">📊 Total: ' + mpFilteredRows.length + ' registros</span>';
-    html += '</div>';
-
-    if (mpIsFormVisible) {
-        html += '<div class="form-section visible" id="addMantenimientoSection">';
-        html += '<h3>🔧 Cargar nuevo mantenimiento</h3>';
-        html += '<form id="addMantenimientoForm">';
-        html += '<div class="form-row" id="addMantenimientoFields">' + generateMantenimientoFormFields({}, false) + '</div>';
-        html += '<button type="submit" class="btn">➕ Cargar Mantenimiento</button>';
-        html += '<button type="button" class="btn btn-cancel" onclick="toggleMantenimientoForm()">Cancelar</button>';
-        html += '</form>';
-        html += '</div>';
-    }
-
-    html += '<div class="table-wrapper"><div class="table-container"><table>';
-    html += '<thead><tr>';
-    displayColumns.forEach(function(col) { html += '<th>' + col + '</th>'; });
-    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
-
-    if (mpFilteredRows.length === 0) {
-        html += '<tr><td colspan="' + (displayColumns.length + 1) + '" style="text-align: center; padding: 20px;">📭 No hay registros de mantenimiento</td></tr>';
-    } else {
-        mpFilteredRows.forEach(function(row) {
-            html += '<tr>';
-            displayColumns.forEach(function(col) {
-                html += '<td>' + (row[col] || '') + '</td>';
-            });
-            html += '<td><div class="actions">';
-            html += '<button type="button" class="btn btn-success btn-sm" onclick="editMantenimiento(' + row._row_number + ')">✏️ Editar</button>';
-            html += '<button type="button" class="btn btn-danger btn-sm" onclick="deleteMantenimiento(' + row._row_number + ')">🗑️ Eliminar</button>';
-            html += '</div></td>';
-            html += '</tr>';
-        });
-    }
-
-    html += '</tbody></table></div></div>';
-    content.innerHTML = html;
-
-    var form = document.getElementById('addMantenimientoForm');
-    if (form) form.addEventListener('submit', handleAddMantenimiento);
-}
-
-function generateMantenimientoFormFields(values, isEdit) {
-    values = values || {};
-    isEdit = isEdit || false;
-    var html = '';
-    var displayCols = mpHeaders.filter(function(h) { return h !== '_row_number'; });
-    var prefix = isEdit ? 'edit_mp_' : 'mp_';
-
-    displayCols.forEach(function(header) {
-        var value = values[header] || '';
-        var isDropdown = MP_DROPDOWN_COLUMNS.indexOf(header) !== -1;
-        var upper = header.toUpperCase();
-        var isDate = upper.indexOf('FECHA') !== -1;
-        var isTextarea = upper.indexOf('DETALLE') !== -1;
-        var isNumber = upper.indexOf('KM') !== -1 || upper.indexOf('GASTO') !== -1;
-
-        html += '<div class="form-group">';
-        html += '<label>' + header + '</label>';
-
-        if (isDropdown && mpDropdowns[header] && mpDropdowns[header].length > 0) {
-            html += '<select id="' + prefix + header + '" name="' + header + '" onchange="recalcularKmProximo(\'' + (isEdit ? 'edit' : 'add') + '\')">';
-            html += '<option value="">-- Seleccionar --</option>';
-            mpDropdowns[header].forEach(function(opt) {
-                var selected = (value === opt) ? ' selected' : '';
-                html += '<option value="' + opt + '"' + selected + '>' + opt + '</option>';
-            });
-            html += '</select>';
-        } else if (isDropdown) {
-            html += '<select id="' + prefix + header + '" name="' + header + '" onchange="recalcularKmProximo(\'' + (isEdit ? 'edit' : 'add') + '\')">';
-            html += '<option value="">-- Sin opciones configuradas --</option>';
-            if (value) html += '<option value="' + value + '" selected>' + value + '</option>';
-            html += '</select>';
-            html += '<small style="color:#e53e3e;">⚠️ Configura las opciones en la pestaña Configuración</small>';
-        } else if (isDate) {
-            var dateValue = value;
-            if (value && value.indexOf('/') !== -1) {
-                var parts = value.split('/');
-                if (parts.length === 3) {
-                    var year = parseInt(parts[2]);
-                    if (year < 100) year += 2000;
-                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
-                }
-            }
-            html += '<input type="date" id="' + prefix + header + '" name="' + header + '" value="' + dateValue + '">';
-        } else if (isTextarea) {
-            html += '<textarea id="' + prefix + header + '" name="' + header + '" rows="2">' + value + '</textarea>';
-        } else if (isNumber) {
-            html += '<input type="number" step="0.01" id="' + prefix + header + '" name="' + header + '" value="' + value + '" oninput="recalcularKmProximo(\'' + (isEdit ? 'edit' : 'add') + '\')">';
-        } else {
-            html += '<input type="text" id="' + prefix + header + '" name="' + header + '" value="' + value + '">';
-        }
-        html += '</div>';
-    });
-    return html;
-}
-
-function recalcularKmProximo(mode) {
-    var prefix = mode === 'edit' ? 'edit_mp_' : 'mp_';
-    var kmRealizadoInput = document.getElementById(prefix + 'KM REALIZADO');
-    var kmProximoInput = document.getElementById(prefix + 'KM PROXIMO CAMBIO');
-    var tipoMantSelect = document.getElementById(prefix + 'TIPO MANTENIMIENTO');
-    var tipoRepSelect = document.getElementById(prefix + 'TIPO REPARACIÓN');
-
-    if (!kmRealizadoInput || !kmProximoInput) return;
-
-    var kmRealizado = parseFloat(kmRealizadoInput.value) || 0;
-    var tipoMant = tipoMantSelect ? tipoMantSelect.value : '';
-    var tipoRep = tipoRepSelect ? tipoRepSelect.value : '';
-
-    var politica = 0;
-    if (tipoMant && tipoRep) {
-        var config = mpConfigMP.find(function(c) {
-            return c['TIPO MANTENIMIENTO'] === tipoMant && c['TIPO REPARACIÓN'] === tipoRep;
-        });
-        if (config) {
-            politica = parseFloat(config['POLITICA']) || 0;
-        }
-    }
-
-    if (politica > 0 && kmRealizado > 0) {
-        kmProximoInput.value = kmRealizado + politica;
-    }
-}
-
-function toggleMantenimientoForm() {
-    mpIsFormVisible = !mpIsFormVisible;
-    renderMantenimientosView();
-}
-
-function applyMantenimientoFilter() {
-    var filterInput = document.getElementById('filterInputMP');
-    var searchTerm = filterInput.value.toLowerCase().trim();
-    if (!searchTerm) mpFilteredRows = mpRows.slice();
-    else mpFilteredRows = mpRows.filter(function(row) { return (row['PATENTE'] || '').toString().toLowerCase().indexOf(searchTerm) !== -1; });
-    renderMantenimientosHistorial(document.getElementById('mantenimientos-content'));
-}
-
-function clearMantenimientoFilter() {
-    document.getElementById('filterInputMP').value = '';
-    mpFilteredRows = mpRows.slice();
-    renderMantenimientosHistorial(document.getElementById('mantenimientos-content'));
-}
-
-async function handleAddMantenimiento(e) {
-    e.preventDefault();
-    var form = e.target;
-    var formData = new FormData(form);
-    var data = {};
-    for (var pair of formData.entries()) {
-        data[pair[0]] = pair[1];
-    }
-
-    try {
-        var response = await fetch('/api/mantenimientos/add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Mantenimiento cargado correctamente', 'success');
-            form.reset();
-            mpIsFormVisible = false;
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-function editMantenimiento(rowNumber) {
-    var row = mpRows.find(function(r) { return r._row_number === rowNumber; });
-    if (!row) { showAlert('No se encontró el registro', 'error'); return; }
-
-    document.getElementById('editMantenimientoRowNumber').value = rowNumber;
-    document.getElementById('editMantenimientoFields').innerHTML = generateMantenimientoFormFields(row, true);
-
-    setTimeout(function() { recalcularKmProximo('edit'); }, 100);
-
-    document.getElementById('editMantenimientoModal').style.display = 'block';
-}
-
-function closeEditMantenimientoModal() {
-    document.getElementById('editMantenimientoModal').style.display = 'none';
-}
-
-async function submitEditMantenimiento(e) {
-    e.preventDefault();
-    var rowNumber = parseInt(document.getElementById('editMantenimientoRowNumber').value);
-    var formData = new FormData(e.target);
-    var data = {};
-    for (var pair of formData.entries()) {
-        data[pair[0]] = pair[1];
-    }
-
-    try {
-        var response = await fetch('/api/mantenimientos/update/' + rowNumber, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Mantenimiento actualizado correctamente', 'success');
-            closeEditMantenimientoModal();
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-async function deleteMantenimiento(rowNumber) {
-    if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
-    try {
-        var response = await fetch('/api/mantenimientos/delete/' + rowNumber, { method: 'DELETE' });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Mantenimiento eliminado correctamente', 'success');
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al eliminar: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   PROGRAMACIÓN MANTENIMIENTO PREVENTIVO
-   ============================================================ */
-function getOdometroActual(patente) {
-    if (!patente) return null;
-    var v = odometroPorPatente[patente];
-    if (v === undefined || v === null || v === '') return null;
-    var n = parseFloat(String(v).replace(/[^\d.-]/g, ''));
-    return isNaN(n) ? null : n;
-}
-
-function getProximoKmClass(row) {
-    var patente = (row['PATENTE'] || '').trim();
-    var proximoKmStr = (row['PROXIMO MANTENIMIENTO KM'] || '').trim();
-    if (!patente || !proximoKmStr) return '';
-    var odom = getOdometroActual(patente);
-    var proxKm = parseFloat(proximoKmStr);
-    if (odom === null || isNaN(proxKm)) return '';
-    return odom >= proxKm ? 'cell-danger' : 'cell-ok';
-}
-
-function getProximoFechaClass(row) {
-    var fechaStr = (row['PROXIMO MANTENIMIENTO FECHA'] || '').trim();
-    if (!fechaStr) return '';
-    var fecha = parseDate(fechaStr);
-    if (!fecha) return '';
-    var hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    fecha.setHours(0, 0, 0, 0);
-    return hoy >= fecha ? 'cell-danger' : 'cell-ok';
-}
-
-function renderProgramacion(content) {
-    var displayColumns = progHeaders.filter(function(h) { return h !== '_row_number'; });
-
-    var html = '<div class="toolbar">';
-    html += '<button type="button" class="btn btn-add" onclick="toggleProgramacionForm()">' + (progIsFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Programación') + '</button>';
-    html += '<div class="filter-group">';
-    html += '<label>🔍 Filtrar por PATENTE:</label>';
-    html += '<input type="text" id="filterInputProg" placeholder="Buscar..." oninput="applyProgramacionFilter()">';
-    html += '<button type="button" class="btn-clear" onclick="clearProgramacionFilter()">✖ Limpiar</button>';
-    html += '</div>';
-    html += '<span class="record-count">📊 Total: ' + progFilteredRows.length + ' registros</span>';
-    html += '</div>';
-
-    if (progIsFormVisible) {
-        html += '<div class="form-section visible" id="addProgramacionSection">';
-        html += '<h3>📅 Agregar programación de mantenimiento preventivo</h3>';
-        html += '<form id="addProgramacionForm">';
-        html += '<div class="form-row" id="addProgramacionFields">' + generateProgramacionFormFields({}, false, progPatentePrecargada) + '</div>';
-        html += '<button type="submit" class="btn">➕ Agregar Programación</button>';
-        html += '<button type="button" class="btn btn-cancel" onclick="toggleProgramacionForm()">Cancelar</button>';
-        html += '</form>';
-        html += '</div>';
-    }
-
-    html += '<div class="table-wrapper"><div class="table-container"><table>';
-    html += '<thead><tr>';
-    displayColumns.forEach(function(col) { html += '<th>' + col + '</th>'; });
-    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
-
-    if (progFilteredRows.length === 0) {
-        html += '<tr><td colspan="' + (displayColumns.length + 1) + '" style="text-align: center; padding: 20px;">📭 No hay programaciones cargadas</td></tr>';
-    } else {
-        progFilteredRows.forEach(function(row) {
-            html += '<tr>';
-            displayColumns.forEach(function(col) {
-                var val = row[col] || '';
-                var cellClass = '';
-                if (col === 'PROXIMO MANTENIMIENTO KM') {
-                    cellClass = getProximoKmClass(row);
-                } else if (col === 'PROXIMO MANTENIMIENTO FECHA') {
-                    cellClass = getProximoFechaClass(row);
-                } else if (col === 'Estado') {
-                    var est = (val || 'En Proceso').toLowerCase().replace(/\s/g, '-');
-                    html += '<td><span class="estado-' + est + '">' + (val || 'En Proceso') + '</span></td>';
-                    return;
-                }
-                if (cellClass) {
-                    html += '<td class="' + cellClass + '">' + val + '</td>';
-                } else {
-                    html += '<td>' + val + '</td>';
-                }
-            });
-            html += '<td><div class="actions">';
-            html += '<button type="button" class="btn btn-complete btn-sm" onclick="openTareaCompleta(' + row._row_number + ')">✅ Tarea Completa</button>';
-            html += '<button type="button" class="btn btn-success btn-sm" onclick="editProgramacion(' + row._row_number + ')">✏️ Editar</button>';
-            html += '<button type="button" class="btn btn-danger btn-sm" onclick="deleteProgramacion(' + row._row_number + ')">🗑️ Eliminar</button>';
-            html += '</div></td>';
-            html += '</tr>';
-        });
-    }
-
-    html += '</tbody></table></div></div>';
-    content.innerHTML = html;
-
-    var form = document.getElementById('addProgramacionForm');
-    if (form) form.addEventListener('submit', handleAddProgramacion);
-}
-
-function generateProgramacionFormFields(values, isEdit, patentePrecargada) {
-    values = values || {};
-    isEdit = isEdit || false;
-    patentePrecargada = patentePrecargada || null;
-    var html = '';
-    var displayCols = progHeaders.filter(function(h) {
-        return h !== '_row_number' && h !== 'Marca Temporal' && h !== 'PROXIMO MANTENIMIENTO FECHA' && h !== 'PROXIMO MANTENIMIENTO KM' && h !== 'Estado';
-    });
-    var prefix = isEdit ? 'edit_prog_' : 'prog_';
-
-    displayCols.forEach(function(header) {
-        var value = values[header] || '';
-        var isDropdown = PROG_DROPDOWN_COLUMNS.indexOf(header) !== -1;
-        var upper = header.toUpperCase();
-        var isDate = upper.indexOf('FECHA') !== -1;
-        var isTextarea = upper.indexOf('DETALLE') !== -1;
-        var isNumber = upper.indexOf('KM') !== -1;
-
-        html += '<div class="form-group">';
-        html += '<label>' + header + '</label>';
-
-        if (header === 'PATENTE') {
-            html += '<select id="' + prefix + header + '" name="' + header + '" onchange="autocompletarKmDesdeOdometro(\'' + (isEdit ? 'edit' : 'add') + '\')">';
-            html += '<option value="">-- Seleccionar --</option>';
-            patentesCamionT2.forEach(function(opt) {
-                var selected = '';
-                if (value === opt) selected = ' selected';
-                else if (!value && patentePrecargada && patentePrecargada === opt) selected = ' selected';
-                html += '<option value="' + opt + '"' + selected + '>' + opt + '</option>';
-            });
-            html += '</select>';
-        } else if (header === 'TIPO MANTENIMIENTO') {
-            html += '<select id="' + prefix + header + '" name="' + header + '">';
-            html += '<option value="PREVENTIVO" selected>PREVENTIVO</option>';
-            html += '</select>';
-        } else if (header === 'TIPO REPARACIÓN') {
-            var tiposReparacion = [];
-            mpConfigMP.forEach(function(c) {
-                var tr = (c['TIPO REPARACIÓN'] || '').trim();
-                if (tr && tiposReparacion.indexOf(tr) === -1) tiposReparacion.push(tr);
-            });
-            tiposReparacion.sort();
-            html += '<select id="' + prefix + header + '" name="' + header + '" onchange="calcularProximoKm(\'' + (isEdit ? 'edit' : 'add') + '\')">';
-            html += '<option value="">-- Seleccionar --</option>';
-            tiposReparacion.forEach(function(opt) {
-                var selected = (value === opt) ? ' selected' : '';
-                html += '<option value="' + opt + '"' + selected + '>' + opt + '</option>';
-            });
-            html += '</select>';
-            if (tiposReparacion.length === 0) {
-                html += '<small style="color:#e53e3e;">⚠️ Configura TIPO REPARACIÓN en la pestaña Configuración → Configuración MP</small>';
-            }
-        } else if (isDropdown && mpDropdowns[header] && mpDropdowns[header].length > 0) {
-            html += '<select id="' + prefix + header + '" name="' + header + '">';
-            html += '<option value="">-- Seleccionar --</option>';
-            mpDropdowns[header].forEach(function(opt) {
-                var selected = (value === opt) ? ' selected' : '';
-                html += '<option value="' + opt + '"' + selected + '>' + opt + '</option>';
-            });
-            html += '</select>';
-        } else if (header === 'FECHA ULTIMO MANTENIMIENTO') {
-            var dateValue = value;
-            if (value && value.indexOf('/') !== -1) {
-                var parts = value.split('/');
-                if (parts.length === 3) {
-                    var year = parseInt(parts[2]);
-                    if (year < 100) year += 2000;
-                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
-                }
-            }
-            html += '<input type="date" id="' + prefix + header + '" name="' + header + '" value="' + dateValue + '" onchange="calcularProximoMantenimiento(\'' + (isEdit ? 'edit' : 'add') + '\')">';
-            html += '<small style="color:#666; display:block; margin-top:5px;" id="' + prefix + 'proximo_label">📅 Próximo mantenimiento: se calcula 1 año después</small>';
-        } else if (header === 'KM ULTIMO MANTENIMIENTO') {
-            html += '<input type="text" id="' + prefix + header + '" name="' + header + '" value="' + value + '" readonly style="background:#f0f0f0; cursor:not-allowed;">';
-            html += '<small style="color:#666;">Se completa automáticamente desde la columna ODOMETRO de Camion T2 al seleccionar la patente</small>';
-        } else if (isTextarea) {
-            html += '<textarea id="' + prefix + header + '" name="' + header + '" rows="3">' + value + '</textarea>';
-        } else if (isNumber) {
-            html += '<input type="number" step="1" id="' + prefix + header + '" name="' + header + '" value="' + value + '">';
-        } else {
-            html += '<input type="text" id="' + prefix + header + '" name="' + header + '" value="' + value + '">';
-        }
-        html += '</div>';
-    });
-    return html;
-}
-
-function autocompletarKmDesdeOdometro(mode) {
-    var prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
-    var patenteSelect = document.getElementById(prefix + 'PATENTE');
-    var kmInput = document.getElementById(prefix + 'KM ULTIMO MANTENIMIENTO');
-
-    if (!patenteSelect || !kmInput) return;
-
-    var patente = patenteSelect.value;
-    if (patente && odometroPorPatente[patente]) {
-        kmInput.value = odometroPorPatente[patente];
-    } else {
-        kmInput.value = '';
-    }
-
-    calcularProximoKm(mode);
-}
-
-function calcularProximoMantenimiento(mode) {
-    var prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
-    var fechaInput = document.getElementById(prefix + 'FECHA ULTIMO MANTENIMIENTO');
-    var label = document.getElementById(prefix + 'proximo_label');
-
-    if (!fechaInput || !label) return;
-
-    var fechaVal = fechaInput.value;
-    if (!fechaVal) {
-        label.textContent = '📅 Próximo mantenimiento: se calcula 1 año después';
-        return;
-    }
-
-    var parts = fechaVal.split('-');
-    if (parts.length !== 3) return;
-
-    var year = parseInt(parts[0]);
-    var month = parseInt(parts[1]);
-    var day = parseInt(parts[2]);
-
-    year += 1;
-    var proximoStr = String(day).padStart(2, '0') + '/' + String(month).padStart(2, '0') + '/' + year;
-
-    label.textContent = '📅 Próximo mantenimiento: ' + proximoStr;
-}
-
-function calcularProximoKm(mode) {
-    var prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
-    var kmUltimoInput = document.getElementById(prefix + 'KM ULTIMO MANTENIMIENTO');
-    var tipoRepSelect = document.getElementById(prefix + 'TIPO REPARACIÓN');
-
-    if (!kmUltimoInput || !tipoRepSelect) return;
-
-    var kmUltimo = parseFloat(kmUltimoInput.value) || 0;
-    var tipoRep = (tipoRepSelect.value || '').trim();
-
-    var politica = 0;
-    if (tipoRep) {
-        var config = mpConfigMP.find(function(c) { return (c['TIPO REPARACIÓN'] || '').trim() === tipoRep; });
-        if (config) {
-            politica = parseFloat(config['POLITICA']) || 0;
-        }
-    }
-
-    var grupo = kmUltimoInput.closest('.form-group');
-    var infoLabel = grupo ? grupo.querySelector('.proximo-km-info') : null;
-    if (!infoLabel && grupo) {
-        infoLabel = document.createElement('small');
-        infoLabel.className = 'proximo-km-info';
-        infoLabel.style.color = '#666';
-        infoLabel.style.display = 'block';
-        infoLabel.style.marginTop = '5px';
-        grupo.appendChild(infoLabel);
-    }
-    if (infoLabel) {
-        if (politica > 0 && kmUltimo > 0) {
-            infoLabel.textContent = '📊 Próximo KM: ' + (kmUltimo + politica) + ' (KM Último ' + kmUltimo + ' + Política ' + politica + ')';
-        } else if (kmUltimo > 0) {
-            infoLabel.textContent = '📊 Próximo KM: ' + kmUltimo + ' (sin política configurada para "' + tipoRep + '")';
-        } else {
-            infoLabel.textContent = '';
-        }
-    }
-}
-
-function toggleProgramacionForm() {
-    progIsFormVisible = !progIsFormVisible;
-    if (!progIsFormVisible) {
-        progPatentePrecargada = null;
-    }
-    renderMantenimientosView();
-}
-
-function applyProgramacionFilter() {
-    var filterInput = document.getElementById('filterInputProg');
-    var searchTerm = filterInput.value.toLowerCase().trim();
-    if (!searchTerm) progFilteredRows = progRows.slice();
-    else progFilteredRows = progRows.filter(function(row) { return (row['PATENTE'] || '').toString().toLowerCase().indexOf(searchTerm) !== -1; });
-    renderProgramacion(document.getElementById('mantenimientos-content'));
-}
-
-function clearProgramacionFilter() {
-    document.getElementById('filterInputProg').value = '';
-    progFilteredRows = progRows.slice();
-    renderProgramacion(document.getElementById('mantenimientos-content'));
-}
-
-async function handleAddProgramacion(e) {
-    e.preventDefault();
-    var form = e.target;
-    var formData = new FormData(form);
-    var data = {};
-    for (var pair of formData.entries()) {
-        data[pair[0]] = pair[1];
-    }
-
-    try {
-        var response = await fetch('/api/programacion/add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Programación agregada correctamente', 'success');
-            form.reset();
-            progIsFormVisible = false;
-            progPatentePrecargada = null;
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-function editProgramacion(rowNumber) {
-    var row = progRows.find(function(r) { return r._row_number === rowNumber; });
-    if (!row) { showAlert('No se encontró el registro', 'error'); return; }
-
-    document.getElementById('editProgramacionRowNumber').value = rowNumber;
-    document.getElementById('editProgramacionFields').innerHTML = generateProgramacionFormFields(row, true);
-
-    setTimeout(function() {
-        calcularProximoMantenimiento('edit');
-        calcularProximoKm('edit');
-    }, 100);
-
-    document.getElementById('editProgramacionModal').style.display = 'block';
-}
-
-function closeEditProgramacionModal() {
-    document.getElementById('editProgramacionModal').style.display = 'none';
-}
-
-async function submitEditProgramacion(e) {
-    e.preventDefault();
-    var rowNumber = parseInt(document.getElementById('editProgramacionRowNumber').value);
-    var formData = new FormData(e.target);
-    var data = {};
-    for (var pair of formData.entries()) {
-        data[pair[0]] = pair[1];
-    }
-
-    try {
-        var response = await fetch('/api/programacion/update/' + rowNumber, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Programación actualizada correctamente', 'success');
-            closeEditProgramacionModal();
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-async function deleteProgramacion(rowNumber) {
-    if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
-    try {
-        var response = await fetch('/api/programacion/delete/' + rowNumber, { method: 'DELETE' });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Programación eliminada correctamente', 'success');
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al eliminar: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   TAREA COMPLETA
-   ============================================================ */
-function openTareaCompleta(rowNumber) {
-    var row = progRows.find(function(r) { return r._row_number === rowNumber; });
-    if (!row) { showAlert('No se encontró el registro', 'error'); return; }
-    progRowSeleccionadaParaCompletar = row;
-    document.getElementById('tareaCompletaMsg').textContent =
-        '¿Estás seguro de marcar como COMPLETO el mantenimiento de la patente ' + (row['PATENTE'] || '') + '? Elegí si querés volver a programar otro mantenimiento.';
-    document.getElementById('tareaCompletaModal').style.display = 'block';
-}
-
-function closeTareaCompletaModal() {
-    document.getElementById('tareaCompletaModal').style.display = 'none';
-    progRowSeleccionadaParaCompletar = null;
-}
-
-async function confirmarTareaCompletaProgramar() {
-    if (!progRowSeleccionadaParaCompletar) return;
-    var row = progRowSeleccionadaParaCompletar;
-
-    try {
-        var response = await fetch('/api/programacion/completar/' + row._row_number, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        var result = await response.json();
-        if (!result.success) {
-            showAlert('❌ Error al marcar como completo: ' + result.error, 'error');
-            return;
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-        return;
-    }
-
-    var patente = row['PATENTE'] || '';
-    closeTareaCompletaModal();
-
-    progIsFormVisible = true;
-    progPatentePrecargada = patente;
-
-    mpCurrentView = 'programacion';
-    document.querySelectorAll('#tabsMantenimientos .tab').forEach(function(t) {
-        if (t.dataset.view === 'programacion') t.classList.add('active');
-        else t.classList.remove('active');
-    });
-
-    await loadMantenimientosData();
-
-    showAlert('✅ Tarea marcada como Completo. Programá el próximo mantenimiento para ' + patente, 'success');
-}
-
-async function confirmarTareaCompletaNoProgramar() {
-    if (!progRowSeleccionadaParaCompletar) return;
-    var row = progRowSeleccionadaParaCompletar;
-
-    try {
-        var response = await fetch('/api/programacion/completar/' + row._row_number, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Tarea marcada como Completo (no se programó otro mantenimiento)', 'success');
-            closeTareaCompletaModal();
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   CONFIGURACIÓN MANTENIMIENTOS
-   ============================================================ */
-function renderMantenimientosConfig(content) {
-    var html = '<div class="config-section">';
-    html += '<h3>⚙️ Configuración de Desplegables</h3>';
-    html += '<p style="color:#666; margin-bottom:15px;">Configura las opciones para cada campo desplegable. Escribe una opción por línea.</p>';
-    html += '<div id="dropdownsConfigContainer">';
-
-    MP_DROPDOWN_COLUMNS.forEach(function(col) {
-        var options = mpDropdowns[col] || [];
-        html += '<div class="dropdown-config-item">';
-        html += '<label>📋 ' + col + '</label>';
-        html += '<textarea id="config_dropdown_' + col + '" placeholder="Escribe una opción por línea...">' + options.join('\n') + '</textarea>';
-        html += '</div>';
-    });
-
-    html += '</div>';
-    html += '<button type="button" class="btn btn-success" onclick="saveDropdowns()">💾 Guardar Desplegables</button>';
-    html += '</div>';
-
-    html += '<div class="config-section">';
-    html += '<h3>📅 Configuración de PATENTES (Camion T2)</h3>';
-    html += '<p style="color:#666; margin-bottom:15px;">Estas son las patentes traídas automáticamente desde la solapa "Camion T2" del maestro de flota. Se usan como desplegable en la Programación de Mantenimiento Preventivo. El ODOMETRO se toma automáticamente de la misma solapa.</p>';
-    html += '<div class="dropdown-config-item">';
-    html += '<label>🚛 PATENTES disponibles con ODOMETRO</label>';
-    html += '<div style="background:white; padding:10px; border:1px solid #e0e0e0; border-radius:4px; max-height:250px; overflow-y:auto; font-family:monospace; font-size:13px;">';
-    if (patentesCamionT2.length === 0) {
-        html += '<span style="color:#999;">No hay patentes cargadas en Camion T2</span>';
-    } else {
-        patentesCamionT2.forEach(function(p) {
-            html += '<div>• <b>' + p + '</b> — ODOMETRO: ' + (odometroPorPatente[p] || '(sin dato)') + '</div>';
-        });
-    }
-    html += '</div>';
-    html += '<small style="color:#666; display:block; margin-top:8px;">ℹ️ Para modificar estas patentes y odómetros, editá la solapa "Camion T2" del maestro de flota.</small>';
-    html += '</div>';
-    html += '</div>';
-
-    html += '<div class="config-section">';
-    html += '<h3>🔧 Configuración MP (Políticas)</h3>';
-    html += '<p style="color:#666; margin-bottom:15px;">Configura las políticas para cada combinación de TIPO MANTENIMIENTO y TIPO REPARACIÓN. La POLITICA se suma a KM REALIZADO / KM ULTIMO MANTENIMIENTO para calcular el próximo KM.</p>';
-    html += '<table class="config-mp-table">';
-    html += '<thead><tr>';
-    html += '<th>TIPO MANTENIMIENTO</th>';
-    html += '<th>TIPO REPARACIÓN</th>';
-    html += '<th>POLITICA (KM)</th>';
-    html += '<th>Acción</th>';
-    html += '</tr></thead>';
-    html += '<tbody id="configMPTableBody">';
-
-    mpConfigMP.forEach(function(row, index) {
-        html += '<tr>';
-        html += '<td><input type="text" id="config_mp_tm_' + index + '" value="' + (row['TIPO MANTENIMIENTO'] || '') + '"></td>';
-        html += '<td><input type="text" id="config_mp_tr_' + index + '" value="' + (row['TIPO REPARACIÓN'] || '') + '"></td>';
-        html += '<td><input type="number" id="config_mp_pol_' + index + '" value="' + (row['POLITICA'] || '') + '"></td>';
-        html += '<td><button type="button" class="btn-remove-row" onclick="removeConfigMPRow(' + index + ')">🗑️</button></td>';
-        html += '</tr>';
-    });
-
-    html += '</tbody></table>';
-    html += '<button type="button" class="btn-add-row" onclick="addConfigMPRow()">➕ Agregar Fila</button>';
-    html += '<br><br>';
-    html += '<button type="button" class="btn btn-success" onclick="saveConfigMP()">💾 Guardar Configuración MP</button>';
-    html += '</div>';
-
-    content.innerHTML = html;
-}
-
-function addConfigMPRow() {
-    mpConfigMP.push({'TIPO MANTENIMIENTO': '', 'TIPO REPARACIÓN': '', 'POLITICA': ''});
-    renderMantenimientosConfig(document.getElementById('mantenimientos-content'));
-}
-
-function removeConfigMPRow(index) {
-    mpConfigMP.splice(index, 1);
-    renderMantenimientosConfig(document.getElementById('mantenimientos-content'));
-}
-
-async function saveDropdowns() {
-    var dropdowns = {};
-    MP_DROPDOWN_COLUMNS.forEach(function(col) {
-        var textarea = document.getElementById('config_dropdown_' + col);
-        if (textarea) {
-            var lines = textarea.value.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l !== ''; });
-            if (lines.length > 0) {
-                dropdowns[col] = lines;
-            }
-        }
-    });
-
-    try {
-        var response = await fetch('/api/mantenimientos/dropdowns', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ dropdowns: dropdowns })
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Desplegables guardados correctamente', 'success');
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-async function saveConfigMP() {
-    var rows = [];
-    mpConfigMP.forEach(function(row, index) {
-        var tm = document.getElementById('config_mp_tm_' + index);
-        var tr = document.getElementById('config_mp_tr_' + index);
-        var pol = document.getElementById('config_mp_pol_' + index);
-        if (tm && tr && pol) {
-            var tmVal = tm.value.trim();
-            var trVal = tr.value.trim();
-            var polVal = pol.value.trim();
-            if (tmVal !== '' || trVal !== '') {
-                rows.push({
-                    'TIPO MANTENIMIENTO': tmVal,
-                    'TIPO REPARACIÓN': trVal,
-                    'POLITICA': polVal
-                });
-            }
-        }
-    });
-
-    try {
-        var response = await fetch('/api/mantenimientos/config_mp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rows: rows })
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Configuración MP guardada correctamente', 'success');
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   EDICIÓN (CONTROL DE DOCUMENTACIÓN)
-   ============================================================ */
-function editRow(sheetName, rowNumber) {
-    var row = allRows.find(function(r) { return r._row_number === rowNumber; });
-    if (!row) { showAlert('No se encontró el documento', 'error'); return; }
-
-    editContextModule = 'docs';
-    currentEditRow = row;
-    var headersForEdit = currentHeaders;
-    var displayColumns = getDisplayColumns(sheetName);
-    var photoCols = getPhotoColumns(headersForEdit);
-    var dateColsRequiringPhoto = getDateColumnsRequiringPhoto(sheetName);
-
-    document.getElementById('editSheetName').value = sheetName;
-    document.getElementById('editRowNumber').value = rowNumber;
-
-    var html = '';
-    displayColumns.forEach(function(header) {
-        if (header === 'Marca Temporal') return;
-        if (photoCols.indexOf(header) !== -1) return;
-
-        var value = row[header] || '';
-        var upper = header.toUpperCase();
-        var isDate = upper.indexOf('FECHA') !== -1 || upper.indexOf('VENCIMIENTO') !== -1 || upper.indexOf('VENC') !== -1;
-        var isTextarea = upper.indexOf('OBSERVACION') !== -1 || upper.indexOf('COMENTARIO') !== -1;
-        var requiresPhoto = dateColsRequiringPhoto.indexOf(header) !== -1;
-
-        html += '<div class="form-group">';
-        html += '<label>' + header;
-        if (requiresPhoto) html += ' <span class="photo-required">(requiere foto)</span>';
-        html += '</label>';
-
-        if (isTextarea) {
-            html += '<textarea id="edit_' + header + '" name="' + header + '" rows="2">' + value + '</textarea>';
-        } else if (isDate) {
-            var dateValue = value;
-            if (value && value.indexOf('/') !== -1) {
-                var parts = value.split('/');
-                if (parts.length === 3) {
-                    var year = parseInt(parts[2]);
-                    if (year < 100) year += 2000;
-                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
-                }
-            }
-            html += '<input type="date" id="edit_' + header + '" name="' + header + '" value="' + dateValue + '">';
-        } else {
-            html += '<input type="text" id="edit_' + header + '" name="' + header + '" value="' + value + '">';
-        }
-        html += '</div>';
-    });
-    document.getElementById('editFormFields').innerHTML = html;
-
-    var photoHtml = generatePhotoFieldsForEdit(headersForEdit, row, false);
-    document.getElementById('editPhotoFields').innerHTML = photoHtml;
-
-    document.getElementById('editModal').style.display = 'block';
-}
-
-function closeEditModal() {
-    document.getElementById('editModal').style.display = 'none';
-}
-
-async function submitEditForm(e) {
-    e.preventDefault();
-
-    var sheetName = document.getElementById('editSheetName').value;
-    var rowNumber = parseInt(document.getElementById('editRowNumber').value);
-    var formData = new FormData(e.target);
-
-    if (editContextModule !== 'master') {
-        var dateCols = getDateColumnsRequiringPhoto(sheetName);
-        var missingPhotos = [];
-
-        dateCols.forEach(function(dateCol) {
-            var dateValue = formData.get(dateCol);
-            if (dateValue && dateValue.trim() !== '') {
-                var photoInput = document.getElementById('edit_foto_' + dateCol);
-                var hasNewFile = photoInput && photoInput.files && photoInput.files.length > 0;
-                var existingPhoto = formData.get(dateCol + '_FOTO');
-                if (!hasNewFile && !existingPhoto) {
-                    missingPhotos.push(dateCol);
-                }
-            }
-        });
-
-        if (missingPhotos.length > 0) {
-            showAlert('⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ' + missingPhotos.join(', '), 'error');
-            return;
-        }
-    }
-
-    var hasPhoto = false;
-    var photoCols = getPhotoColumns(currentHeaders);
-
-    photoCols.forEach(function(col) {
-        var docName = col.replace('_FOTO', '');
-        var fileInput = document.getElementById('edit_foto_' + docName);
-        if (fileInput && fileInput.files && fileInput.files.length > 0) {
-            hasPhoto = true;
-            formData.append('foto_' + docName, fileInput.files[0]);
-        }
-    });
-
-    var keysToDelete = [];
-    for (var key of formData.keys()) {
-        if (key.indexOf('edit_foto_') === 0) keysToDelete.push(key);
-    }
-    keysToDelete.forEach(function(key) { formData.delete(key); });
-
-    try {
-        var response;
-        if (hasPhoto) {
-            response = await fetch('/api/update_with_photo/' + encodeURIComponent(sheetName) + '/' + rowNumber, {
-                method: 'POST',
-                body: formData
-            });
-        } else {
-            var jsonData = {};
-            for (var pair of formData.entries()) {
-                if (pair[0].indexOf('foto_') !== 0 && pair[0] !== 'sheetName' && pair[0] !== 'rowNumber') {
-                    jsonData[pair[0]] = pair[1];
-                }
-            }
-            response = await fetch('/api/update/' + encodeURIComponent(sheetName) + '/' + rowNumber, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(jsonData)
-            });
-        }
-
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Documento actualizado correctamente', 'success');
-            closeEditModal();
-            if (editContextModule === 'master') {
-                await loadMasterData(sheetName);
-            } else {
-                await loadSheetData(sheetName);
-            }
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al actualizar: ' + error.message, 'error');
-    }
-}
-
-async function deleteRow(sheetName, rowNumber) {
-    if (!confirm('¿Estás seguro de que deseas eliminar este documento?')) return;
-    try {
-        var response = await fetch('/api/delete/' + encodeURIComponent(sheetName) + '/' + rowNumber, { method: 'DELETE' });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Documento eliminado correctamente', 'success');
-            await loadSheetData(sheetName);
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al eliminar: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   EXPONER FUNCIONES GLOBALES (para onclick inline)
-   ============================================================ */
-window.showHome = showHome;
-window.showModule = showModule;
-window.toggleForm = toggleForm;
-window.applyFilter = applyFilter;
-window.clearFilter = clearFilter;
-window.editRow = editRow;
-window.deleteRow = deleteRow;
-window.closeEditModal = closeEditModal;
-
-window.toggleMasterForm = toggleMasterForm;
-window.applyMasterFilter = applyMasterFilter;
-window.clearMasterFilter = clearMasterFilter;
-window.editMasterRow = editMasterRow;
-window.deleteMasterRow = deleteMasterRow;
-
-window.applyHistoryFilter = applyHistoryFilter;
-window.clearHistoryFilter = clearHistoryFilter;
-window.updateHistoryStatus = updateHistoryStatus;
-window.deleteHistoryRow = deleteHistoryRow;
-
-window.toggleMantenimientoForm = toggleMantenimientoForm;
-window.applyMantenimientoFilter = applyMantenimientoFilter;
-window.clearMantenimientoFilter = clearMantenimientoFilter;
-window.editMantenimiento = editMantenimiento;
-window.deleteMantenimiento = deleteMantenimiento;
-window.closeEditMantenimientoModal = closeEditMantenimientoModal;
-window.recalcularKmProximo = recalcularKmProximo;
-
-window.toggleProgramacionForm = toggleProgramacionForm;
-window.applyProgramacionFilter = applyProgramacionFilter;
-window.clearProgramacionFilter = clearProgramacionFilter;
-window.editProgramacion = editProgramacion;
-window.deleteProgramacion = deleteProgramacion;
-window.closeEditProgramacionModal = closeEditProgramacionModal;
-window.autocompletarKmDesdeOdometro = autocompletarKmDesdeOdometro;
-window.calcularProximoMantenimiento = calcularProximoMantenimiento;
-window.calcularProximoKm = calcularProximoKm;
-
-window.openTareaCompleta = openTareaCompleta;
-window.closeTareaCompletaModal = closeTareaCompletaModal;
-window.confirmarTareaCompletaProgramar = confirmarTareaCompletaProgramar;
-window.confirmarTareaCompletaNoProgramar = confirmarTareaCompletaNoProgramar;
-
-window.addConfigMPRow = addConfigMPRow;
-window.removeConfigMPRow = removeConfigMPRow;
-window.saveDropdowns = saveDropdowns;
-window.saveConfigMP = saveConfigMP;
-
-window.previewPhoto = previewPhoto;
-
-/* ============================================================
-   INICIALIZACIÓN (DOMContentLoaded)
-   ============================================================ */
-document.addEventListener('DOMContentLoaded', function() {
-    // Tabs de Control de Documentación
-    var tabsDocs = document.querySelectorAll('#tabsDocs .tab');
-    tabsDocs.forEach(function(tab) {
-        tab.addEventListener('click', function() {
-            tabsDocs.forEach(function(t) { t.classList.remove('active'); });
-            this.classList.add('active');
-            currentSheet = this.dataset.sheet;
-            isFormVisible = false;
-            loadSheetData(currentSheet);
-        });
-    });
-
-    // Tabs de Maestro de Flota
-    var tabsMaster = document.querySelectorAll('#tabsMaster .tab');
-    tabsMaster.forEach(function(tab) {
-        tab.addEventListener('click', function() {
-            tabsMaster.forEach(function(t) { t.classList.remove('active'); });
-            this.classList.add('active');
-            masterCurrentSheet = this.dataset.sheet;
-            masterIsFormVisible = false;
-            loadMasterData(masterCurrentSheet);
-        });
-    });
-
-    // Tabs de Mantenimientos
-    var tabsMP = document.querySelectorAll('#tabsMantenimientos .tab');
-    tabsMP.forEach(function(tab) {
-        tab.addEventListener('click', function() {
-            tabsMP.forEach(function(t) { t.classList.remove('active'); });
-            this.classList.add('active');
-            mpCurrentView = this.dataset.view;
-            if (mpCurrentView === 'config') {
-                renderMantenimientosView();
-            } else if (mpCurrentView === 'programacion') {
-                renderMantenimientosView();
-            } else {
-                loadMantenimientosData();
-            }
-        });
-    });
-
-    // Submit de forms de modales
-    var editForm = document.getElementById('editForm');
-    if (editForm) editForm.addEventListener('submit', submitEditForm);
-
-    var editMantForm = document.getElementById('editMantenimientoForm');
-    if (editMantForm) editMantForm.addEventListener('submit', submitEditMantenimiento);
-
-    var editProgForm = document.getElementById('editProgramacionForm');
-    if (editProgForm) editProgForm.addEventListener('submit', submitEditProgramacion);
-
-    // Cerrar modales al clickear fuera
-    var modales = ['editModal', 'editMantenimientoModal', 'editProgramacionModal', 'tareaCompletaModal'];
-    modales.forEach(function(modalId) {
-        var modal = document.getElementById(modalId);
-        if (!modal) return;
-        modal.addEventListener('click', function(event) {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-                if (modalId === 'tareaCompletaModal') {
-                    progRowSeleccionadaParaCompletar = null;
-                }
-            }
-        });
-    });
-
-    showHome();
-});
-</script>
-</body>
-</html>
+        media = MediaIoBaseUpload(
+            io.BytesIO(file_content),
+            mimetype='image/jpeg',
+            resumable=True
+        )
+
+        file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id'
+        ).execute()
+
+        return file.get('id')
+
+    except HttpError as err:
+        print(f"Error uploading file: {err}")
+        return None
+
+def parse_date(date_str):
+    if not date_str:
+        return None
+    date_str = str(date_str).strip()
+    if date_str == '':
+        return None
+
+    if '/' in date_str:
+        parts = date_str.split('/')
+        if len(parts) == 3:
+            try:
+                day = int(parts[0])
+                month = int(parts[1])
+                year = int(parts[2])
+                if year < 100:
+                    year += 2000
+                if 1 <= day <= 31 and 1 <= month <= 12:
+                    return datetime(year, month, day)
+            except ValueError:
+                pass
+
+    if '-' in date_str:
+        parts = date_str.split('-')
+        if len(parts) == 3:
+            try:
+                year = int(parts[0])
+                month = int(parts[1])
+                day = int(parts[2])
+                if 1 <= day <= 31 and 1 <= month <= 12:
+                    return datetime(year, month, day)
+            except ValueError:
+                pass
+
+    return None
+
+def get_politica_por_tipo_reparacion(tipo_reparacion):
+    try:
+        config_data = get_all_data(SHEET_CONFIG_MP, SPREADSHEET_ID_MP)
+        for row in config_data.get('rows', []):
+            tr = (row.get('TIPO REPARACIÓN') or '').strip()
+            if tr and tr == tipo_reparacion.strip():
+                pol = (row.get('POLITICA') or '').strip()
+                try:
+                    return float(pol)
+                except ValueError:
+                    return 0
+        return 0
+    except Exception as e:
+        print(f"Error en get_politica_por_tipo_reparacion: {e}")
+        return 0
+
+def check_and_register_expirations():
+    try:
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        limit_date = today + timedelta(days=30)
+
+        history_data = get_all_data(HISTORY_SHEET)
+        history_rows = history_data.get('rows', [])
+        history_headers = history_data.get('headers', [])
+
+        if not history_headers:
+            print("La hoja de historial no existe o está vacía. Omitiendo detección automática.")
+            return False
+
+        existing_keys = set()
+        for row in history_rows:
+            tipo = row.get('TIPO', '').strip()
+            desc = row.get('DESCRIPCION', '').strip()
+            fecha_venc = row.get('FECHA VENCIMIENTO', '').strip()
+            if tipo and desc and fecha_venc:
+                existing_keys.add((tipo, desc, fecha_venc))
+
+        new_rows = []
+        fecha_deteccion = today.strftime('%d/%m/%Y')
+
+        for sheet_name, date_columns in DATE_COLUMNS_CONFIG.items():
+            if sheet_name == HISTORY_SHEET:
+                continue
+
+            data = get_all_data(sheet_name)
+            rows = data.get('rows', [])
+            id_field = ID_FIELD_CONFIG.get(sheet_name, '')
+
+            for row in rows:
+                identificador = row.get(id_field, '').strip() if id_field else ''
+                if not identificador:
+                    continue
+
+                for date_col in date_columns:
+                    date_value = row.get(date_col, '').strip()
+                    if not date_value:
+                        continue
+
+                    exp_date = parse_date(date_value)
+                    if not exp_date:
+                        continue
+
+                    if exp_date <= limit_date:
+                        tipo = date_col
+                        descripcion = identificador
+                        fecha_venc_str = exp_date.strftime('%d/%m/%Y')
+
+                        key = (tipo, descripcion, fecha_venc_str)
+                        if key not in existing_keys:
+                            fecha_deteccion = today.strftime('%d/%m/%Y')
+
+                            new_row_values = []
+                            for h in history_headers:
+                                if h == 'FECHA':
+                                    new_row_values.append(fecha_deteccion)
+                                elif h == 'TIPO':
+                                    new_row_values.append(tipo)
+                                elif h == 'DESCRIPCION':
+                                    new_row_values.append(descripcion)
+                                elif h == 'FECHA VENCIMIENTO':
+                                    new_row_values.append(fecha_venc_str)
+                                elif h == 'ESTADO':
+                                    new_row_values.append('En Proceso')
+                                else:
+                                    new_row_values.append('')
+
+                            new_rows.append(new_row_values)
+                            existing_keys.add(key)
+
+        if new_rows:
+            try:
+                creds = get_google_creds()
+                service = build('sheets', 'v4', credentials=creds)
+                sheet = service.spreadsheets()
+
+                body = {'values': new_rows}
+
+                sheet.values().append(
+                    spreadsheetId=SPREADSHEET_ID,
+                    range=f"'{HISTORY_SHEET}'!A:Z",
+                    valueInputOption='RAW',
+                    insertDataOption='INSERT_ROWS',
+                    body=body
+                ).execute()
+
+                print(f"Se agregaron {len(new_rows)} registros al historial.")
+            except HttpError as err:
+                print(f"Error al insertar batch en historial: {err}")
+
+        return True
+
+    except Exception as e:
+        print(f"Error en check_and_register_expirations: {e}")
+        return False
+
+@app.route('/')
+def index():
+    return render_template('index.html', sheets=SHEETS)
+
+@app.route('/api/sheet/<sheet_name>')
+def get_sheet(sheet_name):
+    data = get_all_data(sheet_name)
+    return jsonify(data)
+
+@app.route('/api/history')
+def get_history():
+    try:
+        check_and_register_expirations()
+        data = get_all_data(HISTORY_SHEET)
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error en get_history: {e}")
+        return jsonify({'headers': [], 'rows': [], 'error': str(e)}), 500
+
+@app.route('/api/history/update_status/<int:row_number>', methods=['POST'])
+def update_history_status(row_number):
+    try:
+        data = request.json
+        new_status = data.get('estado', '')
+
+        if new_status not in ['En Proceso', 'Completo', 'Vencido', 'Notificado']:
+            return jsonify({'success': False, 'error': 'Estado no válido'}), 400
+
+        success = update_row_partial(HISTORY_SHEET, row_number, {'ESTADO': new_status})
+
+        if success:
+            return jsonify({'success': True, 'message': 'Estado actualizado correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al actualizar el estado'}), 500
+
+    except Exception as e:
+        print(f"Error en update_history_status: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/history/delete/<int:row_number>', methods=['DELETE'])
+def delete_history_row(row_number):
+    try:
+        success = delete_row(HISTORY_SHEET, row_number)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Registro eliminado correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al eliminar el registro'}), 500
+
+    except Exception as e:
+        print(f"Error en delete_history_row: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/add', methods=['POST'])
+def add_document():
+    try:
+        sheet_name = request.form.get('sheet_name')
+
+        form_data = {}
+        for key in request.form:
+            form_data[key] = request.form[key]
+
+        data = get_all_data(sheet_name)
+        headers = data.get('headers', [])
+
+        row_values = []
+        for header in headers:
+            if header == 'Marca Temporal':
+                row_values.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            elif header in form_data:
+                row_values.append(form_data[header])
+            else:
+                row_values.append('')
+
+        for key in request.files:
+            if key.startswith('foto_'):
+                foto = request.files[key]
+                if foto.filename != '':
+                    doc_name = key.replace('foto_', '')
+
+                    if sheet_name in ['Camion T1', 'Camion T2']:
+                        identificador = form_data.get('PATENTE', 'SIN_PATENTE')
+                    elif sheet_name == 'Autoelevadores':
+                        identificador = form_data.get('CODIGO DE AE', 'SIN_CODIGO')
+                    elif sheet_name == 'Choferes y Ayudantes':
+                        identificador = form_data.get('APELLIDO Y NOMBRE', 'SIN_NOMBRE')
+                    else:
+                        identificador = 'DOCUMENTO'
+
+                    file_extension = os.path.splitext(foto.filename)[1]
+                    filename = f"{identificador} - {doc_name}{file_extension}"
+                    file_content = foto.read()
+
+                    file_id = upload_file_to_drive(file_content, filename, DRIVE_FOLDER_ID)
+
+                    if file_id:
+                        drive_url = f"https://drive.google.com/file/d/{file_id}/view"
+                        foto_header = f"{doc_name}_FOTO"
+                        for i, header in enumerate(headers):
+                            if header == foto_header:
+                                row_values[i] = drive_url
+                                break
+
+        success = add_row_to_sheet(sheet_name, row_values)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Documento agregado correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al guardar en Google Sheets'}), 500
+
+    except Exception as e:
+        print(f"Error en add_document: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/update/<sheet_name>/<int:row_number>', methods=['POST'])
+def update_document(sheet_name, row_number):
+    try:
+        data = request.json
+
+        sheet_data = get_all_data(sheet_name)
+        headers = sheet_data.get('headers', [])
+
+        row_values = []
+        for header in headers:
+            if header == 'Marca Temporal':
+                row_values.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            elif header in data:
+                row_values.append(data[header])
+            else:
+                row_values.append('')
+
+        success = update_row(sheet_name, row_number, row_values)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Documento actualizado correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al actualizar en Google Sheets'}), 500
+
+    except Exception as e:
+        print(f"Error en update_document: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/update_with_photo/<sheet_name>/<int:row_number>', methods=['POST'])
+def update_document_with_photo(sheet_name, row_number):
+    try:
+        form_data = {}
+        for key in request.form:
+            form_data[key] = request.form[key]
+
+        for key in request.files:
+            if key.startswith('foto_'):
+                foto = request.files[key]
+                if foto.filename != '':
+                    doc_name = key.replace('foto_', '')
+
+                    if sheet_name in ['Camion T1', 'Camion T2']:
+                        identificador = form_data.get('PATENTE', 'SIN_PATENTE')
+                    elif sheet_name == 'Autoelevadores':
+                        identificador = form_data.get('CODIGO DE AE', 'SIN_CODIGO')
+                    elif sheet_name == 'Choferes y Ayudantes':
+                        identificador = form_data.get('APELLIDO Y NOMBRE', 'SIN_NOMBRE')
+                    else:
+                        identificador = 'DOCUMENTO'
+
+                    file_extension = os.path.splitext(foto.filename)[1]
+                    filename = f"{identificador} - {doc_name}{file_extension}"
+                    file_content = foto.read()
+
+                    file_id = upload_file_to_drive(file_content, filename, DRIVE_FOLDER_ID)
+
+                    if file_id:
+                        drive_url = f"https://drive.google.com/file/d/{file_id}/view"
+                        foto_header = f"{doc_name}_FOTO"
+                        form_data[foto_header] = drive_url
+
+        sheet_data = get_all_data(sheet_name)
+        headers = sheet_data.get('headers', [])
+
+        current_row = None
+        for row in sheet_data.get('rows', []):
+            if row.get('_row_number') == row_number:
+                current_row = row
+                break
+
+        row_values = []
+        for header in headers:
+            if header == 'Marca Temporal':
+                row_values.append(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            elif header in form_data and form_data[header] is not None:
+                row_values.append(form_data[header])
+            elif current_row and header in current_row:
+                row_values.append(current_row[header])
+            else:
+                row_values.append('')
+
+        success = update_row(sheet_name, row_number, row_values)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Documento actualizado correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al actualizar en Google Sheets'}), 500
+
+    except Exception as e:
+        print(f"Error en update_document_with_photo: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/delete/<sheet_name>/<int:row_number>', methods=['DELETE'])
+def delete_document(sheet_name, row_number):
+    try:
+        success = delete_row(sheet_name, row_number)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Documento eliminado correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al eliminar el documento'}), 500
+
+    except Exception as e:
+        print(f"Error en delete_document: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==================== MANTENIMIENTOS ====================
+
+@app.route('/api/mantenimientos/config', methods=['GET'])
+def get_mantenimiento_config():
+    try:
+        ensure_sheet_exists(SHEET_CONFIG_DROPDOWNS, SPREADSHEET_ID_MP)
+
+        dropdown_data = get_all_data(SHEET_CONFIG_DROPDOWNS, SPREADSHEET_ID_MP)
+        config_mp_data = get_all_data(SHEET_CONFIG_MP, SPREADSHEET_ID_MP)
+        hist_data = get_all_data(SHEET_HISTORIAL_MP, SPREADSHEET_ID_MP)
+
+        camion_t2_data = get_all_data('Camion T2', SPREADSHEET_ID)
+        patentes_camion_t2 = []
+        odometro_por_patente = {}
+        for row in camion_t2_data.get('rows', []):
+            patente = (row.get('PATENTE') or '').strip()
+            if patente:
+                if patente not in patentes_camion_t2:
+                    patentes_camion_t2.append(patente)
+                odometro = (row.get('ODOMETRO') or '').strip()
+                if odometro:
+                    odometro_por_patente[patente] = odometro
+        patentes_camion_t2.sort()
+
+        ensure_sheet_exists(
+            SHEET_PROGRAMACION_MP,
+            SPREADSHEET_ID_MP,
+            headers=PROG_HEADERS
+        )
+        programacion_data = get_all_data(SHEET_PROGRAMACION_MP, SPREADSHEET_ID_MP)
+
+        return jsonify({
+            'success': True,
+            'dropdowns': dropdown_data,
+            'config_mp': config_mp_data,
+            'historial_headers': hist_data.get('headers', []),
+            'historial_rows': hist_data.get('rows', []),
+            'patentes_camion_t2': patentes_camion_t2,
+            'odometro_por_patente': odometro_por_patente,
+            'programacion_headers': programacion_data.get('headers', []),
+            'programacion_rows': programacion_data.get('rows', [])
+        })
+    except Exception as e:
+        print(f"Error en get_mantenimiento_config: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/mantenimientos/dropdowns', methods=['POST'])
+def save_mantenimiento_dropdowns():
+    try:
+        data = request.json
+        dropdowns = data.get('dropdowns', {})
+
+        ensure_sheet_exists(SHEET_CONFIG_DROPDOWNS, SPREADSHEET_ID_MP)
+
+        headers = list(dropdowns.keys())
+
+        if not headers:
+            body = {'values': []}
+        else:
+            max_len = max(len(v) for v in dropdowns.values()) if dropdowns else 0
+            rows = [headers]
+            for i in range(max_len):
+                row = []
+                for h in headers:
+                    opts = dropdowns[h]
+                    row.append(opts[i] if i < len(opts) else '')
+                rows.append(row)
+            body = {'values': rows}
+
+        creds = get_google_creds()
+        service = build('sheets', 'v4', credentials=creds)
+        sheet = service.spreadsheets()
+
+        sheet.values().clear(
+            spreadsheetId=SPREADSHEET_ID_MP,
+            range=f"'{SHEET_CONFIG_DROPDOWNS}'!A:Z"
+        ).execute()
+
+        if headers:
+            sheet.values().update(
+                spreadsheetId=SPREADSHEET_ID_MP,
+                range=f"'{SHEET_CONFIG_DROPDOWNS}'!A1",
+                valueInputOption='RAW',
+                body=body
+            ).execute()
+
+        return jsonify({'success': True, 'message': 'Desplegables guardados correctamente'})
+    except Exception as e:
+        print(f"Error en save_mantenimiento_dropdowns: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/mantenimientos/config_mp', methods=['POST'])
+def save_config_mp():
+    try:
+        data = request.json
+        rows = data.get('rows', [])
+
+        ensure_sheet_exists(SHEET_CONFIG_MP, SPREADSHEET_ID_MP)
+
+        headers = ['TIPO MANTENIMIENTO', 'TIPO REPARACIÓN', 'POLITICA']
+
+        body_values = [headers]
+        for r in rows:
+            body_values.append([
+                r.get('TIPO MANTENIMIENTO', ''),
+                r.get('TIPO REPARACIÓN', ''),
+                str(r.get('POLITICA', '')) if r.get('POLITICA', '') != '' else ''
+            ])
+
+        creds = get_google_creds()
+        service = build('sheets', 'v4', credentials=creds)
+        sheet = service.spreadsheets()
+
+        sheet.values().clear(
+            spreadsheetId=SPREADSHEET_ID_MP,
+            range=f"'{SHEET_CONFIG_MP}'!A:Z"
+        ).execute()
+
+        sheet.values().update(
+            spreadsheetId=SPREADSHEET_ID_MP,
+            range=f"'{SHEET_CONFIG_MP}'!A1",
+            valueInputOption='RAW',
+            body={'values': body_values}
+        ).execute()
+
+        return jsonify({'success': True, 'message': 'Configuración MP guardada correctamente'})
+    except Exception as e:
+        print(f"Error en save_config_mp: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/mantenimientos/add', methods=['POST'])
+def add_mantenimiento():
+    try:
+        data = request.json
+        sheet_name = SHEET_HISTORIAL_MP
+
+        sheet_data = get_all_data(sheet_name, SPREADSHEET_ID_MP)
+        headers = sheet_data.get('headers', [])
+
+        if not headers:
+            return jsonify({'success': False, 'error': 'La hoja Historial Mantenimientos no tiene encabezados'}), 500
+
+        row_values = []
+        for header in headers:
+            row_values.append(str(data.get(header, '')))
+
+        success = add_row_to_sheet(sheet_name, row_values, SPREADSHEET_ID_MP)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Mantenimiento agregado correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al guardar en Google Sheets'}), 500
+    except Exception as e:
+        print(f"Error en add_mantenimiento: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/mantenimientos/update/<int:row_number>', methods=['POST'])
+def update_mantenimiento(row_number):
+    try:
+        data = request.json
+        sheet_name = SHEET_HISTORIAL_MP
+
+        sheet_data = get_all_data(sheet_name, SPREADSHEET_ID_MP)
+        headers = sheet_data.get('headers', [])
+
+        row_values = []
+        for header in headers:
+            row_values.append(str(data.get(header, '')))
+
+        success = update_row(sheet_name, row_number, row_values, SPREADSHEET_ID_MP)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Mantenimiento actualizado correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al actualizar'}), 500
+    except Exception as e:
+        print(f"Error en update_mantenimiento: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/mantenimientos/delete/<int:row_number>', methods=['DELETE'])
+def delete_mantenimiento(row_number):
+    try:
+        success = delete_row(SHEET_HISTORIAL_MP, row_number, SPREADSHEET_ID_MP)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Mantenimiento eliminado correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al eliminar'}), 500
+    except Exception as e:
+        print(f"Error en delete_mantenimiento: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==================== PROGRAMACIÓN MANTENIMIENTO PREVENTIVO ====================
+
+@app.route('/api/programacion/add', methods=['POST'])
+def add_programacion():
+    try:
+        data = request.json
+        sheet_name = SHEET_PROGRAMACION_MP
+
+        ensure_sheet_exists(
+            sheet_name,
+            SPREADSHEET_ID_MP,
+            headers=PROG_HEADERS
+        )
+
+        sheet_data = get_all_data(sheet_name, SPREADSHEET_ID_MP)
+        headers = sheet_data.get('headers', [])
+
+        if not headers:
+            return jsonify({'success': False, 'error': 'La hoja Programación no tiene encabezados'}), 500
+
+        marca_temporal = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        fecha_ultimo = data.get('FECHA ULTIMO MANTENIMIENTO', '')
+        proximo_fecha = ''
+        parsed = parse_date(fecha_ultimo)
+        if parsed:
+            try:
+                proximo = parsed.replace(year=parsed.year + 1)
+            except ValueError:
+                proximo = parsed.replace(year=parsed.year + 1, day=28)
+            proximo_fecha = proximo.strftime('%d/%m/%Y')
+
+        tipo_reparacion = (data.get('TIPO REPARACIÓN') or '').strip()
+        km_ultimo_str = (data.get('KM ULTIMO MANTENIMIENTO') or '').strip()
+        politica = get_politica_por_tipo_reparacion(tipo_reparacion) if tipo_reparacion else 0
+        proximo_km = ''
+        if km_ultimo_str:
+            try:
+                km_ultimo = float(km_ultimo_str)
+                proximo_km = str(int(km_ultimo + politica)) if politica else str(int(km_ultimo))
+            except ValueError:
+                proximo_km = ''
+
+        row_values = []
+        for header in headers:
+            if header == 'Marca Temporal':
+                row_values.append(marca_temporal)
+            elif header == 'PROXIMO MANTENIMIENTO FECHA':
+                row_values.append(proximo_fecha)
+            elif header == 'PROXIMO MANTENIMIENTO KM':
+                row_values.append(proximo_km)
+            elif header == 'TIPO MANTENIMIENTO':
+                row_values.append('PREVENTIVO')
+            elif header == 'Estado':
+                row_values.append('En Proceso')
+            else:
+                row_values.append(str(data.get(header, '')))
+
+        success = add_row_to_sheet(sheet_name, row_values, SPREADSHEET_ID_MP)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Programación agregada correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al guardar en Google Sheets'}), 500
+    except Exception as e:
+        print(f"Error en add_programacion: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/programacion/update/<int:row_number>', methods=['POST'])
+def update_programacion(row_number):
+    try:
+        data = request.json
+        sheet_name = SHEET_PROGRAMACION_MP
+
+        sheet_data = get_all_data(sheet_name, SPREADSHEET_ID_MP)
+        headers = sheet_data.get('headers', [])
+
+        fecha_ultimo = data.get('FECHA ULTIMO MANTENIMIENTO', '')
+        proximo_fecha = ''
+        parsed = parse_date(fecha_ultimo)
+        if parsed:
+            try:
+                proximo = parsed.replace(year=parsed.year + 1)
+            except ValueError:
+                proximo = parsed.replace(year=parsed.year + 1, day=28)
+            proximo_fecha = proximo.strftime('%d/%m/%Y')
+
+        tipo_reparacion = (data.get('TIPO REPARACIÓN') or '').strip()
+        km_ultimo_str = (data.get('KM ULTIMO MANTENIMIENTO') or '').strip()
+        politica = get_politica_por_tipo_reparacion(tipo_reparacion) if tipo_reparacion else 0
+        proximo_km = ''
+        if km_ultimo_str:
+            try:
+                km_ultimo = float(km_ultimo_str)
+                proximo_km = str(int(km_ultimo + politica)) if politica else str(int(km_ultimo))
+            except ValueError:
+                proximo_km = ''
+
+        current_row = None
+        for row in sheet_data.get('rows', []):
+            if row.get('_row_number') == row_number:
+                current_row = row
+                break
+        marca_temporal = current_row.get('Marca Temporal', '') if current_row else ''
+        estado_actual = current_row.get('Estado', 'En Proceso') if current_row else 'En Proceso'
+
+        row_values = []
+        for header in headers:
+            if header == 'Marca Temporal':
+                row_values.append(marca_temporal)
+            elif header == 'PROXIMO MANTENIMIENTO FECHA':
+                row_values.append(proximo_fecha)
+            elif header == 'PROXIMO MANTENIMIENTO KM':
+                row_values.append(proximo_km)
+            elif header == 'TIPO MANTENIMIENTO':
+                row_values.append('PREVENTIVO')
+            elif header == 'Estado':
+                # Preservar el estado actual salvo que venga explícito
+                row_values.append(str(data.get('Estado', estado_actual)))
+            else:
+                row_values.append(str(data.get(header, '')))
+
+        success = update_row(sheet_name, row_number, row_values, SPREADSHEET_ID_MP)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Programación actualizada correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al actualizar'}), 500
+    except Exception as e:
+        print(f"Error en update_programacion: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/programacion/delete/<int:row_number>', methods=['DELETE'])
+def delete_programacion(row_number):
+    try:
+        success = delete_row(SHEET_PROGRAMACION_MP, row_number, SPREADSHEET_ID_MP)
+
+        if success:
+            return jsonify({'success': True, 'message': 'Programación eliminada correctamente'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al eliminar'}), 500
+    except Exception as e:
+        print(f"Error en delete_programacion: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/programacion/completar/<int:row_number>', methods=['POST'])
+def completar_programacion(row_number):
+    """Marca la programación como Completo (Estado = 'Completo')"""
+    try:
+        success = update_prog_estado(row_number, 'Completo')
+
+        if success:
+            return jsonify({'success': True, 'message': 'Programación marcada como Completo'})
+        else:
+            return jsonify({'success': False, 'error': 'Error al actualizar el estado'}), 500
+    except Exception as e:
+        print(f"Error en completar_programacion: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+if __name__ == '__main__':
+    port = int(os.getenv('PORT', 5000))
+    app.run(debug=False, host='0.0.0.0', port=port)
