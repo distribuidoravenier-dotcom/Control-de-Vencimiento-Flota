@@ -1624,6 +1624,33 @@ async function loadMantenimientosData() {
     }
 }
 
+/* Recarga datos SIN re-renderizar (para casos donde queremos preservar el estado del form) */
+async function reloadMantenimientosDataSinRender() {
+    try {
+        var response = await fetch('/api/mantenimientos/config');
+        var data = await response.json();
+        if (data.success) {
+            mpHeaders = data.historial_headers || [];
+            mpRows = data.historial_rows || [];
+            mpFilteredRows = mpRows.slice();
+            mpDropdowns = parseDropdowns(data.dropdowns);
+            mpConfigMP = parseConfigMP(data.config_mp);
+            mpConfigLoaded = true;
+
+            progHeaders = data.programacion_headers || [];
+            progRows = data.programacion_rows || [];
+            progFilteredRows = progRows.slice();
+            patentesCamionT2 = data.patentes_camion_t2 || [];
+            odometroPorPatente = data.odometro_por_patente || {};
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('Error recargando datos:', error);
+        return false;
+    }
+}
+
 function parseDropdowns(dropdownData) {
     var result = {};
     if (!dropdownData || !dropdownData.headers || dropdownData.headers.length === 0) return result;
@@ -2317,9 +2344,12 @@ function closeTareaCompletaModal() {
 async function confirmarTareaCompletaProgramar() {
     if (!progRowSeleccionadaParaCompletar) return;
     var row = progRowSeleccionadaParaCompletar;
+    var patente = row['PATENTE'] || '';
+    var rowNum = row._row_number;
 
+    // 1. Marcar como Completo en el backend
     try {
-        var response = await fetch('/api/programacion/completar/' + row._row_number, {
+        var response = await fetch('/api/programacion/completar/' + rowNum, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -2333,19 +2363,32 @@ async function confirmarTareaCompletaProgramar() {
         return;
     }
 
-    var patente = row['PATENTE'] || '';
-    closeTareaCompletaModal();
+    // 2. Cerrar el modal manualmente (sin resetear progRowSeleccionadaParaCompletar)
+    document.getElementById('tareaCompletaModal').style.display = 'none';
+    progRowSeleccionadaParaCompletar = null;
 
+    // 3. Preparar estado para abrir el formulario precargado
+    mpCurrentView = 'programacion';
     progIsFormVisible = true;
     progPatentePrecargada = patente;
 
-    mpCurrentView = 'programacion';
+    // 4. Cambiar tab activa visualmente
     document.querySelectorAll('#tabsMantenimientos .tab').forEach(function(t) {
         if (t.dataset.view === 'programacion') t.classList.add('active');
         else t.classList.remove('active');
     });
 
-    await loadMantenimientosData();
+    // 5. Recargar datos SIN re-renderizar para no perder el estado del form
+    await reloadMantenimientosDataSinRender();
+
+    // 6. Ahora sí renderizar la vista (con el form abierto y la patente precargada)
+    renderMantenimientosView();
+
+    // 7. Scroll al formulario
+    setTimeout(function() {
+        var formSection = document.getElementById('addProgramacionSection');
+        if (formSection) formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 200);
 
     showAlert('✅ Tarea marcada como Completo. Programá el próximo mantenimiento para ' + patente, 'success');
 }
@@ -2684,7 +2727,7 @@ async function deleteRow(sheetName, rowNumber) {
 }
 
 /* ============================================================
-   EXPONER FUNCIONES GLOBALES (para onclick inline)
+   EXPONER FUNCIONES GLOBALES
    ============================================================ */
 window.showHome = showHome;
 window.showModule = showModule;
@@ -2737,10 +2780,9 @@ window.saveConfigMP = saveConfigMP;
 window.previewPhoto = previewPhoto;
 
 /* ============================================================
-   INICIALIZACIÓN (DOMContentLoaded)
+   INICIALIZACIÓN
    ============================================================ */
 document.addEventListener('DOMContentLoaded', function() {
-    // Tabs de Control de Documentación
     var tabsDocs = document.querySelectorAll('#tabsDocs .tab');
     tabsDocs.forEach(function(tab) {
         tab.addEventListener('click', function() {
@@ -2752,7 +2794,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Tabs de Maestro de Flota
     var tabsMaster = document.querySelectorAll('#tabsMaster .tab');
     tabsMaster.forEach(function(tab) {
         tab.addEventListener('click', function() {
@@ -2764,7 +2805,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Tabs de Mantenimientos
     var tabsMP = document.querySelectorAll('#tabsMantenimientos .tab');
     tabsMP.forEach(function(tab) {
         tab.addEventListener('click', function() {
@@ -2781,7 +2821,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Submit de forms de modales
     var editForm = document.getElementById('editForm');
     if (editForm) editForm.addEventListener('submit', submitEditForm);
 
@@ -2791,7 +2830,6 @@ document.addEventListener('DOMContentLoaded', function() {
     var editProgForm = document.getElementById('editProgramacionForm');
     if (editProgForm) editProgForm.addEventListener('submit', submitEditProgramacion);
 
-    // Cerrar modales al clickear fuera
     var modales = ['editModal', 'editMantenimientoModal', 'editProgramacionModal', 'tareaCompletaModal'];
     modales.forEach(function(modalId) {
         var modal = document.getElementById(modalId);
