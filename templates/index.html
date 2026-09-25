@@ -629,7 +629,6 @@ tr:hover { background: #f8f9fa; }
 </div>
 </div>
 
-<!-- Modal Tarea Completa (ahora con carga de gastos) -->
 <div id="tareaCompletaModal" class="modal">
 <div class="modal-content confirm-modal-content">
 <span class="modal-close" onclick="closeTareaCompletaModal()">&times;</span>
@@ -1613,7 +1612,19 @@ async function loadMantenimientosData() {
     content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
     try {
         var response = await fetch('/api/mantenimientos/config');
-        var data = await response.json();
+        var text = await response.text();
+        if (!text || text.trim() === '') {
+            throw new Error('El servidor devolvió una respuesta vacía (HTTP ' + response.status + ').');
+        }
+        var data;
+        try {
+            data = JSON.parse(text);
+        } catch (parseErr) {
+            throw new Error('Respuesta no válida del servidor: ' + text.substring(0, 300));
+        }
+        if (!response.ok) {
+            throw new Error(data.error || 'Error HTTP ' + response.status);
+        }
         if (data.success) {
             mpHeaders = data.historial_headers || [];
             mpRows = data.historial_rows || [];
@@ -1630,9 +1641,10 @@ async function loadMantenimientosData() {
 
             renderMantenimientosView();
         } else {
-            content.innerHTML = '<div class="alert alert-error">❌ Error: ' + data.error + '</div>';
+            content.innerHTML = '<div class="alert alert-error">❌ Error: ' + (data.error || 'Error desconocido') + '</div>';
         }
     } catch (error) {
+        console.error('Error en loadMantenimientosData:', error);
         content.innerHTML = '<div class="alert alert-error">❌ Error al cargar datos: ' + error.message + '</div>';
     }
 }
@@ -1641,7 +1653,15 @@ async function loadMantenimientosData() {
 async function reloadMantenimientosDataSinRender() {
     try {
         var response = await fetch('/api/mantenimientos/config');
-        var data = await response.json();
+        var text = await response.text();
+        if (!text || text.trim() === '') return false;
+        var data;
+        try {
+            data = JSON.parse(text);
+        } catch (parseErr) {
+            console.error('Respuesta no válida:', text.substring(0, 300));
+            return false;
+        }
         if (data.success) {
             mpHeaders = data.historial_headers || [];
             mpRows = data.historial_rows || [];
