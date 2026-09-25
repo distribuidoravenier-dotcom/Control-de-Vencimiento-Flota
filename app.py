@@ -33,7 +33,25 @@ PROG_HEADERS = [
     'TIPO MANTENIMIENTO',
     'TIPO REPARACIÓN',
     'DETALLE REPARACIÓN',
+    'GASTO en PESOS',
+    'GASTO en USD',
     'Estado'
+]
+
+# Headers del Historial de Mantenimientos (para asegurar que existan los campos de gasto)
+HIST_HEADERS = [
+    'FECHA',
+    'PATENTE',
+    'TIPO MANTENIMIENTO',
+    'TIPO REPARACIÓN',
+    'CONCEPTO GENERAL',
+    'DETALLE REPARACIÓN',
+    'KM REALIZADO',
+    'KM PROXIMO CAMBIO',
+    'PROVEEDOR',
+    'GASTO en PESOS',
+    'GASTO en USD',
+    'OBSERVACIONES'
 ]
 
 SHEETS = {
@@ -787,6 +805,12 @@ def get_mantenimiento_config():
             SPREADSHEET_ID_MP,
             headers=PROG_HEADERS
         )
+        # Asegurar que el historial tenga los headers nuevos (GASTO en PESOS / GASTO en USD)
+        ensure_sheet_exists(
+            SHEET_HISTORIAL_MP,
+            SPREADSHEET_ID_MP,
+            headers=HIST_HEADERS
+        )
 
         dropdown_data = get_all_data(SHEET_CONFIG_DROPDOWNS, SPREADSHEET_ID_MP)
         config_mp_data = get_all_data(SHEET_CONFIG_MP, SPREADSHEET_ID_MP)
@@ -1127,15 +1151,154 @@ def delete_programacion(row_number):
 
 @app.route('/api/programacion/completar/<int:row_number>', methods=['POST'])
 def completar_programacion(row_number):
+    """
+    Marca una programación como 'Completo' y, opcionalmente, registra el
+    mantenimiento en el Historial y programa el siguiente.
+    Body esperado (JSON):
+    {
+        "gasto_pesos": "1234.56",
+        "gasto_usd": "12.34",
+        "volver_a_programar": true/false
+    }
+    """
     try:
-        success = update_prog_estado(row_number, 'Completo')
+        data = request.json or {}
+        gasto_pesos = str(data.get('gasto_pesos', '') or '')
+        gasto_usd = str(data.get('gasto_usd', '') or '')
+        volver_a_programar = bool(data.get('volver_a_programar', False))
 
-        if success:
-            return jsonify({'success': True, 'message': 'Programación marcada como Completo'})
-        else:
-            return jsonify({'success': False, 'error': 'Error al actualizar el estado'}), 500
+        # 1) Traer la fila de programación
+        sheet_data = get_all_data(SHEET_PROGRAMACION_MP, SPREADSHEET_ID_MP)
+        prog_row = None
+        for row in sheet_data.get('rows', []):
+            if row.get('_row_number') == row_number:
+                prog_row = row
+                break
+
+        if not prog_row:
+            return jsonify({'success': False, 'error': 'No se encontró la programación'}), 404
+
+        # 2) Marcar como Completo en programación
+        success_estado = update_prog_estado(row_number, 'Completo')
+        if not success_estado:
+            return jsonify({'success': False, 'error': 'No se pudo actualizar el estado de la programación'}), 500
+
+        # 3) Insertar en Historial Mantenimientos
+        hist_data = get_all_data(SHEET_HISTORIAL_MP, SPREADSHEET_ID_MP)
+        hist_headers = hist_data.get('headers', [])
+
+        if not hist_headers:
+            # Si por algún motivo no hay headers, usar los esperados
+            hist_headers = HIST_HEADERS
+
+        # Fecha de hoy en formato dd/mm/yyyy
+        hoy = datetime.now()
+        hoy_str = hoy.strftime('%d/%m/%Y')
+
+        # Mapear los datos de la programación al historial
+        nuevo_hist = {
+            'FECHA': hoy_str,
+            'PATENTE': prog_row.get('PATENTE', ''),
+            'TIPO MANTENIMIENTO': prog_row.get('TIPO MANTENIMIENTO', ''),
+            'TIPO REPARACIÓN': prog_row.get('TIPO REPARACIÓN', ''),
+            'CONCEPTO GENERAL': prog_row.get('TIPO REPARACIÓN', ''),
+            'DETALLE REPARACIÓN': prog_row.get('DETALLE REPARACIÓN', ''),
+            'KM REALIZADO': prog_row.get('PROXIMO MANTENIMIENTO KM', '') or prog_row.get('KM ULTIMO MANTENIMIENTO', ''),
+            'KM PROXIMO CAMBIO': '',
+            'PROVEEDOR': '',
+            'GASTO en PESOS': gasto_pesos,
+            'GASTO en USD': gasto_usd,
+            'OBSERVACIONES': 'Generado automáticamente desde Programación (Tarea Completa)'
+        }
+
+        # Recalcular KM PROXIMO CAMBIO con la política del tipo de reparación
+        tipo_rep = (nuevo_hist['TIPO REPARACIÓN'] or '').strip()
+        politica = get_politica_por_tipo_reparacion(tipo_rep) if tipo_rep else 0
+        km_realizado_str = str(nuevo_hist['KM REALIZADO'] or '').strip()
+        if km_realizado_str:
+            try:
+                km_realizado = float(km_realizado_str)
+                nuevo_hist['KM PROXIMO CAMBIO'] = str(int(km_realizado + politica)) if politica else str(int(km_realizado))
+            except ValueError:
+                pass
+
+        hist_row_values = []
+        for header in hist_headers:
+            hist_row_values.append(str(nuevo_hist.get(header, '')))
+
+        success_hist = add_row_to_sheet(SHEET_HISTORIAL_MP, hist_row_values, SPREADSHEET_ID_MP)
+
+        # 4) Si el usuario eligió volver a programar, crear la nueva programación
+        nueva_prog_ok = True
+        if volver_a_programar:
+            patente = prog_row.get('PATENTE', '')
+            # Intentar obtener el odómetro actual desde Camion T2
+            camion_t2_data = get_all_data('Camion T2', SPREADSHEET_ID)
+            odometro_actual = ''
+            for row in camion_t2_data.get('rows', []):
+                if (row.get('PATENTE') or '').strip() == patente:
+                    odometro_actual = (row.get('ODOMETRO') or '').strip()
+                    break
+
+            km_para_nueva = odometro_actual or nuevo_hist['KM REALIZADO']
+
+            nueva_prog = {
+                'PATENTE': patente,
+                'FECHA ULTIMO MANTENIMIENTO': hoy_str,
+                'KM ULTIMO MANTENIMIENTO': km_para_nueva,
+                'TIPO MANTENIMIENTO': 'PREVENTIVO',
+                'TIPO REPARACIÓN': prog_row.get('TIPO REPARACIÓN', ''),
+                'DETALLE REPARACIÓN': prog_row.get('DETALLE REPARACIÓN', ''),
+                'GASTO en PESOS': '',
+                'GASTO en USD': ''
+            }
+
+            try:
+                prog_headers = sheet_data.get('headers', [])
+                nueva_row_values = []
+                for header in prog_headers:
+                    if header == 'Marca Temporal':
+                        nueva_row_values.append(hoy.strftime('%Y-%m-%d %H:%M:%S'))
+                    elif header == 'PROXIMO MANTENIMIENTO FECHA':
+                        # +1 año
+                        try:
+                            prox = hoy.replace(year=hoy.year + 1)
+                        except ValueError:
+                            prox = hoy.replace(year=hoy.year + 1, day=28)
+                        nueva_row_values.append(prox.strftime('%d/%m/%Y'))
+                    elif header == 'PROXIMO MANTENIMIENTO KM':
+                        km_ult = str(km_para_nueva or '').strip()
+                        if km_ult:
+                            try:
+                                km_ult_f = float(km_ult)
+                                nueva_row_values.append(str(int(km_ult_f + politica)) if politica else str(int(km_ult_f)))
+                            except ValueError:
+                                nueva_row_values.append('')
+                        else:
+                            nueva_row_values.append('')
+                    elif header == 'TIPO MANTENIMIENTO':
+                        nueva_row_values.append('PREVENTIVO')
+                    elif header == 'Estado':
+                        nueva_row_values.append('En Proceso')
+                    else:
+                        nueva_row_values.append(str(nueva_prog.get(header, '')))
+
+                nueva_prog_ok = add_row_to_sheet(SHEET_PROGRAMACION_MP, nueva_row_values, SPREADSHEET_ID_MP)
+            except Exception as e:
+                print(f"Error al agregar nueva programación: {e}")
+                nueva_prog_ok = False
+
+        return jsonify({
+            'success': True,
+            'message': 'Tarea completada',
+            'historial_ok': success_hist,
+            'nueva_programacion_ok': nueva_prog_ok
+        })
+
     except Exception as e:
         print(f"Error en completar_programacion: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
