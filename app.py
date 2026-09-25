@@ -327,6 +327,8 @@ def ensure_sheet_exists(sheet_name, spreadsheet_id=None, headers=None):
     """
     Crea la hoja si no existe Y escribe/actualiza los headers.
     Si la hoja existe pero los headers no coinciden, los reescribe.
+    Esta versión es TOLERANTE a fallos: si no puede actualizar headers,
+    NO rompe el flujo (devuelve False en vez de lanzar excepción).
     """
     try:
         service = get_sheets_service()
@@ -348,14 +350,23 @@ def ensure_sheet_exists(sheet_name, spreadsheet_id=None, headers=None):
                     'properties': {'title': sheet_name}
                 }
             }]
-            sheet.batchUpdate(spreadsheetId=sid, body={'requests': requests}).execute()
+            try:
+                sheet.batchUpdate(spreadsheetId=sid, body={'requests': requests}).execute()
+            except HttpError as err:
+                print(f"⚠️ No se pudo crear la hoja '{sheet_name}': {err}")
+                return False
+
             if headers:
-                sheet.values().update(
-                    spreadsheetId=sid,
-                    range=f"'{sheet_name}'!A1",
-                    valueInputOption='RAW',
-                    body={'values': [headers]}
-                ).execute()
+                try:
+                    sheet.values().update(
+                        spreadsheetId=sid,
+                        range=f"'{sheet_name}'!A1",
+                        valueInputOption='RAW',
+                        body={'values': [headers]}
+                    ).execute()
+                except HttpError as err:
+                    print(f"⚠️ No se pudieron escribir headers en '{sheet_name}': {err}")
+                    return False
             print(f"✅ Hoja '{sheet_name}' creada con headers: {headers}")
         else:
             # Verificar/actualizar headers
@@ -366,30 +377,71 @@ def ensure_sheet_exists(sheet_name, spreadsheet_id=None, headers=None):
                         range=f"'{sheet_name}'!A1:Z1"
                     ).execute()
                     current_headers = result.get('values', [[]])[0] if result.get('values') else []
-                    
+
                     # Si los headers están vacíos o difieren, los reescribimos
                     if not current_headers or current_headers != headers:
                         print(f"⚠️ Headers de '{sheet_name}' no coinciden. Actualizando...")
                         print(f"   Actuales: {current_headers}")
                         print(f"   Esperados: {headers}")
-                        # Limpiar toda la hoja y reescribir headers
-                        sheet.values().clear(
-                            spreadsheetId=sid,
-                            range=f"'{sheet_name}'!A:Z"
-                        ).execute()
-                        sheet.values().update(
-                            spreadsheetId=sid,
-                            range=f"'{sheet_name}'!A1",
-                            valueInputOption='RAW',
-                            body={'values': [headers]}
-                        ).execute()
-                        print(f"✅ Headers actualizados en '{sheet_name}'")
+
+                        # Leer TODOS los datos actuales para preservarlos
+                        try:
+                            full_result = sheet.values().get(
+                                spreadsheetId=sid,
+                                range=f"'{sheet_name}'!A:Z"
+                            ).execute()
+                            full_values = full_result.get('values', [])
+                        except HttpError as err:
+                            print(f"⚠️ No se pudieron leer datos de '{sheet_name}': {err}")
+                            full_values = []
+
+                        # Mapear filas actuales a los nuevos headers
+                        new_rows = []
+                        if full_values and len(full_values) > 1:
+                            old_headers = full_values[0]
+                            for old_row in full_values[1:]:
+                                new_row = []
+                                for h in headers:
+                                    if h in old_headers:
+                                        idx = old_headers.index(h)
+                                        new_row.append(old_row[idx] if idx < len(old_row) else '')
+                                    else:
+                                        new_row.append('')
+                                new_rows.append(new_row)
+
+                        # Limpiar la hoja
+                        try:
+                            sheet.values().clear(
+                                spreadsheetId=sid,
+                                range=f"'{sheet_name}'!A:Z"
+                            ).execute()
+                        except HttpError as err:
+                            print(f"⚠️ No se pudo limpiar '{sheet_name}': {err}")
+                            return False
+
+                        # Escribir headers + datos mapeados
+                        body_values = [headers] + new_rows
+                        try:
+                            sheet.values().update(
+                                spreadsheetId=sid,
+                                range=f"'{sheet_name}'!A1",
+                                valueInputOption='RAW',
+                                body={'values': body_values}
+                            ).execute()
+                            print(f"✅ Headers actualizados en '{sheet_name}' (preservando {len(new_rows)} filas)")
+                        except HttpError as err:
+                            print(f"⚠️ No se pudieron escribir headers/datos en '{sheet_name}': {err}")
+                            return False
                 except HttpError as err:
                     print(f"⚠️ No se pudo verificar headers de '{sheet_name}': {err}")
+                    return False
 
         return True
     except HttpError as err:
         print(f"❌ Error ensuring sheet '{sheet_name}': {err}")
+        return False
+    except Exception as e:
+        print(f"❌ Error inesperado ensuring sheet '{sheet_name}': {e}")
         return False
 
 def upload_file_to_drive(file_content, filename, folder_id):
@@ -797,7 +849,7 @@ def get_mantenimiento_config():
         print("🔍 GET /api/mantenimientos/config")
         print("=" * 60)
 
-        # Asegurar y actualizar headers de las hojas
+        # Asegurar y actualizar headers de las hojas (tolerante a fallos)
         ensure_sheet_exists(SHEET_CONFIG_DROPDOWNS, SPREADSHEET_ID_MP)
         ensure_sheet_exists(SHEET_CONFIG_MP, SPREADSHEET_ID_MP)
         ensure_sheet_exists(
@@ -840,13 +892,6 @@ def get_mantenimiento_config():
         programacion_data = get_all_data(SHEET_PROGRAMACION_MP, SPREADSHEET_ID_MP)
         print(f"📋 Headers programación: {programacion_data.get('headers', [])}")
         print(f"📋 Filas programación: {len(programacion_data.get('rows', []))}")
-
-        # Si los headers de programación vinieron vacíos, forzar creación con headers correctos
-        if not programacion_data.get('headers'):
-            print("⚠️ Headers de programación vacíos. Recreando con headers esperados...")
-            ensure_sheet_exists(SHEET_PROGRAMACION_MP, SPREADSHEET_ID_MP, headers=PROG_HEADERS)
-            programacion_data = get_all_data(SHEET_PROGRAMACION_MP, SPREADSHEET_ID_MP)
-            print(f"📋 Headers después de recrear: {programacion_data.get('headers', [])}")
 
         return jsonify({
             'success': True,
@@ -1188,14 +1233,11 @@ def completar_programacion(row_number):
         hist_headers = hist_data.get('headers', [])
 
         if not hist_headers:
-            # Si por algún motivo no hay headers, usar los esperados
             hist_headers = HIST_HEADERS
 
-        # Fecha de hoy en formato dd/mm/yyyy
         hoy = datetime.now()
         hoy_str = hoy.strftime('%d/%m/%Y')
 
-        # Mapear los datos de la programación al historial
         nuevo_hist = {
             'FECHA': hoy_str,
             'PATENTE': prog_row.get('PATENTE', ''),
@@ -1211,7 +1253,6 @@ def completar_programacion(row_number):
             'OBSERVACIONES': 'Generado automáticamente desde Programación (Tarea Completa)'
         }
 
-        # Recalcular KM PROXIMO CAMBIO con la política del tipo de reparación
         tipo_rep = (nuevo_hist['TIPO REPARACIÓN'] or '').strip()
         politica = get_politica_por_tipo_reparacion(tipo_rep) if tipo_rep else 0
         km_realizado_str = str(nuevo_hist['KM REALIZADO'] or '').strip()
@@ -1232,7 +1273,6 @@ def completar_programacion(row_number):
         nueva_prog_ok = True
         if volver_a_programar:
             patente = prog_row.get('PATENTE', '')
-            # Intentar obtener el odómetro actual desde Camion T2
             camion_t2_data = get_all_data('Camion T2', SPREADSHEET_ID)
             odometro_actual = ''
             for row in camion_t2_data.get('rows', []):
@@ -1260,7 +1300,6 @@ def completar_programacion(row_number):
                     if header == 'Marca Temporal':
                         nueva_row_values.append(hoy.strftime('%Y-%m-%d %H:%M:%S'))
                     elif header == 'PROXIMO MANTENIMIENTO FECHA':
-                        # +1 año
                         try:
                             prox = hoy.replace(year=hoy.year + 1)
                         except ValueError:
