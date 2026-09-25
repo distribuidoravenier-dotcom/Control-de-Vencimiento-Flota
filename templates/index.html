@@ -629,11 +629,24 @@ tr:hover { background: #f8f9fa; }
 </div>
 </div>
 
+<!-- Modal Tarea Completa (ahora con carga de gastos) -->
 <div id="tareaCompletaModal" class="modal">
 <div class="modal-content confirm-modal-content">
 <span class="modal-close" onclick="closeTareaCompletaModal()">&times;</span>
 <h2>✅ Tarea Completa</h2>
 <p id="tareaCompletaMsg">¿Estás seguro de marcar esta tarea como completa?</p>
+
+<div style="text-align:left; margin: 20px 0;">
+<div class="form-group">
+<label>💵 GASTO en PESOS</label>
+<input type="number" step="0.01" min="0" id="tareaCompletaGastoPesos" placeholder="0.00" value="">
+</div>
+<div class="form-group">
+<label>💵 GASTO en USD</label>
+<input type="number" step="0.01" min="0" id="tareaCompletaGastoUsd" placeholder="0.00" value="">
+</div>
+</div>
+
 <div class="confirm-buttons">
 <button type="button" class="btn btn-success" onclick="confirmarTareaCompletaProgramar()">✅ Sí, volver a programar</button>
 <button type="button" class="btn btn-cancel" onclick="confirmarTareaCompletaNoProgramar()">🚫 No volver a programar</button>
@@ -2325,14 +2338,17 @@ async function deleteProgramacion(rowNumber) {
 }
 
 /* ============================================================
-   TAREA COMPLETA
+   TAREA COMPLETA (con carga de gastos + registro en historial)
    ============================================================ */
 function openTareaCompleta(rowNumber) {
     var row = progRows.find(function(r) { return r._row_number === rowNumber; });
     if (!row) { showAlert('No se encontró el registro', 'error'); return; }
     progRowSeleccionadaParaCompletar = row;
+
     document.getElementById('tareaCompletaMsg').textContent =
         '¿Estás seguro de marcar como COMPLETO el mantenimiento de la patente ' + (row['PATENTE'] || '') + '? Elegí si querés volver a programar otro mantenimiento.';
+    document.getElementById('tareaCompletaGastoPesos').value = row['GASTO en PESOS'] || '';
+    document.getElementById('tareaCompletaGastoUsd').value = row['GASTO en USD'] || '';
     document.getElementById('tareaCompletaModal').style.display = 'block';
 }
 
@@ -2341,81 +2357,69 @@ function closeTareaCompletaModal() {
     progRowSeleccionadaParaCompletar = null;
 }
 
+function obtenerGastosTareaCompleta() {
+    var gastoPesos = document.getElementById('tareaCompletaGastoPesos').value.trim();
+    var gastoUsd = document.getElementById('tareaCompletaGastoUsd').value.trim();
+    return { gasto_pesos: gastoPesos, gasto_usd: gastoUsd };
+}
+
 async function confirmarTareaCompletaProgramar() {
     if (!progRowSeleccionadaParaCompletar) return;
     var row = progRowSeleccionadaParaCompletar;
-    var patente = row['PATENTE'] || '';
-    var rowNum = row._row_number;
+    var gastos = obtenerGastosTareaCompleta();
 
-    // 1. Marcar la tarea actual como Completo en el backend
     try {
-        var response = await fetch('/api/programacion/completar/' + rowNum, {
+        var response = await fetch('/api/programacion/completar/' + row._row_number, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                gasto_pesos: gastos.gasto_pesos,
+                gasto_usd: gastos.gasto_usd,
+                volver_a_programar: true
+            })
         });
         var result = await response.json();
         if (!result.success) {
-            showAlert('❌ Error al marcar como completo: ' + result.error, 'error');
+            showAlert('❌ Error al completar: ' + result.error, 'error');
             return;
         }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-        return;
-    }
-
-    // 2. Armar automáticamente los datos de la nueva programación,
-    //    en base a la tarea que se acaba de completar
-    var hoy = new Date();
-    var hoyStr = String(hoy.getDate()).padStart(2, '0') + '/' + String(hoy.getMonth() + 1).padStart(2, '0') + '/' + hoy.getFullYear();
-    var kmActual = odometroPorPatente[patente] || row['KM ULTIMO MANTENIMIENTO'] || '';
-
-    var nuevaProgramacion = {
-        'PATENTE': patente,
-        'FECHA ULTIMO MANTENIMIENTO': hoyStr,
-        'KM ULTIMO MANTENIMIENTO': kmActual,
-        'TIPO REPARACIÓN': row['TIPO REPARACIÓN'] || '',
-        'DETALLE REPARACIÓN': row['DETALLE REPARACIÓN'] || ''
-    };
-
-    // 3. Crear la nueva programación automáticamente (sin pasar por el formulario)
-    try {
-        var addResponse = await fetch('/api/programacion/add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(nuevaProgramacion)
-        });
-        var addResult = await addResponse.json();
-        if (!addResult.success) {
-            showAlert('⚠️ Se marcó como completo, pero hubo un error al programar la nueva tarea: ' + addResult.error, 'error');
-            closeTareaCompletaModal();
-            await loadMantenimientosData();
-            return;
+        var msg = '✅ Tarea marcada como Completo, guardada en Historial y nuevo mantenimiento programado para ' + (row['PATENTE'] || '') + '.';
+        if (result.historial_ok === false) {
+            msg = '⚠️ Se marcó como completo y se programó, pero falló el guardado en el Historial.';
         }
-    } catch (error) {
-        showAlert('⚠️ Se marcó como completo, pero hubo un error al programar la nueva tarea: ' + error.message, 'error');
+        if (result.nueva_programacion_ok === false) {
+            msg = '⚠️ Se marcó como completo y se guardó en Historial, pero falló la nueva programación.';
+        }
+        showAlert(msg, result.historial_ok === false || result.nueva_programacion_ok === false ? 'error' : 'success');
         closeTareaCompletaModal();
         await loadMantenimientosData();
-        return;
+    } catch (error) {
+        showAlert('❌ Error: ' + error.message, 'error');
     }
-
-    // 4. Cerrar el modal y refrescar la tabla, que ya va a mostrar la nueva tarea programada
-    closeTareaCompletaModal();
-    showAlert('✅ Tarea marcada como Completo y nuevo mantenimiento programado para ' + patente + '. Podés ajustar los datos con "✏️ Editar" si hace falta.', 'success');
-    await loadMantenimientosData();
 }
 
 async function confirmarTareaCompletaNoProgramar() {
     if (!progRowSeleccionadaParaCompletar) return;
     var row = progRowSeleccionadaParaCompletar;
+    var gastos = obtenerGastosTareaCompleta();
 
     try {
         var response = await fetch('/api/programacion/completar/' + row._row_number, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                gasto_pesos: gastos.gasto_pesos,
+                gasto_usd: gastos.gasto_usd,
+                volver_a_programar: false
+            })
         });
         var result = await response.json();
         if (result.success) {
-            showAlert('✅ Tarea marcada como Completo (no se programó otro mantenimiento)', 'success');
+            var msg = '✅ Tarea marcada como Completo y guardada en Historial (no se programó otro mantenimiento).';
+            if (result.historial_ok === false) {
+                msg = '⚠️ Se marcó como completo, pero falló el guardado en el Historial.';
+            }
+            showAlert(msg, result.historial_ok === false ? 'error' : 'success');
             closeTareaCompletaModal();
             await loadMantenimientosData();
         } else {
