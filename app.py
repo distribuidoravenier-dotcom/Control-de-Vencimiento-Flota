@@ -23,6 +23,8 @@ SHEET_CONFIG_DROPDOWNS = 'Configuracion Desplegables'
 SHEET_PROGRAMACION_MP = 'Programacion Mantenimiento Preventivo'
 
 # Headers de la hoja de Programación
+# (SIN GASTO en PESOS / GASTO en USD: el gasto solo se registra en Historial Mantenimientos,
+# cuando la tarea ya se realizó)
 PROG_HEADERS = [
     'Marca Temporal',
     'PATENTE',
@@ -33,8 +35,6 @@ PROG_HEADERS = [
     'TIPO MANTENIMIENTO',
     'TIPO REPARACIÓN',
     'DETALLE REPARACIÓN',
-    'GASTO en PESOS',
-    'GASTO en USD',
     'Estado'
 ]
 
@@ -1319,8 +1319,10 @@ def delete_programacion(row_number):
 @app.route('/api/programacion/completar/<int:row_number>', methods=['POST'])
 def completar_programacion(row_number):
     """
-    Marca una programación como 'Completo' y, opcionalmente, registra el
-    mantenimiento en el Historial y programa el siguiente.
+    Registra el mantenimiento en el Historial y resuelve la fila de Programación:
+    - Si se vuelve a programar: SOBRESCRIBE esa misma fila con la nueva fecha/km (no crea una fila nueva).
+    - Si NO se vuelve a programar: ELIMINA la fila de Programación.
+    "Programacion Mantenimiento Preventivo" debe contener siempre solo tareas en proceso.
     Body esperado (JSON):
     {
         "gasto_pesos": "1234.56",
@@ -1345,12 +1347,7 @@ def completar_programacion(row_number):
         if not prog_row:
             return jsonify({'success': False, 'error': 'No se encontró la programación'}), 404
 
-        # 2) Marcar como Completo en programación
-        success_estado = update_prog_estado(row_number, 'Completo')
-        if not success_estado:
-            return jsonify({'success': False, 'error': 'No se pudo actualizar el estado de la programación'}), 500
-
-        # 3) Insertar en Historial Mantenimientos
+        # 2) Insertar en Historial Mantenimientos (el gasto se carga acá, no en Programación)
         hist_data = get_all_data(SHEET_HISTORIAL_MP, SPREADSHEET_ID_MP)
         hist_headers = hist_data.get('headers', [])
 
@@ -1391,9 +1388,10 @@ def completar_programacion(row_number):
 
         success_hist = add_row_to_sheet(SHEET_HISTORIAL_MP, hist_row_values, SPREADSHEET_ID_MP)
 
-        # 4) Si el usuario eligió volver a programar, crear la nueva programación
+        # 3) Resolver la fila de Programación
         nueva_prog_ok = True
         if volver_a_programar:
+            # Se SOBRESCRIBE la misma fila con la nueva fecha/km (no se agrega una fila nueva)
             patente = prog_row.get('PATENTE', '')
             camion_t2_data = get_all_data('Camion T2', SPREADSHEET_ID)
             odometro_actual = ''
@@ -1410,9 +1408,7 @@ def completar_programacion(row_number):
                 'KM ULTIMO MANTENIMIENTO': km_para_nueva,
                 'TIPO MANTENIMIENTO': 'PREVENTIVO',
                 'TIPO REPARACIÓN': prog_row.get('TIPO REPARACIÓN', ''),
-                'DETALLE REPARACIÓN': prog_row.get('DETALLE REPARACIÓN', ''),
-                'GASTO en PESOS': '',
-                'GASTO en USD': ''
+                'DETALLE REPARACIÓN': prog_row.get('DETALLE REPARACIÓN', '')
             }
 
             try:
@@ -1444,10 +1440,13 @@ def completar_programacion(row_number):
                     else:
                         nueva_row_values.append(str(nueva_prog.get(header, '')))
 
-                nueva_prog_ok = add_row_to_sheet(SHEET_PROGRAMACION_MP, nueva_row_values, SPREADSHEET_ID_MP)
+                nueva_prog_ok = update_row(SHEET_PROGRAMACION_MP, row_number, nueva_row_values, SPREADSHEET_ID_MP)
             except Exception as e:
-                print(f"Error al agregar nueva programación: {e}")
+                print(f"Error al reprogramar (sobrescribir fila): {e}")
                 nueva_prog_ok = False
+        else:
+            # La tarea no se vuelve a repetir: se elimina la fila de Programación
+            nueva_prog_ok = delete_row(SHEET_PROGRAMACION_MP, row_number, SPREADSHEET_ID_MP)
 
         return jsonify({
             'success': True,
