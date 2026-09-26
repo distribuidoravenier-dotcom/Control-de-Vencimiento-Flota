@@ -381,6 +381,8 @@ tr:hover { background: #f8f9fa; }
 
 .home-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4); }
 
+.home-btn.panel-btn { background: linear-gradient(135deg, #805ad5 0%, #553c9a 100%); }
+.home-btn.panel-btn:hover { box-shadow: 0 10px 25px rgba(128, 90, 213, 0.4); }
 .home-btn.master-btn { background: linear-gradient(135deg, #38a169 0%, #2f855a 100%); }
 .home-btn.master-btn:hover { box-shadow: 0 10px 25px rgba(56, 161, 105, 0.4); }
 
@@ -541,10 +543,17 @@ tr:hover { background: #f8f9fa; }
 <div id="alert-container"></div>
 
 <div id="homeScreen" class="home-screen">
+<button type="button" class="home-btn panel-btn" onclick="showModule('panel')">📊 Panel de Flota (todo correlacionado)</button>
 <button type="button" class="home-btn master-btn" onclick="showModule('master')">🗂️ Maestro de Flota</button>
 <button type="button" class="home-btn" onclick="showModule('docs')">📋 Control de Documentación</button>
 <button type="button" class="home-btn history-btn" onclick="showModule('history')">📊 Historial de Vencimiento de Documentación</button>
 <button type="button" class="home-btn mp-btn" onclick="showModule('mantenimientos')">🔧 Carga de Mantenimientos</button>
+</div>
+
+<div id="panelModule" style="display:none;">
+<button type="button" class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
+<p class="subtitle" style="margin-top:0;">Documentación + último y próximo mantenimiento, por vehículo/persona, en una sola vista.</p>
+<div id="panel-content"></div>
 </div>
 
 <div id="docsModule" style="display:none;">
@@ -848,35 +857,116 @@ function showHome() {
     document.getElementById('masterModule').style.display = 'none';
     document.getElementById('historyModule').style.display = 'none';
     document.getElementById('mantenimientosModule').style.display = 'none';
+    document.getElementById('panelModule').style.display = 'none';
 }
 
 function showModule(module) {
     document.getElementById('homeScreen').style.display = 'none';
+    document.getElementById('docsModule').style.display = 'none';
+    document.getElementById('masterModule').style.display = 'none';
+    document.getElementById('historyModule').style.display = 'none';
+    document.getElementById('mantenimientosModule').style.display = 'none';
+    document.getElementById('panelModule').style.display = 'none';
+
     if (module === 'docs') {
         document.getElementById('docsModule').style.display = 'block';
-        document.getElementById('masterModule').style.display = 'none';
-        document.getElementById('historyModule').style.display = 'none';
-        document.getElementById('mantenimientosModule').style.display = 'none';
         loadSheetData(currentSheet);
     } else if (module === 'master') {
         document.getElementById('masterModule').style.display = 'block';
-        document.getElementById('docsModule').style.display = 'none';
-        document.getElementById('historyModule').style.display = 'none';
-        document.getElementById('mantenimientosModule').style.display = 'none';
         loadMasterData(masterCurrentSheet);
     } else if (module === 'history') {
         document.getElementById('historyModule').style.display = 'block';
-        document.getElementById('docsModule').style.display = 'none';
-        document.getElementById('masterModule').style.display = 'none';
-        document.getElementById('mantenimientosModule').style.display = 'none';
         loadHistoryData();
     } else if (module === 'mantenimientos') {
         document.getElementById('mantenimientosModule').style.display = 'block';
-        document.getElementById('docsModule').style.display = 'none';
-        document.getElementById('masterModule').style.display = 'none';
-        document.getElementById('historyModule').style.display = 'none';
         loadMantenimientosData();
+    } else if (module === 'panel') {
+        document.getElementById('panelModule').style.display = 'block';
+        loadPanelFlota();
     }
+}
+
+/* ============================================================
+   PANEL DE FLOTA (vista correlacionada: documentación + mantenimiento)
+   ============================================================ */
+var PANEL_ICONOS = {
+    'Camion T1': '🚚',
+    'Camion T2': '🚛',
+    'Autoelevadores': '🏗️',
+    'Choferes y Ayudantes': '👨‍✈️'
+};
+
+var PANEL_ESTADO_INFO = {
+    'VENCIDO': { clase: 'status-danger', texto: '🔴 Vencido' },
+    'PROXIMO_A_VENCER': { clase: 'status-warning', texto: '🟡 Por vencer' },
+    'OK': { clase: 'status-ok', texto: '✅ Al día' },
+    'SIN_DATOS': { clase: '', texto: '⚪ Sin datos' }
+};
+
+async function loadPanelFlota() {
+    var content = document.getElementById('panel-content');
+    content.innerHTML = '<div class="loading">🔄 Cargando panel de flota...</div>';
+    try {
+        var response = await fetch('/api/panel_flota');
+        var data = await response.json();
+        if (!data.success) {
+            content.innerHTML = '<div class="alert alert-error">❌ Error: ' + (data.error || 'desconocido') + '</div>';
+            return;
+        }
+        renderPanelFlota(data.panel || []);
+    } catch (error) {
+        content.innerHTML = '<div class="alert alert-error">❌ Error al cargar el panel: ' + error.message + '</div>';
+    }
+}
+
+function renderPanelFlota(panel) {
+    var content = document.getElementById('panel-content');
+
+    var vencidos = panel.filter(function(p) { return p.estado_documentacion === 'VENCIDO'; }).length;
+    var porVencer = panel.filter(function(p) { return p.estado_documentacion === 'PROXIMO_A_VENCER'; }).length;
+
+    var html = '<div class="toolbar">';
+    html += '<span class="record-count">📊 Total: ' + panel.length + ' registros</span>';
+    if (vencidos > 0) html += '<span class="record-count status-danger">🔴 ' + vencidos + ' vencidos</span>';
+    if (porVencer > 0) html += '<span class="record-count status-warning">🟡 ' + porVencer + ' por vencer (30 días)</span>';
+    html += '</div>';
+
+    html += '<div class="table-wrapper"><div class="table-container"><table>';
+    html += '<thead><tr>';
+    html += '<th>Categoría</th><th>Identificador</th><th>📊 Estado Documentación</th>';
+    html += '<th>Próximo vencimiento</th><th>Fecha</th>';
+    html += '<th>Último mantenimiento</th><th>Próximo mantenimiento</th>';
+    html += '</tr></thead><tbody>';
+
+    if (panel.length === 0) {
+        html += '<tr><td colspan="7" style="text-align:center; padding:20px;">📭 No hay datos para mostrar</td></tr>';
+    } else {
+        panel.forEach(function(p) {
+            var estadoInfo = PANEL_ESTADO_INFO[p.estado_documentacion] || PANEL_ESTADO_INFO['SIN_DATOS'];
+            var icono = PANEL_ICONOS[p.categoria] || '📄';
+
+            var ultimoMant = p.ultimo_mantenimiento_fecha
+                ? p.ultimo_mantenimiento_fecha + (p.ultimo_mantenimiento_tipo ? ' — ' + p.ultimo_mantenimiento_tipo : '')
+                : '<span style="color:#999;">Sin registro</span>';
+
+            var proximoMant = p.proximo_mantenimiento_fecha
+                ? p.proximo_mantenimiento_fecha + (p.proximo_mantenimiento_km ? ' (km: ' + p.proximo_mantenimiento_km + ')' : '')
+                : '<span style="color:#999;">No programado</span>';
+
+            html += '<tr>';
+            html += '<td>' + icono + ' ' + p.categoria + '</td>';
+            html += '<td><strong>' + p.identificador + '</strong></td>';
+            html += '<td><span class="' + estadoInfo.clase + '">' + estadoInfo.texto + '</span></td>';
+            html += '<td>' + (p.proxima_doc_tipo || '-') + '</td>';
+            html += '<td>' + (p.proxima_doc_fecha || '-') + '</td>';
+            html += '<td>' + ultimoMant + '</td>';
+            html += '<td>' + proximoMant + '</td>';
+            html += '</tr>';
+        });
+    }
+
+    html += '</tbody></table></div></div>';
+    content.innerHTML = html;
 }
 
 /* ============================================================
