@@ -262,7 +262,10 @@ def delete_row(sheet_name, row_number, spreadsheet_id=None):
 
         sid = spreadsheet_id or SPREADSHEET_ID
 
-        spreadsheet = service.spreadsheets().get(spreadsheetId=sid).execute()
+        spreadsheet = service.spreadsheets().get(
+            spreadsheetId=sid,
+            fields='sheets.properties(sheetId,title)'
+        ).execute()
 
         sheet_id = None
         for s in spreadsheet.get('sheets', []):
@@ -336,7 +339,10 @@ def ensure_sheet_exists(sheet_name, spreadsheet_id=None, headers=None):
 
         sid = spreadsheet_id or SPREADSHEET_ID
 
-        spreadsheet = service.spreadsheets().get(spreadsheetId=sid).execute()
+        spreadsheet = service.spreadsheets().get(
+            spreadsheetId=sid,
+            fields='sheets.properties(sheetId,title)'
+        ).execute()
         exists = False
         for s in spreadsheet.get('sheets', []):
             if s['properties']['title'] == sheet_name:
