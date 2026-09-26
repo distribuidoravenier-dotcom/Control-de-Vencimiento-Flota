@@ -620,6 +620,128 @@ def check_and_register_expirations():
         print(f"Error en check_and_register_expirations: {e}")
         return False
 
+def _fecha_mas_cercana(row, date_columns):
+    """Devuelve (fecha_datetime, nombre_columna) del vencimiento MAS PROXIMO de una fila."""
+    nearest = None
+    nearest_col = None
+    for col in date_columns:
+        val = (row.get(col) or '').strip()
+        if not val:
+            continue
+        d = parse_date(val)
+        if not d:
+            continue
+        if nearest is None or d < nearest:
+            nearest = d
+            nearest_col = col
+    return nearest, nearest_col
+
+def build_panel_flota():
+    """
+    Correlaciona, por PATENTE / CODIGO DE AE, los 3 módulos que hoy viven separados:
+    - Documentación (Camion T1/T2, Autoelevadores, Choferes) -> próximo vencimiento
+    - Mantenimiento (Historial Mantenimientos MP)             -> último mantenimiento
+    - Programación de Mantenimiento Preventivo (MP)           -> próximo mantenimiento
+    Devuelve una lista de "fichas" unificadas, una por vehículo/persona.
+    """
+    hoy = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # --- Último mantenimiento realizado, por PATENTE ---
+    hist_data = get_all_data(SHEET_HISTORIAL_MP, SPREADSHEET_ID_MP)
+    ultimo_mant_por_patente = {}
+    for row in hist_data.get('rows', []):
+        patente = (row.get('PATENTE') or '').strip()
+        if not patente:
+            continue
+        fecha = parse_date(row.get('FECHA', ''))
+        if not fecha:
+            continue
+        actual = ultimo_mant_por_patente.get(patente)
+        if actual is None or fecha > actual['fecha']:
+            ultimo_mant_por_patente[patente] = {
+                'fecha': fecha,
+                'tipo': row.get('TIPO REPARACIÓN', '') or row.get('TIPO MANTENIMIENTO', '')
+            }
+
+    # --- Próximo mantenimiento programado (no completo), por PATENTE ---
+    prog_data = get_all_data(SHEET_PROGRAMACION_MP, SPREADSHEET_ID_MP)
+    proximo_mant_por_patente = {}
+    for row in prog_data.get('rows', []):
+        if (row.get('Estado') or '').strip() == 'Completo':
+            continue
+        patente = (row.get('PATENTE') or '').strip()
+        if not patente:
+            continue
+        fecha = parse_date(row.get('PROXIMO MANTENIMIENTO FECHA', ''))
+        actual = proximo_mant_por_patente.get(patente)
+        if fecha and (actual is None or fecha < actual['fecha']):
+            proximo_mant_por_patente[patente] = {
+                'fecha': fecha,
+                'km': row.get('PROXIMO MANTENIMIENTO KM', ''),
+                'tipo_reparacion': row.get('TIPO REPARACIÓN', '')
+            }
+
+    # --- Documentación: recorremos cada sheet de flota/personal ---
+    panel = []
+    for sheet_name, date_columns in DATE_COLUMNS_CONFIG.items():
+        if sheet_name == HISTORY_SHEET:
+            continue
+        id_field = ID_FIELD_CONFIG.get(sheet_name, '')
+        data = get_all_data(sheet_name)
+
+        for row in data.get('rows', []):
+            identificador = (row.get(id_field) or '').strip() if id_field else ''
+            if not identificador:
+                continue
+
+            nearest, nearest_col = _fecha_mas_cercana(row, date_columns)
+            if nearest:
+                dias = (nearest - hoy).days
+                if dias < 0:
+                    estado_doc = 'VENCIDO'
+                elif dias <= 30:
+                    estado_doc = 'PROXIMO_A_VENCER'
+                else:
+                    estado_doc = 'OK'
+            else:
+                dias = None
+                estado_doc = 'SIN_DATOS'
+
+            ultimo = ultimo_mant_por_patente.get(identificador)
+            proximo = proximo_mant_por_patente.get(identificador)
+
+            panel.append({
+                'categoria': sheet_name,
+                'identificador': identificador,
+                'estado_documentacion': estado_doc,
+                'proxima_doc_tipo': nearest_col or '',
+                'proxima_doc_fecha': nearest.strftime('%d/%m/%Y') if nearest else '',
+                'proxima_doc_dias': dias,
+                'ultimo_mantenimiento_fecha': ultimo['fecha'].strftime('%d/%m/%Y') if ultimo else '',
+                'ultimo_mantenimiento_tipo': ultimo['tipo'] if ultimo else '',
+                'proximo_mantenimiento_fecha': proximo['fecha'].strftime('%d/%m/%Y') if proximo else '',
+                'proximo_mantenimiento_km': proximo['km'] if proximo else '',
+            })
+
+    orden_estado = {'VENCIDO': 0, 'PROXIMO_A_VENCER': 1, 'OK': 2, 'SIN_DATOS': 3}
+    panel.sort(key=lambda p: (orden_estado.get(p['estado_documentacion'], 4), p['categoria'], p['identificador']))
+    return panel
+
+@app.route('/api/panel_flota')
+def panel_flota():
+    """
+    Endpoint único que junta Documentación + Mantenimiento + Programación
+    por PATENTE/CODIGO, para tener TODO correlacionado en una sola vista.
+    """
+    try:
+        panel = build_panel_flota()
+        return jsonify({'success': True, 'panel': panel})
+    except Exception as e:
+        print(f"Error en panel_flota: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/')
 def index():
     return render_template('index.html', sheets=SHEETS)
