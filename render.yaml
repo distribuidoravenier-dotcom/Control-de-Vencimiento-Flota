@@ -1,9 +1,13 @@
 services:
   - type: web
-    name: gestion-documentacion
+    name: maestro-flota
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --timeout 120
     envVars:
       - key: SECRET_KEY
         generateValue: true
+      - key: SPREADSHEET_ID
+        sync: false
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false
