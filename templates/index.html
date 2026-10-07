@@ -3,2973 +3,431 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistema de Gestión de Documentación</title>
+<title>Maestro de Flota - Camión T2</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-    padding: 20px;
-}
-
-.container {
-    max-width: 1400px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    padding: 30px;
-}
-
-h1 { color: #333; margin-bottom: 10px; text-align: center; }
-.subtitle { text-align: center; color: #666; margin-bottom: 30px; }
-
-.tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-
-.tab {
-    padding: 10px 20px;
-    background: #f0f0f0;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s;
-}
-
-.tab:hover { background: #e0e0e0; transform: translateY(-2px); }
-.tab.active { background: #667eea; color: white; }
-
-.toolbar {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    align-items: center;
-    background: #f8f9fa;
-    padding: 15px;
-    border-radius: 8px;
-}
-
-.toolbar .btn { margin: 0; }
-
-.filter-group {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-    flex: 1;
-}
-
-.filter-group label { font-weight: 600; color: #333; white-space: nowrap; }
-
-.filter-group input {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 14px;
-    flex: 1;
-    min-width: 200px;
-}
-
-.filter-group input:focus { outline: none; border-color: #667eea; }
-
-.btn-clear {
-    background: #e53e3e;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s;
-}
-
-.btn-clear:hover { background: #c53030; }
-
-.form-section {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    display: none;
-}
-
-.form-section.visible { display: block; }
-
-.form-group { margin-bottom: 15px; }
-
-.form-group label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 5px;
-    color: #333;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 14px;
-}
-
-.form-group input[type="file"] { padding: 8px; }
-.form-group textarea { resize: vertical; min-height: 60px; }
-
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-.btn {
-    background: #667eea;
-    color: white;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s;
-    font-size: 14px;
-}
-
-.btn:hover {
-    background: #5a67d8;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-}
-
-.btn-danger { background: #e53e3e; }
-.btn-danger:hover { background: #c53030; }
-.btn-success { background: #38a169; }
-.btn-success:hover { background: #2f855a; }
-.btn-sm { padding: 5px 10px; font-size: 12px; }
-.btn-add { background: #38a169; }
-.btn-add:hover { background: #2f855a; }
-.btn-cancel { background: #718096; }
-.btn-cancel:hover { background: #4a5568; }
-.btn-complete { background: #ed8936; }
-.btn-complete:hover { background: #c05621; }
-
-.table-container { overflow-x: auto; margin-top: 10px; }
-.table-wrapper { position: relative; overflow: auto; max-height: 550px; }
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-}
-
-th {
-    background: #667eea;
-    color: white;
-    padding: 10px 8px;
-    text-align: left;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    white-space: nowrap;
-}
-
-td {
-    padding: 8px;
-    border-bottom: 1px solid #e0e0e0;
-    vertical-align: middle;
-}
-
-tr:hover { background: #f8f9fa; }
-
-.estado-en-proceso {
-    background-color: #fefcbf !important;
-    color: #744210;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 4px;
-    display: inline-block;
-}
-
-.estado-completo {
-    background-color: #c6f6d5 !important;
-    color: #22543d;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 4px;
-    display: inline-block;
-}
-
-.status-ok {
-    background-color: #c6f6d5 !important;
-    color: #22543d;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 4px;
-    display: inline-block;
-}
-
-.status-warning {
-    background-color: #fefcbf !important;
-    color: #744210;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 4px;
-    display: inline-block;
-}
-
-.status-danger {
-    background-color: #fed7d7 !important;
-    color: #742a2a;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 4px;
-    display: inline-block;
-}
-
-.date-ok { background-color: #c6f6d5 !important; color: #22543d; font-weight: 600; }
-.date-warning { background-color: #fefcbf !important; color: #744210; font-weight: 600; }
-.date-danger { background-color: #fed7d7 !important; color: #742a2a; font-weight: 600; }
-
-.cell-ok {
-    background-color: #c6f6d5 !important;
-    color: #22543d;
-    font-weight: 700;
-    text-align: center;
-}
-
-.cell-danger {
-    background-color: #fed7d7 !important;
-    color: #742a2a;
-    font-weight: 700;
-    text-align: center;
-    animation: pulse-red 1.5s infinite;
-}
-
-@keyframes pulse-red {
-    0%, 100% { background-color: #fed7d7; }
-    50% { background-color: #fc8181; }
-}
-
-.file-link { color: #667eea; text-decoration: none; }
-.file-link:hover { text-decoration: underline; }
-
-.photo-thumb {
-    max-width: 40px;
-    max-height: 40px;
-    border-radius: 4px;
-    cursor: pointer;
-    border: 1px solid #ddd;
-    object-fit: cover;
-}
-
-.photo-thumb:hover { border-color: #667eea; transform: scale(1.05); }
-.photo-group { display: flex; gap: 5px; flex-wrap: wrap; }
-
-.loading { text-align: center; padding: 20px; color: #666; }
-
-.alert {
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-}
-
-.alert-success { background: #c6f6d5; color: #22543d; border: 1px solid #9ae6b4; }
-.alert-error { background: #fed7d7; color: #742a2a; border: 1px solid #fc8181; }
-
-.required { color: #e53e3e; }
-.actions { display: flex; gap: 5px; flex-wrap: wrap; flex-direction: column; }
-
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-.modal-content {
-    background-color: white;
-    margin: 5% auto;
-    padding: 30px;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 800px;
-    position: relative;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.modal-close {
-    position: absolute;
-    right: 20px;
-    top: 10px;
-    font-size: 30px;
-    cursor: pointer;
-    color: #999;
-}
-
-.modal-close:hover { color: #333; }
-
-.record-count { color: #666; font-size: 14px; margin-left: 10px; }
-
-.photo-preview {
-    max-width: 100px;
-    max-height: 100px;
-    border-radius: 8px;
-    border: 2px solid #667eea;
-    margin-top: 5px;
-}
-
-.photo-upload-group {
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 10px;
-    background: #fafafa;
-}
-
-.photo-upload-group label { font-weight: 600; color: #333; }
-
-.photo-upload-group .current-photo-thumb {
-    max-width: 60px;
-    max-height: 60px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    margin-top: 5px;
-}
-
-.photo-required {
-    color: #e53e3e;
-    font-size: 12px;
-    font-weight: normal;
-    margin-left: 5px;
-}
-
-.home-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 25px;
-    padding: 60px 20px;
-}
-
-.home-btn {
-    width: 100%;
-    max-width: 420px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 30px;
-    border-radius: 12px;
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    transition: all 0.3s;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
-}
-
-.home-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4); }
-
-.home-btn.panel-btn { background: linear-gradient(135deg, #805ad5 0%, #553c9a 100%); }
-.home-btn.panel-btn:hover { box-shadow: 0 10px 25px rgba(128, 90, 213, 0.4); }
-.home-btn.master-btn { background: linear-gradient(135deg, #38a169 0%, #2f855a 100%); }
-.home-btn.master-btn:hover { box-shadow: 0 10px 25px rgba(56, 161, 105, 0.4); }
-
-.home-btn.history-btn { background: linear-gradient(135deg, #ed8936 0%, #c05621 100%); }
-.home-btn.history-btn:hover { box-shadow: 0 10px 25px rgba(237, 137, 54, 0.4); }
-
-.home-btn.mp-btn { background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%); }
-.home-btn.mp-btn:hover { box-shadow: 0 10px 25px rgba(49, 130, 206, 0.4); }
-
-.back-home-btn {
-    background: #718096;
-    color: white;
-    border: none;
-    padding: 8px 18px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 600;
-    margin-bottom: 15px;
-    transition: all 0.3s;
-}
-
-.back-home-btn:hover { background: #4a5568; }
-
-.status-select {
-    padding: 5px 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    min-width: 110px;
-}
-
-.status-select.en-proceso { background: #fefcbf; color: #744210; border-color: #f6e05e; }
-.status-select.completo { background: #c6f6d5; color: #22543d; border-color: #9ae6b4; }
-.status-select.vencido { background: #fed7d7; color: #742a2a; border-color: #fc8181; }
-.status-select.notificado { background: #bee3f8; color: #2a4365; border-color: #90cdf4; }
-
-.config-section {
-    background: #f8f9fa;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-}
-
-.config-section h3 { margin-bottom: 15px; color: #333; }
-
-.dropdown-config-item {
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    padding: 12px;
-    margin-bottom: 12px;
-}
-
-.dropdown-config-item label {
-    font-weight: 700;
-    color: #667eea;
-    display: block;
-    margin-bottom: 8px;
-}
-
-.dropdown-config-item textarea {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 13px;
-    resize: vertical;
-    min-height: 60px;
-    font-family: monospace;
-}
-
-.config-mp-table { width: 100%; border-collapse: collapse; }
-
-.config-mp-table th {
-    background: #667eea;
-    color: white;
-    padding: 8px;
-    font-size: 13px;
-}
-
-.config-mp-table td { padding: 5px; border-bottom: 1px solid #e0e0e0; }
-
-.config-mp-table input {
-    width: 100%;
-    padding: 6px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 13px;
-}
-
-.btn-remove-row {
-    background: #e53e3e;
-    color: white;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-}
-
-.btn-add-row {
-    background: #38a169;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 13px;
-    margin-top: 10px;
-    font-weight: 600;
-}
-
-.confirm-modal-content {
-    max-width: 500px;
-    text-align: center;
-}
-
-.confirm-modal-content h2 {
-    margin-bottom: 15px;
-    color: #333;
-}
-
-.confirm-modal-content p {
-    color: #666;
-    margin-bottom: 20px;
-    font-size: 15px;
-}
-
-.confirm-buttons {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-@media (max-width: 768px) {
-    .form-row { grid-template-columns: 1fr; }
-    .tabs { flex-direction: column; }
-    .tab { width: 100%; }
-    .modal-content { margin: 10% auto; padding: 20px; width: 95%; }
-    table { font-size: 11px; }
-    th, td { padding: 5px; }
-    .toolbar { flex-direction: column; }
-    .filter-group { width: 100%; }
-    .filter-group input { min-width: 100px; }
-    .photo-thumb { max-width: 30px; max-height: 30px; }
-}
+    min-height: 100vh; padding: 20px;
+  }
+  .container {
+    max-width: 1600px; margin: 0 auto; background: #fff;
+    border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    padding: 26px;
+  }
+  h1 { color:#333; margin-bottom: 4px; font-size: 26px; }
+  .subtitle { color:#666; margin-bottom: 20px; font-size: 14px; }
+
+  .toolbar {
+    display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+    background:#f8f9fa; padding:14px; border-radius:8px; margin-bottom:16px;
+  }
+  .toolbar input[type="text"] {
+    flex:1; min-width:220px; padding:9px 12px; border:1px solid #ddd;
+    border-radius:6px; font-size:14px;
+  }
+  .btn {
+    background:#667eea; color:#fff; border:none; padding:9px 18px;
+    border-radius:6px; cursor:pointer; font-weight:600; font-size:14px;
+    transition:.15s; white-space: nowrap;
+  }
+  .btn:hover { background:#5a67d8; transform: translateY(-1px); }
+  .btn-success { background:#38a169; } .btn-success:hover { background:#2f855a; }
+  .btn-danger  { background:#e53e3e; } .btn-danger:hover  { background:#c53030; }
+  .btn-cancel  { background:#718096; } .btn-cancel:hover  { background:#4a5568; }
+  .btn-sm { padding:5px 9px; font-size:12px; }
+
+  .alert { padding:12px 16px; border-radius:6px; margin-bottom:14px; font-weight:600; font-size:14px; }
+  .alert-success { background:#c6f6d5; color:#22543d; }
+  .alert-error   { background:#fed7d7; color:#742a2a; }
+
+  .table-wrapper {
+    overflow:auto; max-height: 620px;
+    border:1px solid #e0e0e0; border-radius:8px;
+  }
+  table { width:100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background:#667eea; color:#fff; padding:10px 8px;
+    text-align:left; position: sticky; top:0; z-index:5;
+    white-space:nowrap; font-size:12px;
+  }
+  td {
+    padding:7px 9px; border-bottom:1px solid #eee;
+    white-space:nowrap; vertical-align: middle;
+  }
+  tr:hover td { background:#f8f9fa; }
+
+  .pk-badge {
+    background:#fefcbf; color:#744210; padding:2px 6px;
+    border-radius:4px; font-size:10px; font-weight:700; margin-left:4px;
+  }
+  .status-sale    { background:#c6f6d5; color:#22543d; padding:3px 8px; border-radius:4px; font-weight:700; font-size:11px; }
+  .status-nosale  { background:#fed7d7; color:#742a2a; padding:3px 8px; border-radius:4px; font-weight:700; font-size:11px; }
+  .status-si      { background:#c6f6d5; color:#22543d; padding:3px 8px; border-radius:4px; font-weight:700; font-size:11px; }
+  .status-no      { background:#e2e8f0; color:#2d3748; padding:3px 8px; border-radius:4px; font-weight:700; font-size:11px; }
+  .date-ok        { background:#c6f6d5; color:#22543d; padding:3px 8px; border-radius:4px; font-weight:600; font-size:11px; }
+  .date-warning   { background:#fefcbf; color:#744210; padding:3px 8px; border-radius:4px; font-weight:600; font-size:11px; }
+  .date-danger    { background:#fed7d7; color:#742a2a; padding:3px 8px; border-radius:4px; font-weight:600; font-size:11px; }
+
+  .actions { display:flex; gap:4px; }
+
+  .modal {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.55);
+    z-index:100; align-items:flex-start; justify-content:center;
+    overflow-y:auto; padding: 30px 16px;
+  }
+  .modal.open { display:flex; }
+  .modal-content {
+    background:#fff; border-radius:10px; padding:26px;
+    width:100%; max-width:820px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  }
+  .modal-content h2 { margin-bottom:18px; color:#333; font-size: 20px; }
+  .form-grid {
+    display:grid; grid-template-columns: 1fr 1fr; gap:14px;
+  }
+  .form-group { display:flex; flex-direction:column; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-group label {
+    font-weight:600; margin-bottom:4px; color:#333; font-size:12px;
+    text-transform: uppercase; letter-spacing: .3px;
+  }
+  .form-group input,
+  .form-group select {
+    padding:9px 11px; border:1px solid #ddd; border-radius:6px; font-size:14px;
+    font-family: inherit;
+  }
+  .form-group input:focus,
+  .form-group select:focus { outline:none; border-color:#667eea; }
+  .form-group input[readonly] { background:#f0f0f0; cursor:not-allowed; }
+  .modal-buttons {
+    display:flex; gap:10px; justify-content:flex-end; margin-top:22px;
+    padding-top:18px; border-top:1px solid #eee;
+  }
+  .no-data { text-align:center; padding:40px; color:#999; }
+
+  @media (max-width: 720px) {
+    .form-grid { grid-template-columns: 1fr; }
+    td, th { font-size: 11px; }
+  }
 </style>
 </head>
 <body>
 <div class="container">
-<h1>🚛 Sistema de Gestión de Documentación</h1>
-<p class="subtitle">Control de vencimientos de documentación</p>
+  <h1>🚛 Maestro de Flota - Camión T2</h1>
+  <p class="subtitle">Administración de la flota · Primary Key: <b>PATENTE</b></p>
 
-<div id="alert-container"></div>
+  <div id="alert-container"></div>
 
-<div id="homeScreen" class="home-screen">
-<button type="button" class="home-btn panel-btn" onclick="showModule('panel')">📊 Panel de Flota (todo correlacionado)</button>
-<button type="button" class="home-btn master-btn" onclick="showModule('master')">🗂️ Maestro de Flota</button>
-<button type="button" class="home-btn" onclick="showModule('docs')">📋 Control de Documentación</button>
-<button type="button" class="home-btn history-btn" onclick="showModule('history')">📊 Historial de Vencimiento de Documentación</button>
-<button type="button" class="home-btn mp-btn" onclick="showModule('mantenimientos')">🔧 Carga de Mantenimientos</button>
-</div>
+  <div class="toolbar">
+    <button class="btn btn-success" onclick="openAddModal()">➕ Agregar Vehículo</button>
+    <input type="text" id="filterInput" placeholder="🔍 Buscar por PATENTE, FLOTA, MARCA..." oninput="applyFilter()">
+    <button class="btn btn-cancel" onclick="clearFilter()">✖ Limpiar</button>
+    <span id="recordCount" style="color:#666; font-size:14px;">Total: 0</span>
+  </div>
 
-<div id="panelModule" style="display:none;">
-<button type="button" class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
-<p class="subtitle" style="margin-top:0;">Documentación + último y próximo mantenimiento, por vehículo/persona, en una sola vista.</p>
-<div id="panel-content"></div>
-</div>
-
-<div id="docsModule" style="display:none;">
-<button type="button" class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
-
-<div class="tabs" id="tabsDocs">
-<button type="button" class="tab active" data-sheet="Camion T1">🚚 Camión T1</button>
-<button type="button" class="tab" data-sheet="Camion T2">🚛 Camión T2</button>
-<button type="button" class="tab" data-sheet="Autoelevadores">🏗️ Autoelevadores</button>
-<button type="button" class="tab" data-sheet="Choferes y Ayudantes">👨‍✈️ Choferes y Ayudantes</button>
+  <div class="table-wrapper">
+    <table id="maestroTable">
+      <thead id="maestroHead"></thead>
+      <tbody id="maestroBody"></tbody>
+    </table>
+  </div>
 </div>
 
-<div id="tab-content"></div>
-</div>
-
-<div id="masterModule" style="display:none;">
-<button type="button" class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
-
-<div class="tabs" id="tabsMaster">
-<button type="button" class="tab active" data-sheet="Camion T1">🚚 Camión T1</button>
-<button type="button" class="tab" data-sheet="Camion T2">🚛 Camión T2</button>
-<button type="button" class="tab" data-sheet="Autoelevadores">🏗️ Autoelevadores</button>
-<button type="button" class="tab" data-sheet="Choferes y Ayudantes">👨‍✈️ Choferes y Ayudantes</button>
-</div>
-
-<div id="master-tab-content"></div>
-</div>
-
-<div id="historyModule" style="display:none;">
-<button type="button" class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
-<div id="history-content"></div>
-</div>
-
-<div id="mantenimientosModule" style="display:none;">
-<button type="button" class="back-home-btn" onclick="showHome()">⬅ Volver al inicio</button>
-
-<div class="tabs" id="tabsMantenimientos">
-<button type="button" class="tab active" data-view="historial">🔧 Historial Mantenimientos</button>
-<button type="button" class="tab" data-view="programacion">📅 Programación Mantenimiento Preventivo</button>
-<button type="button" class="tab" data-view="config">⚙️ Configuración</button>
-</div>
-
-<div id="mantenimientos-content"></div>
-</div>
-</div>
-
-<div id="editModal" class="modal">
-<div class="modal-content">
-<span class="modal-close" onclick="closeEditModal()">&times;</span>
-<h2>✏️ Editar Documento</h2>
-<form id="editForm" enctype="multipart/form-data">
-<input type="hidden" id="editSheetName">
-<input type="hidden" id="editRowNumber">
-<div id="editFormFields"></div>
-<div id="editPhotoFields"></div>
-<button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
-</form>
-</div>
-</div>
-
-<div id="editMantenimientoModal" class="modal">
-<div class="modal-content">
-<span class="modal-close" onclick="closeEditMantenimientoModal()">&times;</span>
-<h2>✏️ Editar Mantenimiento</h2>
-<form id="editMantenimientoForm">
-<input type="hidden" id="editMantenimientoRowNumber">
-<div id="editMantenimientoFields"></div>
-<button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
-</form>
-</div>
-</div>
-
-<div id="editProgramacionModal" class="modal">
-<div class="modal-content">
-<span class="modal-close" onclick="closeEditProgramacionModal()">&times;</span>
-<h2>✏️ Editar Programación</h2>
-<form id="editProgramacionForm">
-<input type="hidden" id="editProgramacionRowNumber">
-<div id="editProgramacionFields"></div>
-<button type="submit" class="btn btn-success">💾 Guardar Cambios</button>
-</form>
-</div>
-</div>
-
-<div id="tareaCompletaModal" class="modal">
-<div class="modal-content confirm-modal-content">
-<span class="modal-close" onclick="closeTareaCompletaModal()">&times;</span>
-<h2>✅ Tarea Completa</h2>
-<p id="tareaCompletaMsg">¿Estás seguro de marcar esta tarea como completa?</p>
-
-<div style="text-align:left; margin: 20px 0;">
-<div class="form-group">
-<label>💵 GASTO en PESOS</label>
-<input type="number" step="0.01" min="0" id="tareaCompletaGastoPesos" placeholder="0.00" value="">
-</div>
-<div class="form-group">
-<label>💵 GASTO en USD</label>
-<input type="number" step="0.01" min="0" id="tareaCompletaGastoUsd" placeholder="0.00" value="">
-</div>
-</div>
-
-<div class="confirm-buttons">
-<button type="button" class="btn btn-success" onclick="confirmarTareaCompletaProgramar()">✅ Sí, volver a programar</button>
-<button type="button" class="btn btn-cancel" onclick="confirmarTareaCompletaNoProgramar()">🚫 No volver a programar</button>
-</div>
-<br>
-<button type="button" class="btn btn-danger btn-sm" style="margin-top:10px;" onclick="closeTareaCompletaModal()">Cancelar</button>
-</div>
+<!-- Modal Agregar / Editar -->
+<div class="modal" id="rowModal">
+  <div class="modal-content">
+    <h2 id="rowModalTitle">➕ Agregar Vehículo</h2>
+    <div class="form-grid" id="rowModalFields"></div>
+    <div class="modal-buttons">
+      <button class="btn btn-cancel" onclick="closeModal('rowModal')">Cancelar</button>
+      <button class="btn btn-success" onclick="submitRow()">💾 Guardar</button>
+    </div>
+  </div>
 </div>
 
 <script>
-/* ============================================================
-   VARIABLES GLOBALES
-   ============================================================ */
-var currentSheet = 'Camion T1';
-var dataCache = {};
-var currentHeaders = [];
-var allRows = [];
-var filteredRows = [];
-var isFormVisible = false;
-var currentEditRow = null;
-var editContextModule = 'docs';
+let COLUMNS = [];
+let PRIMARY_KEY = 'PATENTE';
+let allRows = [];
+let filteredRows = [];
+let editingRowNumber = null;
+let headers = [];
 
-var masterCurrentSheet = 'Camion T1';
-var masterDataCache = {};
-var masterCurrentHeaders = [];
-var masterAllRows = [];
-var masterFilteredRows = [];
-var masterIsFormVisible = false;
-
-var historyAllRows = [];
-var historyFilteredRows = [];
-var historyHeaders = [];
-
-var mpCurrentView = 'historial';
-var mpHeaders = [];
-var mpRows = [];
-var mpFilteredRows = [];
-var mpIsFormVisible = false;
-var mpDropdowns = {};
-var mpConfigMP = [];
-var mpConfigLoaded = false;
-
-var progHeaders = [];
-var progRows = [];
-var progFilteredRows = [];
-var progIsFormVisible = false;
-var patentesCamionT2 = [];
-var odometroPorPatente = {};
-var progRowSeleccionadaParaCompletar = null;
-var progPatentePrecargada = null;
-
-var columnConfig = {
-    'Camion T1': [
-        'PATENTE', 'PROPIETARIO', 'MAIL', 'CIA SEGURO', 'VENC VTV',
-        'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO',
-        'POLIZA DE SEGUROS', 'SEGURO DE ACCIDENTES PERSONALES',
-        'CLAUSULA DE NO REPETICION', 'INDUCCION DE CMQ',
-        'CAPACITACION DE MANEJO DEFENSIVO'
-    ],
-    'Camion T2': [
-        'PATENTE', 'CIA SEGURO', 'AÑO', 'VENC VTV', 'VENC SEGURO',
-        'UTA', 'EXTINTOR', 'BOTIQUIN'
-    ],
-    'Autoelevadores': [
-        'CODIGO DE AE', 'CIA SEGURO', 'AÑO', 'VENC SEGURO', 'EXTINTOR'
-    ],
-    'Choferes y Ayudantes': [
-        'APELLIDO Y NOMBRE', 'CONTRATACION', 'Mail',
-        'VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA'
-    ]
-};
-
-var dateColumnsConfig = {
-    'Camion T1': ['VENC VTV', 'VENC SEGURO', 'SENASA', 'LICENCIA DE CONDUCIR', 'PAGO MONOTRIBUTO', 'POLIZA DE SEGUROS',
-        'SEGURO DE ACCIDENTES PERSONALES', 'CLAUSULA DE NO REPETICION', 'INDUCCION DE CMQ',
-        'CAPACITACION DE MANEJO DEFENSIVO'
-    ],
-    'Camion T2': ['VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN'],
-    'Autoelevadores': ['VENC SEGURO', 'EXTINTOR'],
-    'Choferes y Ayudantes': ['VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA']
-};
-
-var filterFields = {
-    'Camion T1': 'PATENTE',
-    'Camion T2': 'PATENTE',
-    'Autoelevadores': 'CODIGO DE AE',
-    'Choferes y Ayudantes': 'APELLIDO Y NOMBRE'
-};
-
-var MP_DROPDOWN_COLUMNS = ['PATENTE', 'TIPO MANTENIMIENTO', 'CONCEPTO GENERAL', 'TIPO REPARACIÓN', 'PROVEEDOR'];
-var PROG_DROPDOWN_COLUMNS = ['PATENTE', 'TIPO MANTENIMIENTO', 'TIPO REPARACIÓN'];
-
-/* ============================================================
-   UTILIDADES
-   ============================================================ */
-function showAlert(message, type) {
-    type = type || 'success';
-    var container = document.getElementById('alert-container');
-    if (!container) return;
-    var alert = document.createElement('div');
-    alert.className = 'alert alert-' + type;
-    alert.textContent = message;
-    container.appendChild(alert);
-    setTimeout(function() { alert.remove(); }, 5000);
+/* ============ HELPERS ============ */
+function showAlert(msg, type='success') {
+  const c = document.getElementById('alert-container');
+  const div = document.createElement('div');
+  div.className = 'alert alert-' + type;
+  div.textContent = msg;
+  c.appendChild(div);
+  setTimeout(() => div.remove(), 4500);
+}
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[c]);
 }
 
-function parseDate(dateStr) {
-    if (!dateStr) return null;
-    dateStr = String(dateStr).trim();
-    if (dateStr === '') return null;
-
-    if (dateStr.indexOf('/') !== -1) {
-        var parts = dateStr.split('/');
-        if (parts.length === 3) {
-            var day = parseInt(parts[0]);
-            var month = parseInt(parts[1]) - 1;
-            var year = parseInt(parts[2]);
-            if (year < 100) year += 2000;
-            if (!isNaN(day) && !isNaN(month) && !isNaN(year) && day > 0 && month >= 0 && day <= 31 && month <= 11) {
-                return new Date(year, month, day);
-            }
-        }
-    }
-
-    if (dateStr.indexOf('-') !== -1) {
-        var parts2 = dateStr.split('-');
-        if (parts2.length === 3) {
-            var year2 = parseInt(parts2[0]);
-            var month2 = parseInt(parts2[1]) - 1;
-            var day2 = parseInt(parts2[2]);
-            if (!isNaN(year2) && !isNaN(month2) && !isNaN(day2) && day2 > 0 && month2 >= 0 && day2 <= 31 && month2 <= 11) {
-                return new Date(year2, month2, day2);
-            }
-        }
-    }
-
-    var date = new Date(dateStr);
-    if (!isNaN(date.getTime())) return date;
-    return null;
+/* ============ CÁLCULO DE VENCIMIENTOS ============ */
+function parseDate(str) {
+  if (!str) return null;
+  str = String(str).trim();
+  if (!str) return null;
+  let m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (m) {
+    let [_, d, mo, y] = m;
+    if (y.length === 2) y = '20' + y;
+    return new Date(+y, +mo - 1, +d);
+  }
+  m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  const d = new Date(str);
+  return isNaN(d) ? null : d;
+}
+function formatDate(date) {
+  if (!date) return '';
+  const d = String(date.getDate()).padStart(2,'0');
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+function dateToInputValue(str) {
+  const d = parseDate(str);
+  if (!d) return '';
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+function dateStatusClass(dateStr) {
+  const d = parseDate(dateStr);
+  if (!d) return '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  d.setHours(0,0,0,0);
+  const diff = Math.ceil((d - today) / 86400000);
+  if (diff < 0) return 'date-danger';
+  if (diff <= 30) return 'date-warning';
+  return 'date-ok';
 }
 
-function getDateStatus(dateStr) {
-    if (!dateStr) return { class: '', text: '' };
-    var expDate = parseDate(dateStr);
-    if (!expDate) return { class: '', text: '' };
-    var today = new Date();
-    today.setHours(0, 0, 0, 0);
-    expDate.setHours(0, 0, 0, 0);
-    var diffDays = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
-    if (diffDays < 0) return { class: 'date-danger', text: 'VENCIDO' };
-    else if (diffDays >= 0 && diffDays <= 30) return { class: 'date-warning', text: diffDays + ' días' };
-    else return { class: 'date-ok', text: diffDays + ' días' };
+/* ============ CARGA ============ */
+async function loadConfig() {
+  const res = await fetch('/api/config');
+  const data = await res.json();
+  if (data.success) {
+    COLUMNS = data.columns;
+    PRIMARY_KEY = data.primaryKey;
+    headers = COLUMNS.map(c => c.name);
+  }
 }
 
-function getRowStatus(row, sheetName) {
-    var dateColumns = dateColumnsConfig[sheetName] || [];
-    var hasDate = false, anyExpired = false, anyWarning = false;
-    dateColumns.forEach(function(col) {
-        if (row[col]) {
-            hasDate = true;
-            var status = getDateStatus(row[col]);
-            if (status.class === 'date-danger') anyExpired = true;
-            else if (status.class === 'date-warning') anyWarning = true;
-        }
-    });
-    if (!hasDate) return { class: 'status-ok', text: '✅ Sin fechas' };
-    if (anyExpired) return { class: 'status-danger', text: '🔴 VENCIDO' };
-    else if (anyWarning) return { class: 'status-warning', text: '🟡 Cerca de vencimiento' };
-    else return { class: 'status-ok', text: '✅ OK' };
-}
-
-function getDisplayColumns(sheetName) {
-    var columns = columnConfig[sheetName] || [];
-    return columns.concat(['Marca Temporal']);
-}
-
-function getAllColumns(headers) {
-    return headers.filter(function(h) { return h !== '_row_number' && h.indexOf('_FOTO') === -1; });
-}
-
-function isPhotoUrl(value) {
-    if (!value) return false;
-    return value.indexOf('http') === 0 && (value.indexOf('drive') !== -1 || value.indexOf('docs') !== -1 || value.indexOf('google') !== -1);
-}
-
-function getPhotoColumns(headers) {
-    return headers.filter(function(h) { return h.indexOf('_FOTO') !== -1; });
-}
-
-function getDateColumnsRequiringPhoto(sheetName) {
-    return dateColumnsConfig[sheetName] || [];
-}
-
-/* ============================================================
-   NAVEGACIÓN
-   ============================================================ */
-function showHome() {
-    document.getElementById('homeScreen').style.display = 'flex';
-    document.getElementById('docsModule').style.display = 'none';
-    document.getElementById('masterModule').style.display = 'none';
-    document.getElementById('historyModule').style.display = 'none';
-    document.getElementById('mantenimientosModule').style.display = 'none';
-    document.getElementById('panelModule').style.display = 'none';
-}
-
-function showModule(module) {
-    document.getElementById('homeScreen').style.display = 'none';
-    document.getElementById('docsModule').style.display = 'none';
-    document.getElementById('masterModule').style.display = 'none';
-    document.getElementById('historyModule').style.display = 'none';
-    document.getElementById('mantenimientosModule').style.display = 'none';
-    document.getElementById('panelModule').style.display = 'none';
-
-    if (module === 'docs') {
-        document.getElementById('docsModule').style.display = 'block';
-        loadSheetData(currentSheet);
-    } else if (module === 'master') {
-        document.getElementById('masterModule').style.display = 'block';
-        loadMasterData(masterCurrentSheet);
-    } else if (module === 'history') {
-        document.getElementById('historyModule').style.display = 'block';
-        loadHistoryData();
-    } else if (module === 'mantenimientos') {
-        document.getElementById('mantenimientosModule').style.display = 'block';
-        loadMantenimientosData();
-    } else if (module === 'panel') {
-        document.getElementById('panelModule').style.display = 'block';
-        loadPanelFlota();
-    }
-}
-
-/* ============================================================
-   PANEL DE FLOTA (vista correlacionada: documentación + mantenimiento)
-   ============================================================ */
-var PANEL_ICONOS = {
-    'Camion T1': '🚚',
-    'Camion T2': '🚛',
-    'Autoelevadores': '🏗️',
-    'Choferes y Ayudantes': '👨‍✈️'
-};
-
-var PANEL_ESTADO_INFO = {
-    'VENCIDO': { clase: 'status-danger', texto: '🔴 Vencido' },
-    'PROXIMO_A_VENCER': { clase: 'status-warning', texto: '🟡 Por vencer' },
-    'OK': { clase: 'status-ok', texto: '✅ Al día' },
-    'SIN_DATOS': { clase: '', texto: '⚪ Sin datos' }
-};
-
-async function loadPanelFlota() {
-    var content = document.getElementById('panel-content');
-    content.innerHTML = '<div class="loading">🔄 Cargando panel de flota...</div>';
-    try {
-        var response = await fetch('/api/panel_flota');
-        var data = await response.json();
-        if (!data.success) {
-            content.innerHTML = '<div class="alert alert-error">❌ Error: ' + (data.error || 'desconocido') + '</div>';
-            return;
-        }
-        renderPanelFlota(data.panel || []);
-    } catch (error) {
-        content.innerHTML = '<div class="alert alert-error">❌ Error al cargar el panel: ' + error.message + '</div>';
-    }
-}
-
-function renderPanelFlota(panel) {
-    var content = document.getElementById('panel-content');
-
-    var vencidos = panel.filter(function(p) { return p.estado_documentacion === 'VENCIDO'; }).length;
-    var porVencer = panel.filter(function(p) { return p.estado_documentacion === 'PROXIMO_A_VENCER'; }).length;
-
-    var html = '<div class="toolbar">';
-    html += '<span class="record-count">📊 Total: ' + panel.length + ' registros</span>';
-    if (vencidos > 0) html += '<span class="record-count status-danger">🔴 ' + vencidos + ' vencidos</span>';
-    if (porVencer > 0) html += '<span class="record-count status-warning">🟡 ' + porVencer + ' por vencer (30 días)</span>';
-    html += '</div>';
-
-    html += '<div class="table-wrapper"><div class="table-container"><table>';
-    html += '<thead><tr>';
-    html += '<th>Categoría</th><th>Identificador</th><th>📊 Estado Documentación</th>';
-    html += '<th>Próximo vencimiento</th><th>Fecha</th>';
-    html += '<th>Último mantenimiento</th><th>Próximo mantenimiento</th>';
-    html += '</tr></thead><tbody>';
-
-    if (panel.length === 0) {
-        html += '<tr><td colspan="7" style="text-align:center; padding:20px;">📭 No hay datos para mostrar</td></tr>';
-    } else {
-        panel.forEach(function(p) {
-            var estadoInfo = PANEL_ESTADO_INFO[p.estado_documentacion] || PANEL_ESTADO_INFO['SIN_DATOS'];
-            var icono = PANEL_ICONOS[p.categoria] || '📄';
-
-            var ultimoMant = p.ultimo_mantenimiento_fecha
-                ? p.ultimo_mantenimiento_fecha + (p.ultimo_mantenimiento_tipo ? ' — ' + p.ultimo_mantenimiento_tipo : '')
-                : '<span style="color:#999;">Sin registro</span>';
-
-            var proximoMant = p.proximo_mantenimiento_fecha
-                ? p.proximo_mantenimiento_fecha + (p.proximo_mantenimiento_km ? ' (km: ' + p.proximo_mantenimiento_km + ')' : '')
-                : '<span style="color:#999;">No programado</span>';
-
-            html += '<tr>';
-            html += '<td>' + icono + ' ' + p.categoria + '</td>';
-            html += '<td><strong>' + p.identificador + '</strong></td>';
-            html += '<td><span class="' + estadoInfo.clase + '">' + estadoInfo.texto + '</span></td>';
-            html += '<td>' + (p.proxima_doc_tipo || '-') + '</td>';
-            html += '<td>' + (p.proxima_doc_fecha || '-') + '</td>';
-            html += '<td>' + ultimoMant + '</td>';
-            html += '<td>' + proximoMant + '</td>';
-            html += '</tr>';
-        });
-    }
-
-    html += '</tbody></table></div></div>';
-    content.innerHTML = html;
-}
-
-/* ============================================================
-   FORMULARIOS GENÉRICOS
-   ============================================================ */
-function generateFormFields(headers, excludeFields, values, isMaster) {
-    excludeFields = excludeFields || ['_row_number', 'Marca Temporal'];
-    values = values || {};
-    isMaster = isMaster || false;
-    var html = '';
-    var photoCols = getPhotoColumns(headers);
-    var dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
-
-    headers.forEach(function(header) {
-        if (excludeFields.indexOf(header) !== -1) return;
-        if (photoCols.indexOf(header) !== -1) return;
-
-        var upper = header.toUpperCase();
-        var isDate = upper.indexOf('FECHA') !== -1 || upper.indexOf('VENCIMIENTO') !== -1 || upper.indexOf('VENC') !== -1;
-        var isTextarea = upper.indexOf('OBSERVACION') !== -1 || upper.indexOf('COMENTARIO') !== -1;
-        var value = values[header] || '';
-        var requiresPhoto = dateColsRequiringPhoto.indexOf(header) !== -1;
-
-        html += '<div class="form-group">';
-        html += '<label>' + header;
-        if (requiresPhoto && !isMaster) {
-            html += ' <span class="photo-required">(requiere foto)</span>';
-        }
-        html += '</label>';
-
-        if (isTextarea) {
-            html += '<textarea id="field_' + header + '" name="' + header + '" rows="2">' + value + '</textarea>';
-        } else if (isDate) {
-            var dateValue = value;
-            if (value && value.indexOf('/') !== -1) {
-                var parts = value.split('/');
-                if (parts.length === 3) {
-                    var year = parseInt(parts[2]);
-                    if (year < 100) year += 2000;
-                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
-                }
-            }
-            html += '<input type="date" id="field_' + header + '" name="' + header + '" value="' + dateValue + '">';
-        } else {
-            html += '<input type="text" id="field_' + header + '" name="' + header + '" value="' + value + '">';
-        }
-        html += '</div>';
-    });
-    return html;
-}
-
-function generatePhotoFields(headers, values, isMaster, prefix) {
-    values = values || {};
-    isMaster = isMaster || false;
-    prefix = prefix || '';
-    var html = '';
-    var photoCols = getPhotoColumns(headers);
-    var dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
-
-    if (photoCols.length === 0) return html;
-
-    html += '<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">';
-    html += '<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>';
-    html += '<p style="color:#666; font-size:14px; margin-bottom:15px;">Sube las fotos de los documentos. Las fotos son obligatorias para los documentos con fecha.</p>';
-
-    photoCols.forEach(function(col) {
-        var docName = col.replace('_FOTO', '');
-        var photoUrl = values[col] || '';
-        var fileInputId = prefix + 'foto_' + docName;
-        var isRequired = dateColsRequiringPhoto.indexOf(docName) !== -1 && !isMaster;
-
-        html += '<div class="photo-upload-group">';
-        html += '<label for="' + fileInputId + '">📷 ' + docName + ':';
-        if (isRequired) {
-            html += ' <span class="photo-required">(OBLIGATORIA)</span>';
-        }
-        html += '</label>';
-
-        if (photoUrl && isPhotoUrl(photoUrl)) {
-            var fileId = photoUrl;
-            if (photoUrl.indexOf('file/d/') !== -1) {
-                var match = photoUrl.match(/file\/d\/([^\/]+)/);
-                if (match) fileId = match[1];
-            }
-            html += '<br><img src="https://drive.google.com/thumbnail?id=' + fileId + '&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">';
-            html += '<br><small style="color:#666;">Foto actual - <a href="' + photoUrl + '" target="_blank">Ver en Drive</a></small>';
-            html += '<br><small style="color:#888;">Si quieres reemplazarla, selecciona una nueva foto.</small>';
-        } else {
-            html += '<br><small style="color:#999;">No hay foto cargada</small>';
-        }
-
-        html += '<br><input type="file" id="' + fileInputId + '" name="' + fileInputId + '" accept="image/*" onchange="previewPhoto(event, \'' + fileInputId + '\')"';
-        if (isRequired && !photoUrl) {
-            html += ' required';
-        }
-        html += '>';
-        html += '<div id="preview_' + fileInputId + '"></div>';
-        html += '</div>';
-    });
-
-    html += '</div>';
-    return html;
-}
-
-function previewPhoto(event, inputId) {
-    var file = event.target.files[0];
-    var preview = document.getElementById('preview_' + inputId);
-    if (!preview) return;
-    if (file) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            preview.innerHTML = '<img src="' + e.target.result + '" class="photo-preview" alt="Nueva foto">';
-        };
-        reader.readAsDataURL(file);
-    } else {
-        preview.innerHTML = '';
-    }
-}
-
-function validateRequiredPhotos(sheetName, formData, isMaster) {
-    if (isMaster) return true;
-    var dateCols = getDateColumnsRequiringPhoto(sheetName);
-    var missingPhotos = [];
-
-    dateCols.forEach(function(dateCol) {
-        var dateValue = formData.get(dateCol);
-        if (dateValue && dateValue.trim() !== '') {
-            var photoInput = document.getElementById('foto_' + dateCol);
-            if (photoInput) {
-                var hasFile = photoInput.files && photoInput.files.length > 0;
-                var existingPhoto = formData.get(dateCol + '_FOTO');
-                if (!hasFile && !existingPhoto) {
-                    missingPhotos.push(dateCol);
-                }
-            } else {
-                var existingPhoto2 = formData.get(dateCol + '_FOTO');
-                if (!existingPhoto2) {
-                    missingPhotos.push(dateCol);
-                }
-            }
-        }
-    });
-
-    if (missingPhotos.length > 0) {
-        showAlert('⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ' + missingPhotos.join(', '), 'error');
-        return false;
-    }
-    return true;
-}
-
-/* ============================================================
-   CONTROL DE DOCUMENTACIÓN
-   ============================================================ */
-async function loadSheetData(sheetName) {
-    var content = document.getElementById('tab-content');
-    content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
-    try {
-        var response = await fetch('/api/sheet/' + encodeURIComponent(sheetName));
-        var data = await response.json();
-        dataCache[sheetName] = data;
-        currentHeaders = data.headers || [];
-        allRows = data.rows || [];
-        filteredRows = allRows.slice();
-        renderTable(sheetName);
-    } catch (error) {
-        content.innerHTML = '<div class="alert alert-error">❌ Error al cargar datos: ' + error.message + '</div>';
-    }
-}
-
-function renderTable(sheetName) {
-    var content = document.getElementById('tab-content');
-    var displayColumns = getDisplayColumns(sheetName);
-    var filterField = filterFields[sheetName] || 'PATENTE';
-    var dateColumns = dateColumnsConfig[sheetName] || [];
-    var photoCols = getPhotoColumns(currentHeaders);
-
-    var html = '<div class="toolbar">';
-    html += '<button type="button" class="btn btn-add" onclick="toggleForm()">' + (isFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Nuevo') + '</button>';
-    html += '<div class="filter-group">';
-    html += '<label>🔍 Filtrar por ' + filterField + ':</label>';
-    html += '<input type="text" id="filterInput" placeholder="Buscar..." oninput="applyFilter(\'' + sheetName + '\')">';
-    html += '<button type="button" class="btn-clear" onclick="clearFilter()">✖ Limpiar</button>';
-    html += '</div>';
-    html += '<span class="record-count">📊 Total: ' + filteredRows.length + ' registros</span>';
-    html += '</div>';
-
-    html += '<div class="form-section ' + (isFormVisible ? 'visible' : '') + '" id="addFormSection">';
-    html += '<h3>📄 Agregar nuevo documento</h3>';
-    html += '<form id="addForm" enctype="multipart/form-data">';
-    html += '<div class="form-row" id="addFormFields">' + generateFormFields(currentHeaders, ['_row_number', 'Marca Temporal'], {}, false) + '</div>';
-    html += generatePhotoFields(currentHeaders, {}, false, '');
-    html += '<input type="hidden" name="sheet_name" value="' + sheetName + '">';
-    html += '<button type="submit" class="btn">➕ Agregar Documento</button>';
-    html += '<button type="button" class="btn btn-cancel" onclick="toggleForm()">Cancelar</button>';
-    html += '</form>';
-    html += '</div>';
-
-    html += '<div class="table-wrapper"><div class="table-container"><table>';
-    html += '<thead><tr><th>📊 Estado</th>';
-    displayColumns.forEach(function(col) { html += '<th>' + col + '</th>'; });
-    if (photoCols.length > 0) html += '<th>📸 Fotos</th>';
-    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
-
-    if (filteredRows.length === 0) {
-        var colSpan = displayColumns.length + (photoCols.length > 0 ? 2 : 1) + 1;
-        html += '<tr><td colspan="' + colSpan + '" style="text-align: center; padding: 20px;">📭 No hay documentos</td></tr>';
-    } else {
-        filteredRows.forEach(function(row) {
-            html += '<tr>';
-            var rowStatus = getRowStatus(row, sheetName);
-            html += '<td><span class="' + rowStatus.class + '">' + rowStatus.text + '</span></td>';
-
-            displayColumns.forEach(function(col) {
-                var value = row[col] || '';
-                var cellClass = '';
-                if (dateColumns.indexOf(col) !== -1 && value) {
-                    var dateStatus = getDateStatus(value);
-                    if (dateStatus.class) cellClass = ' class="' + dateStatus.class + '"';
-                }
-                html += '<td' + cellClass + '>' + value + '</td>';
-            });
-
-            if (photoCols.length > 0) {
-                html += '<td><div class="photo-group">';
-                var hasPhoto = false;
-                photoCols.forEach(function(col) {
-                    var photoUrl = row[col] || '';
-                    if (photoUrl && isPhotoUrl(photoUrl)) {
-                        hasPhoto = true;
-                        var fileId = photoUrl;
-                        if (photoUrl.indexOf('file/d/') !== -1) {
-                            var match = photoUrl.match(/file\/d\/([^\/]+)/);
-                            if (match) fileId = match[1];
-                        }
-                        var docName = col.replace('_FOTO', '');
-                        html += '<a href="' + photoUrl + '" target="_blank" title="' + docName + '">';
-                        html += '<img src="https://drive.google.com/thumbnail?id=' + fileId + '&sz=w80-h80" class="photo-thumb" onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E\'">';
-                        html += '</a>';
-                    }
-                });
-                if (!hasPhoto) html += '<span style="color:#999;font-size:11px;">Sin fotos</span>';
-                html += '</div></td>';
-            }
-
-            html += '<td><div class="actions">';
-            html += '<button type="button" class="btn btn-success btn-sm" onclick="editRow(\'' + sheetName + '\', ' + row._row_number + ')">✏️ Editar</button>';
-            html += '<button type="button" class="btn btn-danger btn-sm" onclick="deleteRow(\'' + sheetName + '\', ' + row._row_number + ')">🗑️ Eliminar</button>';
-            html += '</div></td>';
-            html += '</tr>';
-        });
-    }
-
-    html += '</tbody></table></div></div>';
-    content.innerHTML = html;
-
-    var form = document.getElementById('addForm');
-    if (form) form.addEventListener('submit', handleAddDocument);
-}
-
-function toggleForm() {
-    isFormVisible = !isFormVisible;
-    renderTable(currentSheet);
-}
-
-function applyFilter(sheetName) {
-    var filterInput = document.getElementById('filterInput');
-    var searchTerm = filterInput.value.toLowerCase().trim();
-    var filterField = filterFields[sheetName] || 'PATENTE';
-    if (!searchTerm) filteredRows = allRows.slice();
-    else filteredRows = allRows.filter(function(row) { return (row[filterField] || '').toString().toLowerCase().indexOf(searchTerm) !== -1; });
-    renderTable(sheetName);
-}
-
-function clearFilter() {
-    document.getElementById('filterInput').value = '';
+async function loadRows() {
+  try {
+    const res = await fetch('/api/rows');
+    const data = await res.json();
+    if (!data.success) { showAlert('Error: ' + data.error, 'error'); return; }
+    allRows = data.rows || [];
     filteredRows = allRows.slice();
-    renderTable(currentSheet);
+    render();
+  } catch (e) {
+    showAlert('Error de conexión: ' + e.message, 'error');
+  }
 }
 
-async function handleAddDocument(e) {
-    e.preventDefault();
-    var form = e.target;
-    var formData = new FormData(form);
-    var sheetName = formData.get('sheet_name');
+/* ============ RENDER ============ */
+function render() {
+  const thead = document.getElementById('maestroHead');
+  const tbody = document.getElementById('maestroBody');
 
-    if (!validateRequiredPhotos(sheetName, formData, false)) return;
+  // HEAD
+  let headHtml = '<tr><th style="width:140px;">Acciones</th>';
+  COLUMNS.forEach(col => {
+    const pk = col.name === PRIMARY_KEY ? '<span class="pk-badge">PK</span>' : '';
+    headHtml += `<th>${escapeHtml(col.name)}${pk}</th>`;
+  });
+  headHtml += '</tr>';
+  thead.innerHTML = headHtml;
 
-    try {
-        var response = await fetch('/api/add', { method: 'POST', body: formData });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Documento agregado correctamente', 'success');
-            form.reset();
-            isFormVisible = false;
-            await loadSheetData(sheetName);
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
+  // BODY
+  if (filteredRows.length === 0) {
+    tbody.innerHTML = `<tr><td class="no-data" colspan="${COLUMNS.length + 1}">Sin registros</td></tr>`;
+  } else {
+    let bodyHtml = '';
+    filteredRows.forEach(row => {
+      bodyHtml += '<tr>';
+      bodyHtml += `<td>
+        <div class="actions">
+          <button class="btn btn-sm" onclick="editRow(${row._row_number})">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteRow(${row._row_number})">🗑️</button>
+        </div>
+      </td>`;
+      COLUMNS.forEach(col => {
+        const raw = row[col.name] || '';
+        let cell = escapeHtml(raw);
+        if (col.name === 'STATUS') {
+          const cls = raw === 'SALE' ? 'status-sale' : (raw === 'NO SALE' ? 'status-nosale' : '');
+          cell = cls ? `<span class="${cls}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
+        } else if (col.type === 'select' && (col.name === 'Cumple Polìtica?' || col.name === 'Tiene telemetria')) {
+          const cls = raw === 'SI' ? 'status-si' : (raw === 'NO' ? 'status-no' : '');
+          cell = cls ? `<span class="${cls}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
+        } else if (col.type === 'date' && raw) {
+          const cls = dateStatusClass(raw);
+          cell = cls ? `<span class="${cls}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
+        } else if (col.name === PRIMARY_KEY) {
+          cell = `<b>${escapeHtml(raw)}</b>`;
         }
-    } catch (error) {
-        showAlert('❌ Error al enviar el formulario: ' + error.message, 'error');
-    }
+        bodyHtml += `<td>${cell}</td>`;
+      });
+      bodyHtml += '</tr>';
+    });
+    tbody.innerHTML = bodyHtml;
+  }
+
+  document.getElementById('recordCount').textContent = 'Total: ' + filteredRows.length;
 }
 
-/* ============================================================
-   MAESTRO DE FLOTA
-   ============================================================ */
-async function loadMasterData(sheetName) {
-    var content = document.getElementById('master-tab-content');
-    content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
-    try {
-        var response = await fetch('/api/sheet/' + encodeURIComponent(sheetName));
-        var data = await response.json();
-        masterDataCache[sheetName] = data;
-        masterCurrentHeaders = data.headers || [];
-        masterAllRows = data.rows || [];
-        masterFilteredRows = masterAllRows.slice();
-        renderMasterTable(sheetName);
-    } catch (error) {
-        content.innerHTML = '<div class="alert alert-error">❌ Error al cargar datos: ' + error.message + '</div>';
-    }
+/* ============ FILTRO ============ */
+function applyFilter() {
+  const q = document.getElementById('filterInput').value.toLowerCase().trim();
+  if (!q) filteredRows = allRows.slice();
+  else filteredRows = allRows.filter(r =>
+    headers.some(h => String(r[h] || '').toLowerCase().includes(q))
+  );
+  render();
+}
+function clearFilter() {
+  document.getElementById('filterInput').value = '';
+  filteredRows = allRows.slice();
+  render();
 }
 
-function renderMasterTable(sheetName) {
-    var content = document.getElementById('master-tab-content');
-    var displayColumns = getAllColumns(masterCurrentHeaders);
-    var filterField = filterFields[sheetName] || 'PATENTE';
-    var dateColumns = dateColumnsConfig[sheetName] || [];
-    var photoCols = getPhotoColumns(masterCurrentHeaders);
+/* ============ MODAL ============ */
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-    var html = '<div class="toolbar">';
-    html += '<button type="button" class="btn btn-add" onclick="toggleMasterForm()">' + (masterIsFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Nuevo') + '</button>';
-    html += '<div class="filter-group">';
-    html += '<label>🔍 Filtrar por ' + filterField + ':</label>';
-    html += '<input type="text" id="filterInputMaster" placeholder="Buscar..." oninput="applyMasterFilter(\'' + sheetName + '\')">';
-    html += '<button type="button" class="btn-clear" onclick="clearMasterFilter()">✖ Limpiar</button>';
-    html += '</div>';
-    html += '<span class="record-count">📊 Total: ' + masterFilteredRows.length + ' registros</span>';
-    html += '</div>';
+function buildForm(values = {}) {
+  let html = '';
+  COLUMNS.forEach(col => {
+    const val = values[col.name] || '';
+    const isPk = col.name === PRIMARY_KEY;
+    const label = col.name + (isPk ? ' <span style="color:#e53e3e;">*</span>' : '');
+    const full = (col.name === 'CIA SEGURO' || col.name.includes('Capacidad')) ? ' full' : '';
 
-    html += '<div class="form-section ' + (masterIsFormVisible ? 'visible' : '') + '" id="addFormSectionMaster">';
-    html += '<h3>📄 Agregar nuevo registro</h3>';
-    html += '<form id="addFormMaster" enctype="multipart/form-data">';
-    html += '<div class="form-row" id="addFormFieldsMaster">' + generateFormFields(masterCurrentHeaders, ['_row_number', 'Marca Temporal'], {}, true) + '</div>';
-    html += generatePhotoFields(masterCurrentHeaders, {}, true, '');
-    html += '<input type="hidden" name="sheet_name" value="' + sheetName + '">';
-    html += '<button type="submit" class="btn">➕ Agregar Registro</button>';
-    html += '<button type="button" class="btn btn-cancel" onclick="toggleMasterForm()">Cancelar</button>';
-    html += '</form>';
-    html += '</div>';
+    html += `<div class="form-group${full}">`;
+    html += `<label>${escapeHtml(col.name)}${isPk ? ' <span style="color:#e53e3e;">*</span>' : ''}</label>`;
 
-    html += '<div class="table-wrapper"><div class="table-container"><table>';
-    html += '<thead><tr><th>📊 Estado</th>';
-    displayColumns.forEach(function(col) { html += '<th>' + col + '</th>'; });
-    if (photoCols.length > 0) html += '<th>📸 Fotos</th>';
-    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
-
-    if (masterFilteredRows.length === 0) {
-        var colSpan = displayColumns.length + (photoCols.length > 0 ? 2 : 1) + 1;
-        html += '<tr><td colspan="' + colSpan + '" style="text-align: center; padding: 20px;">📭 No hay registros</td></tr>';
+    if (col.type === 'select') {
+      html += `<select data-field="${escapeHtml(col.name)}">`;
+      html += `<option value="">-- Seleccionar --</option>`;
+      col.options.forEach(opt => {
+        const sel = (val === opt) ? ' selected' : '';
+        html += `<option value="${escapeHtml(opt)}"${sel}>${escapeHtml(opt)}</option>`;
+      });
+      html += `</select>`;
+    } else if (col.type === 'date') {
+      html += `<input type="date" data-field="${escapeHtml(col.name)}" value="${dateToInputValue(val)}">`;
+    } else if (col.type === 'number') {
+      html += `<input type="number" step="any" data-field="${escapeHtml(col.name)}" value="${escapeHtml(val)}">`;
     } else {
-        masterFilteredRows.forEach(function(row) {
-            html += '<tr>';
-            var rowStatus = getRowStatus(row, sheetName);
-            html += '<td><span class="' + rowStatus.class + '">' + rowStatus.text + '</span></td>';
-
-            displayColumns.forEach(function(col) {
-                var value = row[col] || '';
-                var cellClass = '';
-                if (dateColumns.indexOf(col) !== -1 && value) {
-                    var dateStatus = getDateStatus(value);
-                    if (dateStatus.class) cellClass = ' class="' + dateStatus.class + '"';
-                }
-                html += '<td' + cellClass + '>' + value + '</td>';
-            });
-
-            if (photoCols.length > 0) {
-                html += '<td><div class="photo-group">';
-                var hasPhoto = false;
-                photoCols.forEach(function(col) {
-                    var photoUrl = row[col] || '';
-                    if (photoUrl && isPhotoUrl(photoUrl)) {
-                        hasPhoto = true;
-                        var fileId = photoUrl;
-                        if (photoUrl.indexOf('file/d/') !== -1) {
-                            var match = photoUrl.match(/file\/d\/([^\/]+)/);
-                            if (match) fileId = match[1];
-                        }
-                        var docName = col.replace('_FOTO', '');
-                        html += '<a href="' + photoUrl + '" target="_blank" title="' + docName + '">';
-                        html += '<img src="https://drive.google.com/thumbnail?id=' + fileId + '&sz=w80-h80" class="photo-thumb" onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23eee%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-size=%2210%22%3E📷%3C/text%3E%3C/svg%3E\'">';
-                        html += '</a>';
-                    }
-                });
-                if (!hasPhoto) html += '<span style="color:#999;font-size:11px;">Sin fotos</span>';
-                html += '</div></td>';
-            }
-
-            html += '<td><div class="actions">';
-            html += '<button type="button" class="btn btn-success btn-sm" onclick="editMasterRow(\'' + sheetName + '\', ' + row._row_number + ')">✏️ Editar</button>';
-            html += '<button type="button" class="btn btn-danger btn-sm" onclick="deleteMasterRow(\'' + sheetName + '\', ' + row._row_number + ')">🗑️ Eliminar</button>';
-            html += '</div></td>';
-            html += '</tr>';
-        });
+      html += `<input type="text" data-field="${escapeHtml(col.name)}" value="${escapeHtml(val)}">`;
     }
-
-    html += '</tbody></table></div></div>';
-    content.innerHTML = html;
-
-    var form = document.getElementById('addFormMaster');
-    if (form) form.addEventListener('submit', handleAddMasterDocument);
+    html += `</div>`;
+  });
+  document.getElementById('rowModalFields').innerHTML = html;
 }
 
-function toggleMasterForm() {
-    masterIsFormVisible = !masterIsFormVisible;
-    renderMasterTable(masterCurrentSheet);
+function openAddModal() {
+  editingRowNumber = null;
+  document.getElementById('rowModalTitle').textContent = '➕ Agregar Vehículo';
+  buildForm({});
+  openModal('rowModal');
 }
 
-function applyMasterFilter(sheetName) {
-    var filterInput = document.getElementById('filterInputMaster');
-    var searchTerm = filterInput.value.toLowerCase().trim();
-    var filterField = filterFields[sheetName] || 'PATENTE';
-    if (!searchTerm) masterFilteredRows = masterAllRows.slice();
-    else masterFilteredRows = masterAllRows.filter(function(row) { return (row[filterField] || '').toString().toLowerCase().indexOf(searchTerm) !== -1; });
-    renderMasterTable(sheetName);
+function editRow(rowNumber) {
+  const row = allRows.find(r => r._row_number === rowNumber);
+  if (!row) return;
+  editingRowNumber = rowNumber;
+  document.getElementById('rowModalTitle').textContent = '✏️ Editar Vehículo';
+  buildForm(row);
+  openModal('rowModal');
 }
 
-function clearMasterFilter() {
-    document.getElementById('filterInputMaster').value = '';
-    masterFilteredRows = masterAllRows.slice();
-    renderMasterTable(masterCurrentSheet);
-}
+async function submitRow() {
+  const values = {};
+  document.querySelectorAll('#rowModalFields [data-field]').forEach(inp => {
+    const field = inp.dataset.field;
+    const col = COLUMNS.find(c => c.name === field);
 
-async function handleAddMasterDocument(e) {
-    e.preventDefault();
-    var form = e.target;
-    var formData = new FormData(form);
-    var sheetName = formData.get('sheet_name');
-    try {
-        var response = await fetch('/api/add', { method: 'POST', body: formData });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Registro agregado correctamente', 'success');
-            form.reset();
-            masterIsFormVisible = false;
-            await loadMasterData(sheetName);
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al enviar el formulario: ' + error.message, 'error');
-    }
-}
-
-function editMasterRow(sheetName, rowNumber) {
-    var row = masterAllRows.find(function(r) { return r._row_number === rowNumber; });
-    if (!row) { showAlert('No se encontró el registro', 'error'); return; }
-
-    editContextModule = 'master';
-    currentEditRow = row;
-    var headersForEdit = masterCurrentHeaders;
-    var photoCols = getPhotoColumns(headersForEdit);
-
-    document.getElementById('editSheetName').value = sheetName;
-    document.getElementById('editRowNumber').value = rowNumber;
-
-    var html = '';
-    var displayCols = getAllColumns(headersForEdit);
-
-    displayCols.forEach(function(header) {
-        if (header === 'Marca Temporal') return;
-        if (photoCols.indexOf(header) !== -1) return;
-
-        var value = row[header] || '';
-        var upper = header.toUpperCase();
-        var isDate = upper.indexOf('FECHA') !== -1 || upper.indexOf('VENCIMIENTO') !== -1 || upper.indexOf('VENC') !== -1;
-        var isTextarea = upper.indexOf('OBSERVACION') !== -1 || upper.indexOf('COMENTARIO') !== -1;
-
-        html += '<div class="form-group">';
-        html += '<label>' + header + '</label>';
-        if (isTextarea) {
-            html += '<textarea id="edit_' + header + '" name="' + header + '" rows="2">' + value + '</textarea>';
-        } else if (isDate) {
-            var dateValue = value;
-            if (value && value.indexOf('/') !== -1) {
-                var parts = value.split('/');
-                if (parts.length === 3) {
-                    var year = parseInt(parts[2]);
-                    if (year < 100) year += 2000;
-                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
-                }
-            }
-            html += '<input type="date" id="edit_' + header + '" name="' + header + '" value="' + dateValue + '">';
-        } else {
-            html += '<input type="text" id="edit_' + header + '" name="' + header + '" value="' + value + '">';
-        }
-        html += '</div>';
-    });
-    document.getElementById('editFormFields').innerHTML = html;
-
-    var photoHtml = generatePhotoFieldsForEdit(headersForEdit, row, true);
-    document.getElementById('editPhotoFields').innerHTML = photoHtml;
-
-    document.getElementById('editModal').style.display = 'block';
-}
-
-function generatePhotoFieldsForEdit(headers, values, isMaster) {
-    values = values || {};
-    isMaster = isMaster || false;
-    var html = '';
-    var photoCols = getPhotoColumns(headers);
-    var dateColsRequiringPhoto = getDateColumnsRequiringPhoto(currentSheet);
-
-    if (photoCols.length === 0) {
-        html += '<p style="color:#999; font-style:italic;">No hay campos de foto configurados para este documento.</p>';
-        return html;
-    }
-
-    html += '<div class="form-group" style="border-top: 2px solid #e0e0e0; padding-top: 15px; margin-top: 15px;">';
-    html += '<h3 style="margin-bottom: 15px;">📸 Fotos de documentos</h3>';
-    html += '<p style="color:#666; font-size:14px; margin-bottom:15px;">Las fotos son obligatorias para los documentos con fecha. Si ya tienes una foto, no es necesario subirla de nuevo.</p>';
-
-    photoCols.forEach(function(col) {
-        var docName = col.replace('_FOTO', '');
-        var photoUrl = values[col] || '';
-        var fileInputId = 'edit_foto_' + docName;
-        var isRequired = dateColsRequiringPhoto.indexOf(docName) !== -1 && !isMaster;
-
-        html += '<div class="photo-upload-group">';
-        html += '<label for="' + fileInputId + '">📷 ' + docName + ':';
-        if (isRequired) {
-            html += ' <span class="photo-required">(OBLIGATORIA)</span>';
-        }
-        html += '</label>';
-
-        if (photoUrl && isPhotoUrl(photoUrl)) {
-            var fileId = photoUrl;
-            if (photoUrl.indexOf('file/d/') !== -1) {
-                var match = photoUrl.match(/file\/d\/([^\/]+)/);
-                if (match) fileId = match[1];
-            }
-            html += '<br><img src="https://drive.google.com/thumbnail?id=' + fileId + '&sz=w100-h100" class="current-photo-thumb" alt="Foto actual">';
-            html += '<br><small style="color:#666;">Foto actual - <a href="' + photoUrl + '" target="_blank">Ver en Drive</a></small>';
-            html += '<br><small style="color:#888;">Si quieres reemplazarla, selecciona una nueva foto.</small>';
-        } else {
-            html += '<br><small style="color:#999;">No hay foto cargada</small>';
-        }
-
-        html += '<br><input type="file" id="' + fileInputId + '" name="' + fileInputId + '" accept="image/*" onchange="previewPhoto(event, \'' + fileInputId + '\')"';
-        if (isRequired && !photoUrl) {
-            html += ' required';
-        }
-        html += '>';
-        html += '<div id="preview_' + fileInputId + '"></div>';
-        html += '</div>';
-    });
-
-    html += '</div>';
-    return html;
-}
-
-async function deleteMasterRow(sheetName, rowNumber) {
-    if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
-    try {
-        var response = await fetch('/api/delete/' + encodeURIComponent(sheetName) + '/' + rowNumber, { method: 'DELETE' });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Registro eliminado correctamente', 'success');
-            await loadMasterData(sheetName);
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al eliminar: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   HISTORIAL DE VENCIMIENTO
-   ============================================================ */
-async function loadHistoryData() {
-    var content = document.getElementById('history-content');
-    content.innerHTML = '<div class="loading">🔄 Cargando historial y detectando vencimientos...</div>';
-    try {
-        var response = await fetch('/api/history');
-        var text = await response.text();
-        if (!text || text.trim() === '') {
-            throw new Error('El servidor devolvió una respuesta vacía.');
-        }
-        var data;
-        try {
-            data = JSON.parse(text);
-        } catch (parseErr) {
-            throw new Error('Respuesta no válida del servidor: ' + text.substring(0, 200));
-        }
-        if (!response.ok) {
-            throw new Error(data.error || 'Error HTTP ' + response.status);
-        }
-        historyHeaders = data.headers || [];
-        historyAllRows = data.rows || [];
-        historyFilteredRows = historyAllRows.slice();
-        if (historyHeaders.length === 0) {
-            content.innerHTML = '<div class="alert alert-error">⚠️ La hoja "Historial de Vencimiento de Documentación" no existe o está vacía.<br>Creala en tu Google Spreadsheet con los encabezados: <b>FECHA | TIPO | DESCRIPCION | FECHA VENCIMIENTO | ESTADO</b></div>';
-            return;
-        }
-        renderHistoryTable();
-    } catch (error) {
-        content.innerHTML = '<div class="alert alert-error">❌ Error al cargar historial: ' + error.message + '</div>';
-    }
-}
-
-function renderHistoryTable() {
-    var content = document.getElementById('history-content');
-
-    var html = '<div class="toolbar">';
-    html += '<div class="filter-group">';
-    html += '<label>🔍 Filtrar:</label>';
-    html += '<input type="text" id="filterInputHistory" placeholder="Buscar por tipo, descripción o estado..." oninput="applyHistoryFilter()">';
-    html += '<button type="button" class="btn-clear" onclick="clearHistoryFilter()">✖ Limpiar</button>';
-    html += '</div>';
-    html += '<span class="record-count">📊 Total: ' + historyFilteredRows.length + ' registros</span>';
-    html += '</div>';
-
-    html += '<div class="table-wrapper"><div class="table-container"><table>';
-    html += '<thead><tr>';
-    historyHeaders.forEach(function(col) {
-        if (col !== '_row_number') html += '<th>' + col + '</th>';
-    });
-    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
-
-    if (historyFilteredRows.length === 0) {
-        var colSpan = historyHeaders.filter(function(h) { return h !== '_row_number'; }).length + 1;
-        html += '<tr><td colspan="' + colSpan + '" style="text-align: center; padding: 20px;">📭 No hay registros en el historial</td></tr>';
+    if (col && col.type === 'date') {
+      // date input value = "YYYY-MM-DD" -> guardamos como "DD/MM/YYYY" (formato del Sheet)
+      values[field] = inp.value ? formatDate(new Date(inp.value + 'T00:00:00')) : '';
     } else {
-        historyFilteredRows.forEach(function(row) {
-            html += '<tr>';
-            historyHeaders.forEach(function(col) {
-                if (col === '_row_number') return;
-                var value = row[col] || '';
-
-                if (col === 'FECHA' || col === 'FECHA VENCIMIENTO') {
-                    var cellClass = '';
-                    if (col === 'FECHA VENCIMIENTO' && value) {
-                        var dateStatus = getDateStatus(value);
-                        if (dateStatus.class) cellClass = ' class="' + dateStatus.class + '"';
-                    }
-                    html += '<td' + cellClass + '>' + value + '</td>';
-                } else if (col === 'ESTADO') {
-                    var estado = value || 'En Proceso';
-                    var estadoClass = estado.toLowerCase().replace(/\s/g, '-');
-                    html += '<td><select class="status-select ' + estadoClass + '" onchange="updateHistoryStatus(' + row._row_number + ', this.value)">';
-                    html += '<option value="En Proceso" ' + (estado === 'En Proceso' ? 'selected' : '') + '>En Proceso</option>';
-                    html += '<option value="Completo" ' + (estado === 'Completo' ? 'selected' : '') + '>Completo</option>';
-                    html += '<option value="Vencido" ' + (estado === 'Vencido' ? 'selected' : '') + '>Vencido</option>';
-                    html += '<option value="Notificado" ' + (estado === 'Notificado' ? 'selected' : '') + '>Notificado</option>';
-                    html += '</select></td>';
-                } else {
-                    html += '<td>' + value + '</td>';
-                }
-            });
-
-            html += '<td><button type="button" class="btn btn-danger btn-sm" onclick="deleteHistoryRow(' + row._row_number + ')">🗑️ Eliminar</button></td>';
-            html += '</tr>';
-        });
+      values[field] = inp.value;
     }
+  });
 
-    html += '</tbody></table></div></div>';
-    content.innerHTML = html;
-}
+  // Validar PK
+  if (!String(values[PRIMARY_KEY] || '').trim()) {
+    showAlert(`El campo ${PRIMARY_KEY} es obligatorio`, 'error');
+    return;
+  }
 
-function applyHistoryFilter() {
-    var filterInput = document.getElementById('filterInputHistory');
-    var searchTerm = filterInput.value.toLowerCase().trim();
-    if (!searchTerm) {
-        historyFilteredRows = historyAllRows.slice();
+  try {
+    let res;
+    if (editingRowNumber === null) {
+      res = await fetch('/api/rows', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ values })
+      });
     } else {
-        historyFilteredRows = historyAllRows.filter(function(row) {
-            var tipo = (row['TIPO'] || '').toLowerCase();
-            var desc = (row['DESCRIPCION'] || '').toLowerCase();
-            var estado = (row['ESTADO'] || '').toLowerCase();
-            return tipo.indexOf(searchTerm) !== -1 || desc.indexOf(searchTerm) !== -1 || estado.indexOf(searchTerm) !== -1;
-        });
+      res = await fetch('/api/rows/' + editingRowNumber, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ values })
+      });
     }
-    renderHistoryTable();
-}
-
-function clearHistoryFilter() {
-    document.getElementById('filterInputHistory').value = '';
-    historyFilteredRows = historyAllRows.slice();
-    renderHistoryTable();
-}
-
-async function updateHistoryStatus(rowNumber, newStatus) {
-    try {
-        var response = await fetch('/api/history/update_status/' + rowNumber, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ estado: newStatus })
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Estado actualizado correctamente', 'success');
-            var row = historyAllRows.find(function(r) { return r._row_number === rowNumber; });
-            if (row) row['ESTADO'] = newStatus;
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al actualizar estado: ' + error.message, 'error');
-    }
-}
-
-async function deleteHistoryRow(rowNumber) {
-    if (!confirm('¿Estás seguro de que deseas eliminar este registro del historial?')) return;
-    try {
-        var response = await fetch('/api/history/delete/' + rowNumber, { method: 'DELETE' });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Registro eliminado correctamente', 'success');
-            await loadHistoryData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al eliminar: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   MANTENIMIENTOS
-   ============================================================ */
-async function loadMantenimientosData() {
-    var content = document.getElementById('mantenimientos-content');
-    content.innerHTML = '<div class="loading">🔄 Cargando datos...</div>';
-    try {
-        var response = await fetch('/api/mantenimientos/config');
-        var text = await response.text();
-        if (!text || text.trim() === '') {
-            throw new Error('El servidor devolvió una respuesta vacía (HTTP ' + response.status + ').');
-        }
-        var data;
-        try {
-            data = JSON.parse(text);
-        } catch (parseErr) {
-            throw new Error('Respuesta no válida del servidor: ' + text.substring(0, 300));
-        }
-        if (!response.ok) {
-            throw new Error(data.error || 'Error HTTP ' + response.status);
-        }
-        if (data.success) {
-            mpHeaders = data.historial_headers || [];
-            mpRows = data.historial_rows || [];
-            mpFilteredRows = mpRows.slice();
-            mpDropdowns = parseDropdowns(data.dropdowns);
-            mpConfigMP = parseConfigMP(data.config_mp);
-            mpConfigLoaded = true;
-
-            progHeaders = data.programacion_headers || [];
-            progRows = data.programacion_rows || [];
-            progFilteredRows = progRows.slice();
-            patentesCamionT2 = data.patentes_camion_t2 || [];
-            odometroPorPatente = data.odometro_por_patente || {};
-
-            renderMantenimientosView();
-        } else {
-            content.innerHTML = '<div class="alert alert-error">❌ Error: ' + (data.error || 'Error desconocido') + '</div>';
-        }
-    } catch (error) {
-        console.error('Error en loadMantenimientosData:', error);
-        content.innerHTML = '<div class="alert alert-error">❌ Error al cargar datos: ' + error.message + '</div>';
-    }
-}
-
-/* Recarga datos SIN re-renderizar (para casos donde queremos preservar el estado del form) */
-async function reloadMantenimientosDataSinRender() {
-    try {
-        var response = await fetch('/api/mantenimientos/config');
-        var text = await response.text();
-        if (!text || text.trim() === '') return false;
-        var data;
-        try {
-            data = JSON.parse(text);
-        } catch (parseErr) {
-            console.error('Respuesta no válida:', text.substring(0, 300));
-            return false;
-        }
-        if (data.success) {
-            mpHeaders = data.historial_headers || [];
-            mpRows = data.historial_rows || [];
-            mpFilteredRows = mpRows.slice();
-            mpDropdowns = parseDropdowns(data.dropdowns);
-            mpConfigMP = parseConfigMP(data.config_mp);
-            mpConfigLoaded = true;
-
-            progHeaders = data.programacion_headers || [];
-            progRows = data.programacion_rows || [];
-            progFilteredRows = progRows.slice();
-            patentesCamionT2 = data.patentes_camion_t2 || [];
-            odometroPorPatente = data.odometro_por_patente || {};
-            return true;
-        }
-        return false;
-    } catch (error) {
-        console.error('Error recargando datos:', error);
-        return false;
-    }
-}
-
-function parseDropdowns(dropdownData) {
-    var result = {};
-    if (!dropdownData || !dropdownData.headers || dropdownData.headers.length === 0) return result;
-
-    var headers = dropdownData.headers || [];
-    var rowsRaw = dropdownData.rows || [];
-
-    headers.forEach(function(fieldName) {
-        var options = [];
-        rowsRaw.forEach(function(rowObj) {
-            var val = rowObj[fieldName];
-            if (val && String(val).trim() !== '') options.push(String(val).trim());
-        });
-        if (options.length > 0) {
-            result[fieldName] = options;
-        }
-    });
-
-    return result;
-}
-
-function parseConfigMP(configData) {
-    var result = [];
-    if (!configData || !configData.rows || configData.rows.length === 0) return result;
-
-    configData.rows.forEach(function(row) {
-        result.push({
-            'TIPO MANTENIMIENTO': row['TIPO MANTENIMIENTO'] || '',
-            'TIPO REPARACIÓN': row['TIPO REPARACIÓN'] || '',
-            'POLITICA': row['POLITICA'] || ''
-        });
-    });
-    return result;
-}
-
-function renderMantenimientosView() {
-    var content = document.getElementById('mantenimientos-content');
-    if (mpCurrentView === 'historial') {
-        renderMantenimientosHistorial(content);
-    } else if (mpCurrentView === 'programacion') {
-        renderProgramacion(content);
+    const data = await res.json();
+    if (data.success) {
+      showAlert(editingRowNumber === null ? '✅ Vehículo agregado' : '✅ Vehículo actualizado');
+      closeModal('rowModal');
+      await loadRows();
     } else {
-        renderMantenimientosConfig(content);
+      showAlert('❌ ' + data.error, 'error');
     }
+  } catch (e) {
+    showAlert('Error: ' + e.message, 'error');
+  }
 }
 
-function renderMantenimientosHistorial(content) {
-    var displayColumns = mpHeaders.filter(function(h) { return h !== '_row_number'; });
-
-    var html = '<div class="toolbar">';
-    html += '<button type="button" class="btn btn-add" onclick="toggleMantenimientoForm()">' + (mpIsFormVisible ? '❌ Ocultar Formulario' : '➕ Cargar Mantenimiento') + '</button>';
-    html += '<div class="filter-group">';
-    html += '<label>🔍 Filtrar por PATENTE:</label>';
-    html += '<input type="text" id="filterInputMP" placeholder="Buscar..." oninput="applyMantenimientoFilter()">';
-    html += '<button type="button" class="btn-clear" onclick="clearMantenimientoFilter()">✖ Limpiar</button>';
-    html += '</div>';
-    html += '<span class="record-count">📊 Total: ' + mpFilteredRows.length + ' registros</span>';
-    html += '</div>';
-
-    if (mpIsFormVisible) {
-        html += '<div class="form-section visible" id="addMantenimientoSection">';
-        html += '<h3>🔧 Cargar nuevo mantenimiento</h3>';
-        html += '<form id="addMantenimientoForm">';
-        html += '<div class="form-row" id="addMantenimientoFields">' + generateMantenimientoFormFields({}, false) + '</div>';
-        html += '<button type="submit" class="btn">➕ Cargar Mantenimiento</button>';
-        html += '<button type="button" class="btn btn-cancel" onclick="toggleMantenimientoForm()">Cancelar</button>';
-        html += '</form>';
-        html += '</div>';
-    }
-
-    html += '<div class="table-wrapper"><div class="table-container"><table>';
-    html += '<thead><tr>';
-    displayColumns.forEach(function(col) { html += '<th>' + col + '</th>'; });
-    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
-
-    if (mpFilteredRows.length === 0) {
-        html += '<tr><td colspan="' + (displayColumns.length + 1) + '" style="text-align: center; padding: 20px;">📭 No hay registros de mantenimiento</td></tr>';
+async function deleteRow(rowNumber) {
+  const row = allRows.find(r => r._row_number === rowNumber);
+  const label = row ? row[PRIMARY_KEY] : '';
+  if (!confirm(`¿Eliminar el vehículo "${label}"?`)) return;
+  try {
+    const res = await fetch('/api/rows/' + rowNumber, { method:'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      showAlert('✅ Vehículo eliminado');
+      await loadRows();
     } else {
-        mpFilteredRows.forEach(function(row) {
-            html += '<tr>';
-            displayColumns.forEach(function(col) {
-                html += '<td>' + (row[col] || '') + '</td>';
-            });
-            html += '<td><div class="actions">';
-            html += '<button type="button" class="btn btn-success btn-sm" onclick="editMantenimiento(' + row._row_number + ')">✏️ Editar</button>';
-            html += '<button type="button" class="btn btn-danger btn-sm" onclick="deleteMantenimiento(' + row._row_number + ')">🗑️ Eliminar</button>';
-            html += '</div></td>';
-            html += '</tr>';
-        });
+      showAlert('❌ ' + data.error, 'error');
     }
-
-    html += '</tbody></table></div></div>';
-    content.innerHTML = html;
-
-    var form = document.getElementById('addMantenimientoForm');
-    if (form) form.addEventListener('submit', handleAddMantenimiento);
+  } catch (e) {
+    showAlert('Error: ' + e.message, 'error');
+  }
 }
 
-function generateMantenimientoFormFields(values, isEdit) {
-    values = values || {};
-    isEdit = isEdit || false;
-    var html = '';
-    var displayCols = mpHeaders.filter(function(h) { return h !== '_row_number'; });
-    var prefix = isEdit ? 'edit_mp_' : 'mp_';
-
-    displayCols.forEach(function(header) {
-        var value = values[header] || '';
-        var isDropdown = MP_DROPDOWN_COLUMNS.indexOf(header) !== -1;
-        var upper = header.toUpperCase();
-        var isDate = upper.indexOf('FECHA') !== -1;
-        var isTextarea = upper.indexOf('DETALLE') !== -1;
-        var isNumber = upper.indexOf('KM') !== -1 || upper.indexOf('GASTO') !== -1;
-
-        html += '<div class="form-group">';
-        html += '<label>' + header + '</label>';
-
-        if (isDropdown && mpDropdowns[header] && mpDropdowns[header].length > 0) {
-            html += '<select id="' + prefix + header + '" name="' + header + '" onchange="recalcularKmProximo(\'' + (isEdit ? 'edit' : 'add') + '\')">';
-            html += '<option value="">-- Seleccionar --</option>';
-            mpDropdowns[header].forEach(function(opt) {
-                var selected = (value === opt) ? ' selected' : '';
-                html += '<option value="' + opt + '"' + selected + '>' + opt + '</option>';
-            });
-            html += '</select>';
-        } else if (isDropdown) {
-            html += '<select id="' + prefix + header + '" name="' + header + '" onchange="recalcularKmProximo(\'' + (isEdit ? 'edit' : 'add') + '\')">';
-            html += '<option value="">-- Sin opciones configuradas --</option>';
-            if (value) html += '<option value="' + value + '" selected>' + value + '</option>';
-            html += '</select>';
-            html += '<small style="color:#e53e3e;">⚠️ Configura las opciones en la pestaña Configuración</small>';
-        } else if (isDate) {
-            var dateValue = value;
-            if (value && value.indexOf('/') !== -1) {
-                var parts = value.split('/');
-                if (parts.length === 3) {
-                    var year = parseInt(parts[2]);
-                    if (year < 100) year += 2000;
-                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
-                }
-            }
-            html += '<input type="date" id="' + prefix + header + '" name="' + header + '" value="' + dateValue + '">';
-        } else if (isTextarea) {
-            html += '<textarea id="' + prefix + header + '" name="' + header + '" rows="2">' + value + '</textarea>';
-        } else if (isNumber) {
-            html += '<input type="number" step="0.01" id="' + prefix + header + '" name="' + header + '" value="' + value + '" oninput="recalcularKmProximo(\'' + (isEdit ? 'edit' : 'add') + '\')">';
-        } else {
-            html += '<input type="text" id="' + prefix + header + '" name="' + header + '" value="' + value + '">';
-        }
-        html += '</div>';
-    });
-    return html;
-}
-
-function recalcularKmProximo(mode) {
-    var prefix = mode === 'edit' ? 'edit_mp_' : 'mp_';
-    var kmRealizadoInput = document.getElementById(prefix + 'KM REALIZADO');
-    var kmProximoInput = document.getElementById(prefix + 'KM PROXIMO CAMBIO');
-    var tipoMantSelect = document.getElementById(prefix + 'TIPO MANTENIMIENTO');
-    var tipoRepSelect = document.getElementById(prefix + 'TIPO REPARACIÓN');
-
-    if (!kmRealizadoInput || !kmProximoInput) return;
-
-    var kmRealizado = parseFloat(kmRealizadoInput.value) || 0;
-    var tipoMant = tipoMantSelect ? tipoMantSelect.value : '';
-    var tipoRep = tipoRepSelect ? tipoRepSelect.value : '';
-
-    var politica = 0;
-    if (tipoMant && tipoRep) {
-        var config = mpConfigMP.find(function(c) {
-            return c['TIPO MANTENIMIENTO'] === tipoMant && c['TIPO REPARACIÓN'] === tipoRep;
-        });
-        if (config) {
-            politica = parseFloat(config['POLITICA']) || 0;
-        }
-    }
-
-    if (politica > 0 && kmRealizado > 0) {
-        kmProximoInput.value = kmRealizado + politica;
-    }
-}
-
-function toggleMantenimientoForm() {
-    mpIsFormVisible = !mpIsFormVisible;
-    renderMantenimientosView();
-}
-
-function applyMantenimientoFilter() {
-    var filterInput = document.getElementById('filterInputMP');
-    var searchTerm = filterInput.value.toLowerCase().trim();
-    if (!searchTerm) mpFilteredRows = mpRows.slice();
-    else mpFilteredRows = mpRows.filter(function(row) { return (row['PATENTE'] || '').toString().toLowerCase().indexOf(searchTerm) !== -1; });
-    renderMantenimientosHistorial(document.getElementById('mantenimientos-content'));
-}
-
-function clearMantenimientoFilter() {
-    document.getElementById('filterInputMP').value = '';
-    mpFilteredRows = mpRows.slice();
-    renderMantenimientosHistorial(document.getElementById('mantenimientos-content'));
-}
-
-async function handleAddMantenimiento(e) {
-    e.preventDefault();
-    var form = e.target;
-    var formData = new FormData(form);
-    var data = {};
-    for (var pair of formData.entries()) {
-        data[pair[0]] = pair[1];
-    }
-
-    try {
-        var response = await fetch('/api/mantenimientos/add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Mantenimiento cargado correctamente', 'success');
-            form.reset();
-            mpIsFormVisible = false;
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-function editMantenimiento(rowNumber) {
-    var row = mpRows.find(function(r) { return r._row_number === rowNumber; });
-    if (!row) { showAlert('No se encontró el registro', 'error'); return; }
-
-    document.getElementById('editMantenimientoRowNumber').value = rowNumber;
-    document.getElementById('editMantenimientoFields').innerHTML = generateMantenimientoFormFields(row, true);
-
-    setTimeout(function() { recalcularKmProximo('edit'); }, 100);
-
-    document.getElementById('editMantenimientoModal').style.display = 'block';
-}
-
-function closeEditMantenimientoModal() {
-    document.getElementById('editMantenimientoModal').style.display = 'none';
-}
-
-async function submitEditMantenimiento(e) {
-    e.preventDefault();
-    var rowNumber = parseInt(document.getElementById('editMantenimientoRowNumber').value);
-    var formData = new FormData(e.target);
-    var data = {};
-    for (var pair of formData.entries()) {
-        data[pair[0]] = pair[1];
-    }
-
-    try {
-        var response = await fetch('/api/mantenimientos/update/' + rowNumber, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Mantenimiento actualizado correctamente', 'success');
-            closeEditMantenimientoModal();
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-async function deleteMantenimiento(rowNumber) {
-    if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
-    try {
-        var response = await fetch('/api/mantenimientos/delete/' + rowNumber, { method: 'DELETE' });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Mantenimiento eliminado correctamente', 'success');
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al eliminar: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   PROGRAMACIÓN MANTENIMIENTO PREVENTIVO
-   ============================================================ */
-function getOdometroActual(patente) {
-    if (!patente) return null;
-    var v = odometroPorPatente[patente];
-    if (v === undefined || v === null || v === '') return null;
-    var n = parseFloat(String(v).replace(/[^\d.-]/g, ''));
-    return isNaN(n) ? null : n;
-}
-
-function getProximoKmClass(row) {
-    var patente = (row['PATENTE'] || '').trim();
-    var proximoKmStr = (row['PROXIMO MANTENIMIENTO KM'] || '').trim();
-    if (!patente || !proximoKmStr) return '';
-    var odom = getOdometroActual(patente);
-    var proxKm = parseFloat(proximoKmStr);
-    if (odom === null || isNaN(proxKm)) return '';
-    return odom >= proxKm ? 'cell-danger' : 'cell-ok';
-}
-
-function getProximoFechaClass(row) {
-    var fechaStr = (row['PROXIMO MANTENIMIENTO FECHA'] || '').trim();
-    if (!fechaStr) return '';
-    var fecha = parseDate(fechaStr);
-    if (!fecha) return '';
-    var hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    fecha.setHours(0, 0, 0, 0);
-    return hoy >= fecha ? 'cell-danger' : 'cell-ok';
-}
-
-function renderProgramacion(content) {
-    var displayColumns = progHeaders.filter(function(h) { return h !== '_row_number'; });
-
-    var html = '<div class="toolbar">';
-    html += '<button type="button" class="btn btn-add" onclick="toggleProgramacionForm()">' + (progIsFormVisible ? '❌ Ocultar Formulario' : '➕ Agregar Programación') + '</button>';
-    html += '<div class="filter-group">';
-    html += '<label>🔍 Filtrar por PATENTE:</label>';
-    html += '<input type="text" id="filterInputProg" placeholder="Buscar..." oninput="applyProgramacionFilter()">';
-    html += '<button type="button" class="btn-clear" onclick="clearProgramacionFilter()">✖ Limpiar</button>';
-    html += '</div>';
-    html += '<span class="record-count">📊 Total: ' + progFilteredRows.length + ' registros</span>';
-    html += '</div>';
-
-    if (progIsFormVisible) {
-        html += '<div class="form-section visible" id="addProgramacionSection">';
-        html += '<h3>📅 Agregar programación de mantenimiento preventivo</h3>';
-        html += '<form id="addProgramacionForm">';
-        html += '<div class="form-row" id="addProgramacionFields">' + generateProgramacionFormFields({}, false, progPatentePrecargada) + '</div>';
-        html += '<button type="submit" class="btn">➕ Agregar Programación</button>';
-        html += '<button type="button" class="btn btn-cancel" onclick="toggleProgramacionForm()">Cancelar</button>';
-        html += '</form>';
-        html += '</div>';
-    }
-
-    html += '<div class="table-wrapper"><div class="table-container"><table>';
-    html += '<thead><tr>';
-    displayColumns.forEach(function(col) { html += '<th>' + col + '</th>'; });
-    html += '<th>⚙️ Acciones</th></tr></thead><tbody>';
-
-    if (progFilteredRows.length === 0) {
-        html += '<tr><td colspan="' + (displayColumns.length + 1) + '" style="text-align: center; padding: 20px;">📭 No hay programaciones cargadas</td></tr>';
-    } else {
-        progFilteredRows.forEach(function(row) {
-            html += '<tr>';
-            displayColumns.forEach(function(col) {
-                var val = row[col] || '';
-                var cellClass = '';
-                if (col === 'PROXIMO MANTENIMIENTO KM') {
-                    cellClass = getProximoKmClass(row);
-                } else if (col === 'PROXIMO MANTENIMIENTO FECHA') {
-                    cellClass = getProximoFechaClass(row);
-                } else if (col === 'Estado') {
-                    var est = (val || 'En Proceso').toLowerCase().replace(/\s/g, '-');
-                    html += '<td><span class="estado-' + est + '">' + (val || 'En Proceso') + '</span></td>';
-                    return;
-                }
-                if (cellClass) {
-                    html += '<td class="' + cellClass + '">' + val + '</td>';
-                } else {
-                    html += '<td>' + val + '</td>';
-                }
-            });
-            html += '<td><div class="actions">';
-            html += '<button type="button" class="btn btn-complete btn-sm" onclick="openTareaCompleta(' + row._row_number + ')">✅ Tarea Completa</button>';
-            html += '<button type="button" class="btn btn-success btn-sm" onclick="editProgramacion(' + row._row_number + ')">✏️ Editar</button>';
-            html += '<button type="button" class="btn btn-danger btn-sm" onclick="deleteProgramacion(' + row._row_number + ')">🗑️ Eliminar</button>';
-            html += '</div></td>';
-            html += '</tr>';
-        });
-    }
-
-    html += '</tbody></table></div></div>';
-    content.innerHTML = html;
-
-    var form = document.getElementById('addProgramacionForm');
-    if (form) form.addEventListener('submit', handleAddProgramacion);
-}
-
-function generateProgramacionFormFields(values, isEdit, patentePrecargada) {
-    values = values || {};
-    isEdit = isEdit || false;
-    patentePrecargada = patentePrecargada || null;
-    var html = '';
-    var displayCols = progHeaders.filter(function(h) {
-        return h !== '_row_number' && h !== 'Marca Temporal' && h !== 'PROXIMO MANTENIMIENTO FECHA' && h !== 'PROXIMO MANTENIMIENTO KM' && h !== 'Estado';
-    });
-    var prefix = isEdit ? 'edit_prog_' : 'prog_';
-
-    displayCols.forEach(function(header) {
-        var value = values[header] || '';
-        var isDropdown = PROG_DROPDOWN_COLUMNS.indexOf(header) !== -1;
-        var upper = header.toUpperCase();
-        var isDate = upper.indexOf('FECHA') !== -1;
-        var isTextarea = upper.indexOf('DETALLE') !== -1;
-        var isNumber = upper.indexOf('KM') !== -1;
-
-        html += '<div class="form-group">';
-        html += '<label>' + header + '</label>';
-
-        if (header === 'PATENTE') {
-            html += '<select id="' + prefix + header + '" name="' + header + '" onchange="autocompletarKmDesdeOdometro(\'' + (isEdit ? 'edit' : 'add') + '\')">';
-            html += '<option value="">-- Seleccionar --</option>';
-            patentesCamionT2.forEach(function(opt) {
-                var selected = '';
-                if (value === opt) selected = ' selected';
-                else if (!value && patentePrecargada && patentePrecargada === opt) selected = ' selected';
-                html += '<option value="' + opt + '"' + selected + '>' + opt + '</option>';
-            });
-            html += '</select>';
-        } else if (header === 'TIPO MANTENIMIENTO') {
-            html += '<select id="' + prefix + header + '" name="' + header + '">';
-            html += '<option value="PREVENTIVO" selected>PREVENTIVO</option>';
-            html += '</select>';
-        } else if (header === 'TIPO REPARACIÓN') {
-            var tiposReparacion = [];
-            mpConfigMP.forEach(function(c) {
-                var tr = (c['TIPO REPARACIÓN'] || '').trim();
-                if (tr && tiposReparacion.indexOf(tr) === -1) tiposReparacion.push(tr);
-            });
-            tiposReparacion.sort();
-            html += '<select id="' + prefix + header + '" name="' + header + '" onchange="calcularProximoKm(\'' + (isEdit ? 'edit' : 'add') + '\')">';
-            html += '<option value="">-- Seleccionar --</option>';
-            tiposReparacion.forEach(function(opt) {
-                var selected = (value === opt) ? ' selected' : '';
-                html += '<option value="' + opt + '"' + selected + '>' + opt + '</option>';
-            });
-            html += '</select>';
-            if (tiposReparacion.length === 0) {
-                html += '<small style="color:#e53e3e;">⚠️ Configura TIPO REPARACIÓN en la pestaña Configuración → Configuración MP</small>';
-            }
-        } else if (isDropdown && mpDropdowns[header] && mpDropdowns[header].length > 0) {
-            html += '<select id="' + prefix + header + '" name="' + header + '">';
-            html += '<option value="">-- Seleccionar --</option>';
-            mpDropdowns[header].forEach(function(opt) {
-                var selected = (value === opt) ? ' selected' : '';
-                html += '<option value="' + opt + '"' + selected + '>' + opt + '</option>';
-            });
-            html += '</select>';
-        } else if (header === 'FECHA ULTIMO MANTENIMIENTO') {
-            var dateValue = value;
-            if (value && value.indexOf('/') !== -1) {
-                var parts = value.split('/');
-                if (parts.length === 3) {
-                    var year = parseInt(parts[2]);
-                    if (year < 100) year += 2000;
-                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
-                }
-            }
-            html += '<input type="date" id="' + prefix + header + '" name="' + header + '" value="' + dateValue + '" onchange="calcularProximoMantenimiento(\'' + (isEdit ? 'edit' : 'add') + '\')">';
-            html += '<small style="color:#666; display:block; margin-top:5px;" id="' + prefix + 'proximo_label">📅 Próximo mantenimiento: se calcula 1 año después</small>';
-        } else if (header === 'KM ULTIMO MANTENIMIENTO') {
-            html += '<input type="text" id="' + prefix + header + '" name="' + header + '" value="' + value + '" readonly style="background:#f0f0f0; cursor:not-allowed;">';
-            html += '<small style="color:#666;">Se completa automáticamente desde la columna ODOMETRO de Camion T2 al seleccionar la patente</small>';
-        } else if (isTextarea) {
-            html += '<textarea id="' + prefix + header + '" name="' + header + '" rows="3">' + value + '</textarea>';
-        } else if (isNumber) {
-            html += '<input type="number" step="1" id="' + prefix + header + '" name="' + header + '" value="' + value + '">';
-        } else {
-            html += '<input type="text" id="' + prefix + header + '" name="' + header + '" value="' + value + '">';
-        }
-        html += '</div>';
-    });
-    return html;
-}
-
-function autocompletarKmDesdeOdometro(mode) {
-    var prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
-    var patenteSelect = document.getElementById(prefix + 'PATENTE');
-    var kmInput = document.getElementById(prefix + 'KM ULTIMO MANTENIMIENTO');
-
-    if (!patenteSelect || !kmInput) return;
-
-    var patente = patenteSelect.value;
-    if (patente && odometroPorPatente[patente]) {
-        kmInput.value = odometroPorPatente[patente];
-    } else {
-        kmInput.value = '';
-    }
-
-    calcularProximoKm(mode);
-}
-
-function calcularProximoMantenimiento(mode) {
-    var prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
-    var fechaInput = document.getElementById(prefix + 'FECHA ULTIMO MANTENIMIENTO');
-    var label = document.getElementById(prefix + 'proximo_label');
-
-    if (!fechaInput || !label) return;
-
-    var fechaVal = fechaInput.value;
-    if (!fechaVal) {
-        label.textContent = '📅 Próximo mantenimiento: se calcula 1 año después';
-        return;
-    }
-
-    var parts = fechaVal.split('-');
-    if (parts.length !== 3) return;
-
-    var year = parseInt(parts[0]);
-    var month = parseInt(parts[1]);
-    var day = parseInt(parts[2]);
-
-    year += 1;
-    var proximoStr = String(day).padStart(2, '0') + '/' + String(month).padStart(2, '0') + '/' + year;
-
-    label.textContent = '📅 Próximo mantenimiento: ' + proximoStr;
-}
-
-function calcularProximoKm(mode) {
-    var prefix = mode === 'edit' ? 'edit_prog_' : 'prog_';
-    var kmUltimoInput = document.getElementById(prefix + 'KM ULTIMO MANTENIMIENTO');
-    var tipoRepSelect = document.getElementById(prefix + 'TIPO REPARACIÓN');
-
-    if (!kmUltimoInput || !tipoRepSelect) return;
-
-    var kmUltimo = parseFloat(kmUltimoInput.value) || 0;
-    var tipoRep = (tipoRepSelect.value || '').trim();
-
-    var politica = 0;
-    if (tipoRep) {
-        var config = mpConfigMP.find(function(c) { return (c['TIPO REPARACIÓN'] || '').trim() === tipoRep; });
-        if (config) {
-            politica = parseFloat(config['POLITICA']) || 0;
-        }
-    }
-
-    var grupo = kmUltimoInput.closest('.form-group');
-    var infoLabel = grupo ? grupo.querySelector('.proximo-km-info') : null;
-    if (!infoLabel && grupo) {
-        infoLabel = document.createElement('small');
-        infoLabel.className = 'proximo-km-info';
-        infoLabel.style.color = '#666';
-        infoLabel.style.display = 'block';
-        infoLabel.style.marginTop = '5px';
-        grupo.appendChild(infoLabel);
-    }
-    if (infoLabel) {
-        if (politica > 0 && kmUltimo > 0) {
-            infoLabel.textContent = '📊 Próximo KM: ' + (kmUltimo + politica) + ' (KM Último ' + kmUltimo + ' + Política ' + politica + ')';
-        } else if (kmUltimo > 0) {
-            infoLabel.textContent = '📊 Próximo KM: ' + kmUltimo + ' (sin política configurada para "' + tipoRep + '")';
-        } else {
-            infoLabel.textContent = '';
-        }
-    }
-}
-
-function toggleProgramacionForm() {
-    progIsFormVisible = !progIsFormVisible;
-    if (!progIsFormVisible) {
-        progPatentePrecargada = null;
-    }
-    renderMantenimientosView();
-}
-
-function applyProgramacionFilter() {
-    var filterInput = document.getElementById('filterInputProg');
-    var searchTerm = filterInput.value.toLowerCase().trim();
-    if (!searchTerm) progFilteredRows = progRows.slice();
-    else progFilteredRows = progRows.filter(function(row) { return (row['PATENTE'] || '').toString().toLowerCase().indexOf(searchTerm) !== -1; });
-    renderProgramacion(document.getElementById('mantenimientos-content'));
-}
-
-function clearProgramacionFilter() {
-    document.getElementById('filterInputProg').value = '';
-    progFilteredRows = progRows.slice();
-    renderProgramacion(document.getElementById('mantenimientos-content'));
-}
-
-async function handleAddProgramacion(e) {
-    e.preventDefault();
-    var form = e.target;
-    var formData = new FormData(form);
-    var data = {};
-    for (var pair of formData.entries()) {
-        data[pair[0]] = pair[1];
-    }
-
-    try {
-        var response = await fetch('/api/programacion/add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Programación agregada correctamente', 'success');
-            form.reset();
-            progIsFormVisible = false;
-            progPatentePrecargada = null;
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-function editProgramacion(rowNumber) {
-    var row = progRows.find(function(r) { return r._row_number === rowNumber; });
-    if (!row) { showAlert('No se encontró el registro', 'error'); return; }
-
-    document.getElementById('editProgramacionRowNumber').value = rowNumber;
-    document.getElementById('editProgramacionFields').innerHTML = generateProgramacionFormFields(row, true);
-
-    setTimeout(function() {
-        calcularProximoMantenimiento('edit');
-        calcularProximoKm('edit');
-    }, 100);
-
-    document.getElementById('editProgramacionModal').style.display = 'block';
-}
-
-function closeEditProgramacionModal() {
-    document.getElementById('editProgramacionModal').style.display = 'none';
-}
-
-async function submitEditProgramacion(e) {
-    e.preventDefault();
-    var rowNumber = parseInt(document.getElementById('editProgramacionRowNumber').value);
-    var formData = new FormData(e.target);
-    var data = {};
-    for (var pair of formData.entries()) {
-        data[pair[0]] = pair[1];
-    }
-
-    try {
-        var response = await fetch('/api/programacion/update/' + rowNumber, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Programación actualizada correctamente', 'success');
-            closeEditProgramacionModal();
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-async function deleteProgramacion(rowNumber) {
-    if (!confirm('¿Estás seguro de que deseas eliminar este registro?')) return;
-    try {
-        var response = await fetch('/api/programacion/delete/' + rowNumber, { method: 'DELETE' });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Programación eliminada correctamente', 'success');
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al eliminar: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   TAREA COMPLETA (con carga de gastos + registro en historial)
-   ============================================================ */
-function openTareaCompleta(rowNumber) {
-    var row = progRows.find(function(r) { return r._row_number === rowNumber; });
-    if (!row) { showAlert('No se encontró el registro', 'error'); return; }
-    progRowSeleccionadaParaCompletar = row;
-
-    document.getElementById('tareaCompletaMsg').textContent =
-        '¿Estás seguro de marcar como COMPLETO el mantenimiento de la patente ' + (row['PATENTE'] || '') + '? Elegí si querés volver a programar otro mantenimiento.';
-    document.getElementById('tareaCompletaGastoPesos').value = row['GASTO en PESOS'] || '';
-    document.getElementById('tareaCompletaGastoUsd').value = row['GASTO en USD'] || '';
-    document.getElementById('tareaCompletaModal').style.display = 'block';
-}
-
-function closeTareaCompletaModal() {
-    document.getElementById('tareaCompletaModal').style.display = 'none';
-    progRowSeleccionadaParaCompletar = null;
-}
-
-function obtenerGastosTareaCompleta() {
-    var gastoPesos = document.getElementById('tareaCompletaGastoPesos').value.trim();
-    var gastoUsd = document.getElementById('tareaCompletaGastoUsd').value.trim();
-    return { gasto_pesos: gastoPesos, gasto_usd: gastoUsd };
-}
-
-async function confirmarTareaCompletaProgramar() {
-    if (!progRowSeleccionadaParaCompletar) return;
-    var row = progRowSeleccionadaParaCompletar;
-    var gastos = obtenerGastosTareaCompleta();
-
-    try {
-        var response = await fetch('/api/programacion/completar/' + row._row_number, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                gasto_pesos: gastos.gasto_pesos,
-                gasto_usd: gastos.gasto_usd,
-                volver_a_programar: true
-            })
-        });
-        var result = await response.json();
-        if (!result.success) {
-            showAlert('❌ Error al completar: ' + result.error, 'error');
-            return;
-        }
-        var msg = '✅ Tarea marcada como Completo, guardada en Historial y nuevo mantenimiento programado para ' + (row['PATENTE'] || '') + '.';
-        if (result.historial_ok === false) {
-            msg = '⚠️ Se marcó como completo y se programó, pero falló el guardado en el Historial.';
-        }
-        if (result.nueva_programacion_ok === false) {
-            msg = '⚠️ Se marcó como completo y se guardó en Historial, pero falló la nueva programación.';
-        }
-        showAlert(msg, result.historial_ok === false || result.nueva_programacion_ok === false ? 'error' : 'success');
-        closeTareaCompletaModal();
-        await loadMantenimientosData();
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-async function confirmarTareaCompletaNoProgramar() {
-    if (!progRowSeleccionadaParaCompletar) return;
-    var row = progRowSeleccionadaParaCompletar;
-    var gastos = obtenerGastosTareaCompleta();
-
-    try {
-        var response = await fetch('/api/programacion/completar/' + row._row_number, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                gasto_pesos: gastos.gasto_pesos,
-                gasto_usd: gastos.gasto_usd,
-                volver_a_programar: false
-            })
-        });
-        var result = await response.json();
-        if (result.success) {
-            var msg = '✅ Tarea marcada como Completo y guardada en Historial (no se programó otro mantenimiento).';
-            if (result.historial_ok === false) {
-                msg = '⚠️ Se marcó como completo, pero falló el guardado en el Historial.';
-            }
-            showAlert(msg, result.historial_ok === false ? 'error' : 'success');
-            closeTareaCompletaModal();
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   CONFIGURACIÓN MANTENIMIENTOS
-   ============================================================ */
-function renderMantenimientosConfig(content) {
-    var html = '<div class="config-section">';
-    html += '<h3>⚙️ Configuración de Desplegables</h3>';
-    html += '<p style="color:#666; margin-bottom:15px;">Configura las opciones para cada campo desplegable. Escribe una opción por línea.</p>';
-    html += '<div id="dropdownsConfigContainer">';
-
-    MP_DROPDOWN_COLUMNS.forEach(function(col) {
-        var options = mpDropdowns[col] || [];
-        html += '<div class="dropdown-config-item">';
-        html += '<label>📋 ' + col + '</label>';
-        html += '<textarea id="config_dropdown_' + col + '" placeholder="Escribe una opción por línea...">' + options.join('\n') + '</textarea>';
-        html += '</div>';
-    });
-
-    html += '</div>';
-    html += '<button type="button" class="btn btn-success" onclick="saveDropdowns()">💾 Guardar Desplegables</button>';
-    html += '</div>';
-
-    html += '<div class="config-section">';
-    html += '<h3>📅 Configuración de PATENTES (Camion T2)</h3>';
-    html += '<p style="color:#666; margin-bottom:15px;">Estas son las patentes traídas automáticamente desde la solapa "Camion T2" del maestro de flota. Se usan como desplegable en la Programación de Mantenimiento Preventivo. El ODOMETRO se toma automáticamente de la misma solapa.</p>';
-    html += '<div class="dropdown-config-item">';
-    html += '<label>🚛 PATENTES disponibles con ODOMETRO</label>';
-    html += '<div style="background:white; padding:10px; border:1px solid #e0e0e0; border-radius:4px; max-height:250px; overflow-y:auto; font-family:monospace; font-size:13px;">';
-    if (patentesCamionT2.length === 0) {
-        html += '<span style="color:#999;">No hay patentes cargadas en Camion T2</span>';
-    } else {
-        patentesCamionT2.forEach(function(p) {
-            html += '<div>• <b>' + p + '</b> — ODOMETRO: ' + (odometroPorPatente[p] || '(sin dato)') + '</div>';
-        });
-    }
-    html += '</div>';
-    html += '<small style="color:#666; display:block; margin-top:8px;">ℹ️ Para modificar estas patentes y odómetros, editá la solapa "Camion T2" del maestro de flota.</small>';
-    html += '</div>';
-    html += '</div>';
-
-    html += '<div class="config-section">';
-    html += '<h3>🔧 Configuración MP (Políticas)</h3>';
-    html += '<p style="color:#666; margin-bottom:15px;">Configura las políticas para cada combinación de TIPO MANTENIMIENTO y TIPO REPARACIÓN. La POLITICA se suma a KM REALIZADO / KM ULTIMO MANTENIMIENTO para calcular el próximo KM.</p>';
-    html += '<table class="config-mp-table">';
-    html += '<thead><tr>';
-    html += '<th>TIPO MANTENIMIENTO</th>';
-    html += '<th>TIPO REPARACIÓN</th>';
-    html += '<th>POLITICA (KM)</th>';
-    html += '<th>Acción</th>';
-    html += '</tr></thead>';
-    html += '<tbody id="configMPTableBody">';
-
-    mpConfigMP.forEach(function(row, index) {
-        html += '<tr>';
-        html += '<td><input type="text" id="config_mp_tm_' + index + '" value="' + (row['TIPO MANTENIMIENTO'] || '') + '"></td>';
-        html += '<td><input type="text" id="config_mp_tr_' + index + '" value="' + (row['TIPO REPARACIÓN'] || '') + '"></td>';
-        html += '<td><input type="number" id="config_mp_pol_' + index + '" value="' + (row['POLITICA'] || '') + '"></td>';
-        html += '<td><button type="button" class="btn-remove-row" onclick="removeConfigMPRow(' + index + ')">🗑️</button></td>';
-        html += '</tr>';
-    });
-
-    html += '</tbody></table>';
-    html += '<button type="button" class="btn-add-row" onclick="addConfigMPRow()">➕ Agregar Fila</button>';
-    html += '<br><br>';
-    html += '<button type="button" class="btn btn-success" onclick="saveConfigMP()">💾 Guardar Configuración MP</button>';
-    html += '</div>';
-
-    content.innerHTML = html;
-}
-
-function addConfigMPRow() {
-    mpConfigMP.push({'TIPO MANTENIMIENTO': '', 'TIPO REPARACIÓN': '', 'POLITICA': ''});
-    renderMantenimientosConfig(document.getElementById('mantenimientos-content'));
-}
-
-function removeConfigMPRow(index) {
-    mpConfigMP.splice(index, 1);
-    renderMantenimientosConfig(document.getElementById('mantenimientos-content'));
-}
-
-async function saveDropdowns() {
-    var dropdowns = {};
-    MP_DROPDOWN_COLUMNS.forEach(function(col) {
-        var textarea = document.getElementById('config_dropdown_' + col);
-        if (textarea) {
-            var lines = textarea.value.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l !== ''; });
-            if (lines.length > 0) {
-                dropdowns[col] = lines;
-            }
-        }
-    });
-
-    try {
-        var response = await fetch('/api/mantenimientos/dropdowns', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ dropdowns: dropdowns })
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Desplegables guardados correctamente', 'success');
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-async function saveConfigMP() {
-    var rows = [];
-    mpConfigMP.forEach(function(row, index) {
-        var tm = document.getElementById('config_mp_tm_' + index);
-        var tr = document.getElementById('config_mp_tr_' + index);
-        var pol = document.getElementById('config_mp_pol_' + index);
-        if (tm && tr && pol) {
-            var tmVal = tm.value.trim();
-            var trVal = tr.value.trim();
-            var polVal = pol.value.trim();
-            if (tmVal !== '' || trVal !== '') {
-                rows.push({
-                    'TIPO MANTENIMIENTO': tmVal,
-                    'TIPO REPARACIÓN': trVal,
-                    'POLITICA': polVal
-                });
-            }
-        }
-    });
-
-    try {
-        var response = await fetch('/api/mantenimientos/config_mp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rows: rows })
-        });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Configuración MP guardada correctamente', 'success');
-            await loadMantenimientosData();
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   EDICIÓN (CONTROL DE DOCUMENTACIÓN)
-   ============================================================ */
-function editRow(sheetName, rowNumber) {
-    var row = allRows.find(function(r) { return r._row_number === rowNumber; });
-    if (!row) { showAlert('No se encontró el documento', 'error'); return; }
-
-    editContextModule = 'docs';
-    currentEditRow = row;
-    var headersForEdit = currentHeaders;
-    var displayColumns = getDisplayColumns(sheetName);
-    var photoCols = getPhotoColumns(headersForEdit);
-    var dateColsRequiringPhoto = getDateColumnsRequiringPhoto(sheetName);
-
-    document.getElementById('editSheetName').value = sheetName;
-    document.getElementById('editRowNumber').value = rowNumber;
-
-    var html = '';
-    displayColumns.forEach(function(header) {
-        if (header === 'Marca Temporal') return;
-        if (photoCols.indexOf(header) !== -1) return;
-
-        var value = row[header] || '';
-        var upper = header.toUpperCase();
-        var isDate = upper.indexOf('FECHA') !== -1 || upper.indexOf('VENCIMIENTO') !== -1 || upper.indexOf('VENC') !== -1;
-        var isTextarea = upper.indexOf('OBSERVACION') !== -1 || upper.indexOf('COMENTARIO') !== -1;
-        var requiresPhoto = dateColsRequiringPhoto.indexOf(header) !== -1;
-
-        html += '<div class="form-group">';
-        html += '<label>' + header;
-        if (requiresPhoto) html += ' <span class="photo-required">(requiere foto)</span>';
-        html += '</label>';
-
-        if (isTextarea) {
-            html += '<textarea id="edit_' + header + '" name="' + header + '" rows="2">' + value + '</textarea>';
-        } else if (isDate) {
-            var dateValue = value;
-            if (value && value.indexOf('/') !== -1) {
-                var parts = value.split('/');
-                if (parts.length === 3) {
-                    var year = parseInt(parts[2]);
-                    if (year < 100) year += 2000;
-                    dateValue = year + '-' + parts[1].padStart(2, '0') + '-' + parts[0].padStart(2, '0');
-                }
-            }
-            html += '<input type="date" id="edit_' + header + '" name="' + header + '" value="' + dateValue + '">';
-        } else {
-            html += '<input type="text" id="edit_' + header + '" name="' + header + '" value="' + value + '">';
-        }
-        html += '</div>';
-    });
-    document.getElementById('editFormFields').innerHTML = html;
-
-    var photoHtml = generatePhotoFieldsForEdit(headersForEdit, row, false);
-    document.getElementById('editPhotoFields').innerHTML = photoHtml;
-
-    document.getElementById('editModal').style.display = 'block';
-}
-
-function closeEditModal() {
-    document.getElementById('editModal').style.display = 'none';
-}
-
-async function submitEditForm(e) {
-    e.preventDefault();
-
-    var sheetName = document.getElementById('editSheetName').value;
-    var rowNumber = parseInt(document.getElementById('editRowNumber').value);
-    var formData = new FormData(e.target);
-
-    if (editContextModule !== 'master') {
-        var dateCols = getDateColumnsRequiringPhoto(sheetName);
-        var missingPhotos = [];
-
-        dateCols.forEach(function(dateCol) {
-            var dateValue = formData.get(dateCol);
-            if (dateValue && dateValue.trim() !== '') {
-                var photoInput = document.getElementById('edit_foto_' + dateCol);
-                var hasNewFile = photoInput && photoInput.files && photoInput.files.length > 0;
-                var existingPhoto = formData.get(dateCol + '_FOTO');
-                if (!hasNewFile && !existingPhoto) {
-                    missingPhotos.push(dateCol);
-                }
-            }
-        });
-
-        if (missingPhotos.length > 0) {
-            showAlert('⚠️ Los siguientes documentos con fecha requieren foto obligatoria: ' + missingPhotos.join(', '), 'error');
-            return;
-        }
-    }
-
-    var hasPhoto = false;
-    var photoCols = getPhotoColumns(currentHeaders);
-
-    photoCols.forEach(function(col) {
-        var docName = col.replace('_FOTO', '');
-        var fileInput = document.getElementById('edit_foto_' + docName);
-        if (fileInput && fileInput.files && fileInput.files.length > 0) {
-            hasPhoto = true;
-            formData.append('foto_' + docName, fileInput.files[0]);
-        }
-    });
-
-    var keysToDelete = [];
-    for (var key of formData.keys()) {
-        if (key.indexOf('edit_foto_') === 0) keysToDelete.push(key);
-    }
-    keysToDelete.forEach(function(key) { formData.delete(key); });
-
-    try {
-        var response;
-        if (hasPhoto) {
-            response = await fetch('/api/update_with_photo/' + encodeURIComponent(sheetName) + '/' + rowNumber, {
-                method: 'POST',
-                body: formData
-            });
-        } else {
-            var jsonData = {};
-            for (var pair of formData.entries()) {
-                if (pair[0].indexOf('foto_') !== 0 && pair[0] !== 'sheetName' && pair[0] !== 'rowNumber') {
-                    jsonData[pair[0]] = pair[1];
-                }
-            }
-            response = await fetch('/api/update/' + encodeURIComponent(sheetName) + '/' + rowNumber, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(jsonData)
-            });
-        }
-
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Documento actualizado correctamente', 'success');
-            closeEditModal();
-            if (editContextModule === 'master') {
-                await loadMasterData(sheetName);
-            } else {
-                await loadSheetData(sheetName);
-            }
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al actualizar: ' + error.message, 'error');
-    }
-}
-
-async function deleteRow(sheetName, rowNumber) {
-    if (!confirm('¿Estás seguro de que deseas eliminar este documento?')) return;
-    try {
-        var response = await fetch('/api/delete/' + encodeURIComponent(sheetName) + '/' + rowNumber, { method: 'DELETE' });
-        var result = await response.json();
-        if (result.success) {
-            showAlert('✅ Documento eliminado correctamente', 'success');
-            await loadSheetData(sheetName);
-        } else {
-            showAlert('❌ Error: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showAlert('❌ Error al eliminar: ' + error.message, 'error');
-    }
-}
-
-/* ============================================================
-   EXPONER FUNCIONES GLOBALES
-   ============================================================ */
-window.showHome = showHome;
-window.showModule = showModule;
-window.toggleForm = toggleForm;
-window.applyFilter = applyFilter;
-window.clearFilter = clearFilter;
-window.editRow = editRow;
-window.deleteRow = deleteRow;
-window.closeEditModal = closeEditModal;
-
-window.toggleMasterForm = toggleMasterForm;
-window.applyMasterFilter = applyMasterFilter;
-window.clearMasterFilter = clearMasterFilter;
-window.editMasterRow = editMasterRow;
-window.deleteMasterRow = deleteMasterRow;
-
-window.applyHistoryFilter = applyHistoryFilter;
-window.clearHistoryFilter = clearHistoryFilter;
-window.updateHistoryStatus = updateHistoryStatus;
-window.deleteHistoryRow = deleteHistoryRow;
-
-window.toggleMantenimientoForm = toggleMantenimientoForm;
-window.applyMantenimientoFilter = applyMantenimientoFilter;
-window.clearMantenimientoFilter = clearMantenimientoFilter;
-window.editMantenimiento = editMantenimiento;
-window.deleteMantenimiento = deleteMantenimiento;
-window.closeEditMantenimientoModal = closeEditMantenimientoModal;
-window.recalcularKmProximo = recalcularKmProximo;
-
-window.toggleProgramacionForm = toggleProgramacionForm;
-window.applyProgramacionFilter = applyProgramacionFilter;
-window.clearProgramacionFilter = clearProgramacionFilter;
-window.editProgramacion = editProgramacion;
-window.deleteProgramacion = deleteProgramacion;
-window.closeEditProgramacionModal = closeEditProgramacionModal;
-window.autocompletarKmDesdeOdometro = autocompletarKmDesdeOdometro;
-window.calcularProximoMantenimiento = calcularProximoMantenimiento;
-window.calcularProximoKm = calcularProximoKm;
-
-window.openTareaCompleta = openTareaCompleta;
-window.closeTareaCompletaModal = closeTareaCompletaModal;
-window.confirmarTareaCompletaProgramar = confirmarTareaCompletaProgramar;
-window.confirmarTareaCompletaNoProgramar = confirmarTareaCompletaNoProgramar;
-
-window.addConfigMPRow = addConfigMPRow;
-window.removeConfigMPRow = removeConfigMPRow;
-window.saveDropdowns = saveDropdowns;
-window.saveConfigMP = saveConfigMP;
-
-window.previewPhoto = previewPhoto;
-
-/* ============================================================
-   INICIALIZACIÓN
-   ============================================================ */
-document.addEventListener('DOMContentLoaded', function() {
-    var tabsDocs = document.querySelectorAll('#tabsDocs .tab');
-    tabsDocs.forEach(function(tab) {
-        tab.addEventListener('click', function() {
-            tabsDocs.forEach(function(t) { t.classList.remove('active'); });
-            this.classList.add('active');
-            currentSheet = this.dataset.sheet;
-            isFormVisible = false;
-            loadSheetData(currentSheet);
-        });
-    });
-
-    var tabsMaster = document.querySelectorAll('#tabsMaster .tab');
-    tabsMaster.forEach(function(tab) {
-        tab.addEventListener('click', function() {
-            tabsMaster.forEach(function(t) { t.classList.remove('active'); });
-            this.classList.add('active');
-            masterCurrentSheet = this.dataset.sheet;
-            masterIsFormVisible = false;
-            loadMasterData(masterCurrentSheet);
-        });
-    });
-
-    var tabsMP = document.querySelectorAll('#tabsMantenimientos .tab');
-    tabsMP.forEach(function(tab) {
-        tab.addEventListener('click', function() {
-            tabsMP.forEach(function(t) { t.classList.remove('active'); });
-            this.classList.add('active');
-            mpCurrentView = this.dataset.view;
-            if (mpCurrentView === 'config') {
-                renderMantenimientosView();
-            } else if (mpCurrentView === 'programacion') {
-                renderMantenimientosView();
-            } else {
-                loadMantenimientosData();
-            }
-        });
-    });
-
-    var editForm = document.getElementById('editForm');
-    if (editForm) editForm.addEventListener('submit', submitEditForm);
-
-    var editMantForm = document.getElementById('editMantenimientoForm');
-    if (editMantForm) editMantForm.addEventListener('submit', submitEditMantenimiento);
-
-    var editProgForm = document.getElementById('editProgramacionForm');
-    if (editProgForm) editProgForm.addEventListener('submit', submitEditProgramacion);
-
-    var modales = ['editModal', 'editMantenimientoModal', 'editProgramacionModal', 'tareaCompletaModal'];
-    modales.forEach(function(modalId) {
-        var modal = document.getElementById(modalId);
-        if (!modal) return;
-        modal.addEventListener('click', function(event) {
-            if (event.target === modal) {
-                modal.style.display = 'none';
-                if (modalId === 'tareaCompletaModal') {
-                    progRowSeleccionadaParaCompletar = null;
-                }
-            }
-        });
-    });
-
-    showHome();
+/* Cerrar modal clickeando afuera */
+document.querySelectorAll('.modal').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadConfig();
+  await loadRows();
 });
 </script>
 </body>
