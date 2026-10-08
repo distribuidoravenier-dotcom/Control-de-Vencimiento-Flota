@@ -29,7 +29,7 @@
   .home-view .subtitle { font-size: 16px; margin-bottom: 40px; }
   .modules {
     display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px; width:100%; max-width: 600px;
+    gap: 20px; width:100%; max-width: 700px;
   }
   .module-card {
     background:#f8f9fa; border:2px solid #e0e0e0; border-radius:12px;
@@ -156,6 +156,23 @@
     background: #f8f9fa;
   }
 
+  /* Variante para tablas de Control Documentario: solo PATENTE sticky */
+  th.col-cd-patente {
+    position: sticky; left: 0; z-index: 7;
+    background: #667eea;
+    min-width: 120px; width: 120px;
+    box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
+  }
+  td.col-cd-patente {
+    position: sticky; left: 0; z-index: 4;
+    background: #ffffff;
+    min-width: 120px; width: 120px;
+    box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
+  }
+  tr:hover td.col-cd-patente {
+    background: #f8f9fa;
+  }
+
   .pk-badge {
     background:#fefcbf; color:#744210; padding:2px 6px;
     border-radius:4px; font-size:10px; font-weight:700; margin-left:4px;
@@ -225,15 +242,20 @@
         <div class="module-title">Maestro de Flota</div>
         <div class="module-desc">Camiones T2 · Maestro AE</div>
       </div>
+      <div class="module-card" onclick="openModule('control_documentario')">
+        <div class="module-icon">📄</div>
+        <div class="module-title">Control Documentario</div>
+        <div class="module-desc">Vencimientos de documentación</div>
+      </div>
     </div>
   </div>
 
-  <!-- ===================== VISTA MÓDULO ===================== -->
-  <div class="module-view" id="moduleView">
+  <!-- ===================== VISTA MÓDULO MAESTRO DE FLOTA ===================== -->
+  <div class="module-view" id="moduleViewMaestro">
     <div class="breadcrumb">
-      <a onclick="goHome()">🏠 Inicio</a> / <span id="breadcrumbModule">Maestro de Flota</span>
+      <a onclick="goHome()">🏠 Inicio</a> / <span>Maestro de Flota</span>
     </div>
-    <h1 id="moduleTitle">📋 Maestro de Flota</h1>
+    <h1>📋 Maestro de Flota</h1>
     <p class="subtitle">Administración de la flota · Primary Key: <b>PATENTE</b></p>
 
     <div class="tabs" id="tabsContainer">
@@ -261,9 +283,41 @@
     </div>
   </div>
 
+  <!-- ===================== VISTA MÓDULO CONTROL DOCUMENTARIO ===================== -->
+  <div class="module-view" id="moduleViewControl">
+    <div class="breadcrumb">
+      <a onclick="goHome()">🏠 Inicio</a> / <span>Control Documentario</span>
+    </div>
+    <h1>📄 Control Documentario</h1>
+    <p class="subtitle">Vencimientos de documentación por vehículo</p>
+
+    <div class="tabs" id="cdTabsContainer">
+      {% for key, cfg in control.items() %}
+      <button class="tab" data-cd-key="{{ key }}" onclick="switchCdSheet('{{ key }}')">
+        {{ cfg.label }}
+      </button>
+      {% endfor %}
+    </div>
+
+    <div id="cd-alert-container"></div>
+
+    <div class="toolbar">
+      <input type="text" id="cdFilterInput" placeholder="🔍 Buscar por PATENTE..." oninput="applyCdFilter()">
+      <button class="btn btn-cancel" onclick="clearCdFilter()">✖ Limpiar</button>
+      <span id="cdRecordCount" style="color:#666; font-size:14px;">Total: 0</span>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="cdTable">
+        <thead id="cdHead"></thead>
+        <tbody id="cdBody"></tbody>
+      </table>
+    </div>
+  </div>
+
 </div>
 
-<!-- Modal Agregar / Editar -->
+<!-- Modal Agregar / Editar (solo Maestro de Flota) -->
 <div class="modal" id="rowModal">
   <div class="modal-content">
     <h2 id="rowModalTitle">➕ Agregar</h2>
@@ -276,6 +330,9 @@
 </div>
 
 <script>
+/* ============================================================
+   MAESTRO DE FLOTA
+   ============================================================ */
 let COLUMNS = [];
 let PRIMARY_KEY = 'PATENTE';
 let allRows = [];
@@ -302,19 +359,26 @@ function escapeHtml(s) {
 /* ============ NAVEGACIÓN ============ */
 function openModule(moduleKey) {
   document.getElementById('homeView').classList.add('hidden');
-  document.getElementById('moduleView').classList.add('active');
+  document.getElementById('moduleViewMaestro').classList.remove('active');
+  document.getElementById('moduleViewControl').classList.remove('active');
 
-  // Inicializar con la primera solapa
-  const firstTab = document.querySelector('.tab');
-  if (firstTab) {
-    switchSheet(firstTab.dataset.sheetKey);
+  if (moduleKey === 'maestro_flota') {
+    document.getElementById('moduleViewMaestro').classList.add('active');
+    const firstTab = document.querySelector('#tabsContainer .tab');
+    if (firstTab) switchSheet(firstTab.dataset.sheetKey);
+  } else if (moduleKey === 'control_documentario') {
+    document.getElementById('moduleViewControl').classList.add('active');
+    const firstTab = document.querySelector('#cdTabsContainer .tab');
+    if (firstTab) switchCdSheet(firstTab.dataset.cdKey);
   }
 }
 
 function goHome() {
-  document.getElementById('moduleView').classList.remove('active');
+  document.getElementById('moduleViewMaestro').classList.remove('active');
+  document.getElementById('moduleViewControl').classList.remove('active');
   document.getElementById('homeView').classList.remove('hidden');
   document.getElementById('alert-container').innerHTML = '';
+  document.getElementById('cd-alert-container').innerHTML = '';
 }
 
 /* ============ CÁLCULO DE VENCIMIENTOS ============ */
@@ -362,7 +426,7 @@ function dateStatusClass(dateStr) {
 /* ============ SOLAPAS ============ */
 async function switchSheet(sheetKey) {
   currentSheetKey = sheetKey;
-  document.querySelectorAll('.tab').forEach(t => {
+  document.querySelectorAll('#tabsContainer .tab').forEach(t => {
     t.classList.toggle('active', t.dataset.sheetKey === sheetKey);
   });
   document.getElementById('filterInput').value = '';
@@ -586,6 +650,108 @@ async function deleteRow(rowNumber) {
 document.querySelectorAll('.modal').forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
 });
+
+
+/* ============================================================
+   CONTROL DOCUMENTARIO
+   ============================================================ */
+let cdData = {};
+let cdCurrentKey = null;
+let cdFilteredRows = [];
+
+function cdShowAlert(msg, type='success') {
+  const c = document.getElementById('cd-alert-container');
+  const div = document.createElement('div');
+  div.className = 'alert alert-' + type;
+  div.textContent = msg;
+  c.appendChild(div);
+  setTimeout(() => div.remove(), 4500);
+}
+
+async function loadControlDocumentario() {
+  try {
+    const res = await fetch('/api/control-documentario');
+    const data = await res.json();
+    if (!data.success) { cdShowAlert('Error: ' + data.error, 'error'); return; }
+    cdData = data.data || {};
+  } catch (e) {
+    cdShowAlert('Error de conexión: ' + e.message, 'error');
+  }
+}
+
+async function switchCdSheet(key) {
+  cdCurrentKey = key;
+  document.querySelectorAll('#cdTabsContainer .tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.cdKey === key);
+  });
+  document.getElementById('cdFilterInput').value = '';
+  if (!cdData[key]) {
+    await loadControlDocumentario();
+  }
+  cdFilteredRows = (cdData[key]?.rows || []).slice();
+  renderCd();
+}
+
+function renderCd() {
+  const thead = document.getElementById('cdHead');
+  const tbody = document.getElementById('cdBody');
+  const cfg = cdData[cdCurrentKey];
+  if (!cfg) return;
+
+  const columns = cfg.columns;
+
+  // HEAD
+  let headHtml = '<tr>';
+  columns.forEach(col => {
+    const cls = col === 'PATENTE' ? ' class="col-cd-patente"' : '';
+    headHtml += `<th${cls}>${escapeHtml(col)}</th>`;
+  });
+  headHtml += '</tr>';
+  thead.innerHTML = headHtml;
+
+  // BODY
+  if (cdFilteredRows.length === 0) {
+    tbody.innerHTML = `<tr><td class="no-data" colspan="${columns.length}">Sin registros</td></tr>`;
+  } else {
+    let bodyHtml = '';
+    cdFilteredRows.forEach(row => {
+      bodyHtml += '<tr>';
+      columns.forEach(col => {
+        const raw = row[col] || '';
+        let cell = escapeHtml(raw);
+        let cls = '';
+        if (col === 'PATENTE') {
+          cls = 'col-cd-patente';
+          cell = `<b>${escapeHtml(raw)}</b>`;
+        } else if (raw) {
+          const c = dateStatusClass(raw);
+          cell = c ? `<span class="${c}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
+        }
+        bodyHtml += `<td class="${cls}">${cell}</td>`;
+      });
+      bodyHtml += '</tr>';
+    });
+    tbody.innerHTML = bodyHtml;
+  }
+
+  document.getElementById('cdRecordCount').textContent = 'Total: ' + cdFilteredRows.length;
+}
+
+function applyCdFilter() {
+  const q = document.getElementById('cdFilterInput').value.toLowerCase().trim();
+  const allCdRows = cdData[cdCurrentKey]?.rows || [];
+  if (!q) cdFilteredRows = allCdRows.slice();
+  else cdFilteredRows = allCdRows.filter(r =>
+    String(r['PATENTE'] || '').toLowerCase().includes(q)
+  );
+  renderCd();
+}
+function clearCdFilter() {
+  document.getElementById('cdFilterInput').value = '';
+  cdFilteredRows = (cdData[cdCurrentKey]?.rows || []).slice();
+  renderCd();
+}
+
 </script>
 </body>
 </html>
