@@ -1,10 +1,10 @@
-<!-- templates/maestro_flota.html -->
+<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maestro de Flota</title>
+<title>Gestión de Flota</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
@@ -17,13 +17,45 @@
     border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
     padding: 26px;
   }
+  h1 { color:#333; margin-bottom: 4px; font-size: 26px; }
+  .subtitle { color:#666; margin-bottom: 20px; font-size: 14px; }
+
+  /* ===== VISTA HOME (MÓDULOS) ===== */
+  .home-view {
+    display:flex; flex-direction:column; align-items:center;
+    justify-content:center; min-height: 70vh; text-align:center;
+  }
+  .home-view h1 { font-size: 34px; margin-bottom: 8px; }
+  .home-view .subtitle { font-size: 16px; margin-bottom: 40px; }
+  .modules {
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px; width:100%; max-width: 600px;
+  }
+  .module-card {
+    background:#f8f9fa; border:2px solid #e0e0e0; border-radius:12px;
+    padding: 30px 20px; cursor:pointer; transition:.2s;
+    display:block; text-align:center;
+  }
+  .module-card:hover {
+    border-color:#667eea; background:#fff; transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(102,126,234,.25);
+  }
+  .module-icon { font-size: 48px; margin-bottom: 12px; }
+  .module-title { font-size: 18px; font-weight:700; color:#333; margin-bottom:6px; }
+  .module-desc { font-size: 13px; color:#666; }
+
+  /* ===== VISTA MÓDULO ===== */
+  .module-view { display:none; }
+  .module-view.active { display:block; }
+  .home-view.hidden { display:none; }
+
   .breadcrumb {
     font-size: 13px; color:#666; margin-bottom: 10px;
   }
-  .breadcrumb a { color:#667eea; text-decoration:none; font-weight:600; }
+  .breadcrumb a {
+    color:#667eea; text-decoration:none; font-weight:600; cursor:pointer;
+  }
   .breadcrumb a:hover { text-decoration:underline; }
-  h1 { color:#333; margin-bottom: 4px; font-size: 26px; }
-  .subtitle { color:#666; margin-bottom: 20px; font-size: 14px; }
 
   /* ===== SOLAPAS ===== */
   .tabs {
@@ -181,35 +213,54 @@
 </head>
 <body>
 <div class="container">
-  <div class="breadcrumb">
-    <a href="/">🏠 Inicio</a> / Maestro de Flota
-  </div>
-  <h1>📋 Maestro de Flota</h1>
-  <p class="subtitle">Administración de la flota · Primary Key: <b>PATENTE</b></p>
 
-  <div class="tabs" id="tabsContainer">
-    {% for key, cfg in sheets.items() %}
-    <button class="tab" data-sheet-key="{{ key }}" onclick="switchSheet('{{ key }}')">
-      {{ cfg.label }}
-    </button>
-    {% endfor %}
-  </div>
+  <!-- ===================== VISTA HOME ===================== -->
+  <div class="home-view" id="homeView">
+    <h1>🚛 Gestión de Flota</h1>
+    <p class="subtitle">Seleccioná un módulo para comenzar</p>
 
-  <div id="alert-container"></div>
-
-  <div class="toolbar">
-    <button class="btn btn-success" onclick="openAddModal()">➕ Agregar</button>
-    <input type="text" id="filterInput" placeholder="🔍 Buscar..." oninput="applyFilter()">
-    <button class="btn btn-cancel" onclick="clearFilter()">✖ Limpiar</button>
-    <span id="recordCount" style="color:#666; font-size:14px;">Total: 0</span>
+    <div class="modules">
+      <div class="module-card" onclick="openModule('maestro_flota')">
+        <div class="module-icon">📋</div>
+        <div class="module-title">Maestro de Flota</div>
+        <div class="module-desc">Camiones T2 · Maestro AE</div>
+      </div>
+    </div>
   </div>
 
-  <div class="table-wrapper">
-    <table id="maestroTable">
-      <thead id="maestroHead"></thead>
-      <tbody id="maestroBody"></tbody>
-    </table>
+  <!-- ===================== VISTA MÓDULO ===================== -->
+  <div class="module-view" id="moduleView">
+    <div class="breadcrumb">
+      <a onclick="goHome()">🏠 Inicio</a> / <span id="breadcrumbModule">Maestro de Flota</span>
+    </div>
+    <h1 id="moduleTitle">📋 Maestro de Flota</h1>
+    <p class="subtitle">Administración de la flota · Primary Key: <b>PATENTE</b></p>
+
+    <div class="tabs" id="tabsContainer">
+      {% for key, cfg in sheets.items() %}
+      <button class="tab" data-sheet-key="{{ key }}" onclick="switchSheet('{{ key }}')">
+        {{ cfg.label }}
+      </button>
+      {% endfor %}
+    </div>
+
+    <div id="alert-container"></div>
+
+    <div class="toolbar">
+      <button class="btn btn-success" onclick="openAddModal()">➕ Agregar</button>
+      <input type="text" id="filterInput" placeholder="🔍 Buscar..." oninput="applyFilter()">
+      <button class="btn btn-cancel" onclick="clearFilter()">✖ Limpiar</button>
+      <span id="recordCount" style="color:#666; font-size:14px;">Total: 0</span>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="maestroTable">
+        <thead id="maestroHead"></thead>
+        <tbody id="maestroBody"></tbody>
+      </table>
+    </div>
   </div>
+
 </div>
 
 <!-- Modal Agregar / Editar -->
@@ -246,6 +297,24 @@ function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   })[c]);
+}
+
+/* ============ NAVEGACIÓN ============ */
+function openModule(moduleKey) {
+  document.getElementById('homeView').classList.add('hidden');
+  document.getElementById('moduleView').classList.add('active');
+
+  // Inicializar con la primera solapa
+  const firstTab = document.querySelector('.tab');
+  if (firstTab) {
+    switchSheet(firstTab.dataset.sheetKey);
+  }
+}
+
+function goHome() {
+  document.getElementById('moduleView').classList.remove('active');
+  document.getElementById('homeView').classList.remove('hidden');
+  document.getElementById('alert-container').innerHTML = '';
 }
 
 /* ============ CÁLCULO DE VENCIMIENTOS ============ */
@@ -516,14 +585,6 @@ async function deleteRow(rowNumber) {
 /* Cerrar modal clickeando afuera */
 document.querySelectorAll('.modal').forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
-});
-
-/* Inicializar con la primera solapa */
-document.addEventListener('DOMContentLoaded', async () => {
-  const firstTab = document.querySelector('.tab');
-  if (firstTab) {
-    await switchSheet(firstTab.dataset.sheetKey);
-  }
 });
 </script>
 </body>
