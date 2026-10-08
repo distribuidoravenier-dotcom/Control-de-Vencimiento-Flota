@@ -13,6 +13,7 @@ app.config['SECRET_KEY'] = Config.SECRET_KEY
 
 SPREADSHEET_ID = Config.SPREADSHEET_ID
 SHEETS = Config.SHEETS
+CONTROL_DOCUMENTARIO = Config.CONTROL_DOCUMENTARIO
 
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -144,7 +145,7 @@ def get_sheet_id(sheet_cfg):
 @app.route('/')
 def index():
     """Página principal unificada con módulos y solapas."""
-    return render_template('index.html', sheets=SHEETS)
+    return render_template('index.html', sheets=SHEETS, control=CONTROL_DOCUMENTARIO)
 
 
 # ============================================================
@@ -178,6 +179,31 @@ def api_get_rows(sheet_key):
         'headers': data['headers'],
         'rows': data['rows']
     })
+
+
+@app.route('/api/control-documentario', methods=['GET'])
+def api_control_documentario():
+    """Devuelve los datos filtrados (solo columnas de documentos) para ambas solapas."""
+    result = {}
+    for key, cfg in CONTROL_DOCUMENTARIO.items():
+        sheet_cfg = get_sheet_config(cfg['sheet_key'])
+        if not sheet_cfg:
+            continue
+        ensure_sheet_headers(sheet_cfg)
+        data = get_all_data(sheet_cfg)
+        rows = []
+        for r in data['rows']:
+            row = {}
+            for col_name in cfg['columns']:
+                row[col_name] = r.get(col_name, '')
+            row['_row_number'] = r['_row_number']
+            rows.append(row)
+        result[key] = {
+            'label': cfg['label'],
+            'columns': cfg['columns'],
+            'rows': rows
+        }
+    return jsonify({'success': True, 'data': result})
 
 
 @app.route('/api/rows/<sheet_key>', methods=['POST'])
