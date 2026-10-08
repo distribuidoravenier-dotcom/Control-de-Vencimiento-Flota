@@ -1,3 +1,4 @@
+# app.py
 import os
 import json
 from flask import Flask, render_template, request, jsonify
@@ -11,10 +12,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = Config.SECRET_KEY
 
 SPREADSHEET_ID = Config.SPREADSHEET_ID
-SHEET_NAME = Config.SHEET_NAME
-PRIMARY_KEY = Config.PRIMARY_KEY
-COLUMNS = Config.COLUMNS
-HEADERS = [c['name'] for c in COLUMNS]
+SHEETS = Config.SHEETS
 
 SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets',
@@ -57,45 +55,59 @@ def col_letter(n):
     return result
 
 
-LAST_COL = col_letter(len(HEADERS))
+def get_sheet_config(sheet_key):
+    """Devuelve la configuración de la solapa solicitada."""
+    if sheet_key not in SHEETS:
+        return None
+    cfg = SHEETS[sheet_key]
+    headers = [c['name'] for c in cfg['columns']]
+    return {
+        'key': sheet_key,
+        'name': cfg['name'],
+        'label': cfg['label'],
+        'primary_key': cfg['primary_key'],
+        'columns': cfg['columns'],
+        'headers': headers,
+        'last_col': col_letter(len(headers))
+    }
 
 
-def ensure_sheet_headers():
+def ensure_sheet_headers(sheet_cfg):
     """Verifica que la fila 1 del Sheet tenga exactamente nuestros headers."""
     try:
         service = get_sheets_service()
         current = service.spreadsheets().values().get(
             spreadsheetId=SPREADSHEET_ID,
-            range=f"'{SHEET_NAME}'!1:1"
+            range=f"'{sheet_cfg['name']}'!1:1"
         ).execute().get('values', [[]])
         current_headers = current[0] if current else []
 
-        if current_headers != HEADERS:
+        if current_headers != sheet_cfg['headers']:
             service.spreadsheets().values().update(
                 spreadsheetId=SPREADSHEET_ID,
-                range=f"'{SHEET_NAME}'!A1",
+                range=f"'{sheet_cfg['name']}'!A1",
                 valueInputOption='RAW',
-                body={'values': [HEADERS]}
+                body={'values': [sheet_cfg['headers']]}
             ).execute()
-            print("✅ Headers sincronizados en el Sheet.")
+            print(f"✅ Headers sincronizados en '{sheet_cfg['name']}'.")
         return True
     except HttpError as err:
         print(f"❌ Error asegurando headers: {err}")
         return False
 
 
-def get_all_data():
+def get_all_data(sheet_cfg):
     """Devuelve {'headers': [...], 'rows': [{..., '_row_number': N}]}"""
     try:
         service = get_sheets_service()
         result = service.spreadsheets().values().get(
             spreadsheetId=SPREADSHEET_ID,
-            range=f"'{SHEET_NAME}'!A:{LAST_COL}"
+            range=f"'{sheet_cfg['name']}'!A:{sheet_cfg['last_col']}"
         ).execute()
 
         values = result.get('values', [])
         if not values:
-            return {'headers': HEADERS, 'rows': []}
+            return {'headers': sheet_cfg['headers'], 'rows': []}
 
         headers = values[0]
         rows = []
@@ -110,33 +122,63 @@ def get_all_data():
         return {'headers': headers, 'rows': rows}
     except HttpError as err:
         print(f"❌ Error leyendo datos: {err}")
-        return {'headers': HEADERS, 'rows': []}
+        return {'headers': sheet_cfg['headers'], 'rows': []}
+
+
+def get_sheet_id(sheet_cfg):
+    service = get_sheets_service()
+    spreadsheet = service.spreadsheets().get(
+        spreadsheetId=SPREADSHEET_ID,
+        fields='sheets.properties(sheetId,title)'
+    ).execute()
+    for s in spreadsheet.get('sheets', []):
+        if s['properties']['title'] == sheet_cfg['name']:
+            return s['properties']['sheetId']
+    return None
 
 
 # ============================================================
-# RUTAS
+# RUTAS PRINCIPALES
 # ============================================================
 
 @app.route('/')
-def index():
-    return render_template('index.html')
+def home():
+    """Página principal con los módulos disponibles."""
+    return render_template('home.html')
 
 
-@app.route('/api/config', methods=['GET'])
-def api_config():
+@app.route('/maestro-flota')
+def maestro_flota():
+    """Módulo Maestro de Flota con solapas."""
+    return render_template('maestro_flota.html', sheets=SHEETS)
+
+
+# ============================================================
+# API
+# ============================================================
+
+@app.route('/api/config/<sheet_key>', methods=['GET'])
+def api_config(sheet_key):
     """Devuelve la definición de columnas para que el frontend sepa tipos y opciones."""
+    sheet_cfg = get_sheet_config(sheet_key)
+    if not sheet_cfg:
+        return jsonify({'success': False, 'error': 'Solapa no encontrada'}), 404
     return jsonify({
         'success': True,
-        'columns': COLUMNS,
-        'primaryKey': PRIMARY_KEY,
-        'sheetName': SHEET_NAME
+        'columns': sheet_cfg['columns'],
+        'primaryKey': sheet_cfg['primary_key'],
+        'sheetName': sheet_cfg['name'],
+        'sheetLabel': sheet_cfg['label']
     })
 
 
-@app.route('/api/rows', methods=['GET'])
-def api_get_rows():
-    ensure_sheet_headers()
-    data = get_all_data()
+@app.route('/api/rows/<sheet_key>', methods=['GET'])
+def api_get_rows(sheet_key):
+    sheet_cfg = get_sheet_config(sheet_key)
+    if not sheet_cfg:
+        return jsonify({'success': False, 'error': 'Solapa no encontrada'}), 404
+    ensure_sheet_headers(sheet_cfg)
+    data = get_all_data(sheet_cfg)
     return jsonify({
         'success': True,
         'headers': data['headers'],
@@ -144,32 +186,38 @@ def api_get_rows():
     })
 
 
-@app.route('/api/rows', methods=['POST'])
-def api_add_row():
+@app.route('/api/rows/<sheet_key>', methods=['POST'])
+def api_add_row(sheet_key):
     """
     Body: { "values": { "PATENTE": "AB123CD", ... } }
     Valida que PATENTE no esté vacía ni duplicada.
     """
+    sheet_cfg = get_sheet_config(sheet_key)
+    if not sheet_cfg:
+        return jsonify({'success': False, 'error': 'Solapa no encontrada'}), 404
     try:
         body = request.get_json() or {}
         values = body.get('values', {})
+        pk = sheet_cfg['primary_key']
+        headers = sheet_cfg['headers']
+        last_col = sheet_cfg['last_col']
 
-        pk_value = (values.get(PRIMARY_KEY) or '').strip()
+        pk_value = (values.get(pk) or '').strip()
         if not pk_value:
-            return jsonify({'success': False, 'error': f'El campo {PRIMARY_KEY} es obligatorio'}), 400
+            return jsonify({'success': False, 'error': f'El campo {pk} es obligatorio'}), 400
 
         # Chequear duplicado
-        data = get_all_data()
+        data = get_all_data(sheet_cfg)
         for r in data['rows']:
-            if (r.get(PRIMARY_KEY) or '').strip().upper() == pk_value.upper():
-                return jsonify({'success': False, 'error': f'Ya existe un registro con {PRIMARY_KEY} = {pk_value}'}), 400
+            if (r.get(pk) or '').strip().upper() == pk_value.upper():
+                return jsonify({'success': False, 'error': f'Ya existe un registro con {pk} = {pk_value}'}), 400
 
-        row_values = [str(values.get(h, '') or '') for h in HEADERS]
+        row_values = [str(values.get(h, '') or '') for h in headers]
 
         service = get_sheets_service()
         service.spreadsheets().values().append(
             spreadsheetId=SPREADSHEET_ID,
-            range=f"'{SHEET_NAME}'!A:{LAST_COL}",
+            range=f"'{sheet_cfg['name']}'!A:{last_col}",
             valueInputOption='RAW',
             insertDataOption='INSERT_ROWS',
             body={'values': [row_values]}
@@ -181,33 +229,39 @@ def api_add_row():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/api/rows/<int:row_number>', methods=['PUT'])
-def api_update_row(row_number):
+@app.route('/api/rows/<sheet_key>/<int:row_number>', methods=['PUT'])
+def api_update_row(sheet_key, row_number):
     """
     Body: { "values": { "PATENTE": "AB123CD", ... } }
     Valida que la nueva PATENTE no duplique otra fila.
     """
+    sheet_cfg = get_sheet_config(sheet_key)
+    if not sheet_cfg:
+        return jsonify({'success': False, 'error': 'Solapa no encontrada'}), 404
     try:
         body = request.get_json() or {}
         values = body.get('values', {})
+        pk = sheet_cfg['primary_key']
+        headers = sheet_cfg['headers']
+        last_col = sheet_cfg['last_col']
 
-        pk_value = (values.get(PRIMARY_KEY) or '').strip()
+        pk_value = (values.get(pk) or '').strip()
         if not pk_value:
-            return jsonify({'success': False, 'error': f'El campo {PRIMARY_KEY} es obligatorio'}), 400
+            return jsonify({'success': False, 'error': f'El campo {pk} es obligatorio'}), 400
 
-        data = get_all_data()
+        data = get_all_data(sheet_cfg)
         for r in data['rows']:
             if r['_row_number'] == row_number:
                 continue
-            if (r.get(PRIMARY_KEY) or '').strip().upper() == pk_value.upper():
-                return jsonify({'success': False, 'error': f'Otra fila ya tiene {PRIMARY_KEY} = {pk_value}'}), 400
+            if (r.get(pk) or '').strip().upper() == pk_value.upper():
+                return jsonify({'success': False, 'error': f'Otra fila ya tiene {pk} = {pk_value}'}), 400
 
-        row_values = [str(values.get(h, '') or '') for h in HEADERS]
+        row_values = [str(values.get(h, '') or '') for h in headers]
 
         service = get_sheets_service()
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
-            range=f"'{SHEET_NAME}'!A{row_number}:{LAST_COL}{row_number}",
+            range=f"'{sheet_cfg['name']}'!A{row_number}:{last_col}{row_number}",
             valueInputOption='RAW',
             body={'values': [row_values]}
         ).execute()
@@ -218,11 +272,14 @@ def api_update_row(row_number):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/api/rows/<int:row_number>', methods=['DELETE'])
-def api_delete_row(row_number):
+@app.route('/api/rows/<sheet_key>/<int:row_number>', methods=['DELETE'])
+def api_delete_row(sheet_key, row_number):
     """Elimina una fila por número de fila real del Sheet."""
+    sheet_cfg = get_sheet_config(sheet_key)
+    if not sheet_cfg:
+        return jsonify({'success': False, 'error': 'Solapa no encontrada'}), 404
     try:
-        sheet_id = get_sheet_id()
+        sheet_id = get_sheet_id(sheet_cfg)
         if sheet_id is None:
             return jsonify({'success': False, 'error': 'Pestaña no encontrada'}), 500
 
@@ -245,18 +302,6 @@ def api_delete_row(row_number):
     except Exception as e:
         print(f"❌ delete_row: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
-
-
-def get_sheet_id():
-    service = get_sheets_service()
-    spreadsheet = service.spreadsheets().get(
-        spreadsheetId=SPREADSHEET_ID,
-        fields='sheets.properties(sheetId,title)'
-    ).execute()
-    for s in spreadsheet.get('sheets', []):
-        if s['properties']['title'] == SHEET_NAME:
-            return s['properties']['sheetId']
-    return None
 
 
 if __name__ == '__main__':
