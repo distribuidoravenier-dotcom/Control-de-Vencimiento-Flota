@@ -45,6 +45,7 @@
   .table-wrapper {
     overflow:auto; max-height: 620px;
     border:1px solid #e0e0e0; border-radius:8px;
+    position: relative;
   }
   table { width:100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
   th {
@@ -56,33 +57,56 @@
   td {
     padding:7px 9px; border-bottom:1px solid #eee;
     white-space:nowrap; vertical-align: middle;
-    background: #fff;
+    background: #ffffff;
   }
   tr:hover td { background:#f8f9fa; }
 
-  /* === Columnas fijas (sticky horizontal) === */
-  /* Orden visual: 1) Acciones  2) FLOTA  3) PATENTE */
-  th.col-acciones, td.col-acciones {
-    position: sticky; left: 0; z-index: 6;
-    background: #667eea; color: #fff;
-  }
-  td.col-acciones { background: #fff; color: inherit; z-index: 4; }
-  tr:hover td.col-acciones { background:#f8f9fa; }
+  /* ================================================
+     COLUMNAS FIJAS (sticky horizontal) - FONDO SÓLIDO
+     ================================================ */
 
-  th.col-flota, td.col-flota {
-    position: sticky; left: 140px; z-index: 6;
-    background: #667eea; color: #fff;
+  /* --- Encabezados sticky: fondo azul sólido --- */
+  th.col-acciones {
+    position: sticky; left: 0; z-index: 7;
+    background: #667eea;
+    min-width: 110px; width: 110px;
   }
-  td.col-flota { background: #fff; color: inherit; z-index: 4; }
-  tr:hover td.col-flota { background:#f8f9fa; }
+  th.col-flota {
+    position: sticky; left: 110px; z-index: 7;
+    background: #667eea;
+    min-width: 100px; width: 100px;
+  }
+  th.col-patente {
+    position: sticky; left: 210px; z-index: 7;
+    background: #667eea;
+    min-width: 110px; width: 110px;
+    box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
+  }
 
-  th.col-patente, td.col-patente {
-    position: sticky; left: 240px; z-index: 6;
-    background: #667eea; color: #fff;
-    box-shadow: 2px 0 4px rgba(0,0,0,.08);
+  /* --- Celdas sticky del cuerpo: fondo blanco sólido --- */
+  td.col-acciones {
+    position: sticky; left: 0; z-index: 4;
+    background: #ffffff;
+    min-width: 110px; width: 110px;
   }
-  td.col-patente { background: #fff; color: inherit; z-index: 4; }
-  tr:hover td.col-patente { background:#f8f9fa; }
+  td.col-flota {
+    position: sticky; left: 110px; z-index: 4;
+    background: #ffffff;
+    min-width: 100px; width: 100px;
+  }
+  td.col-patente {
+    position: sticky; left: 210px; z-index: 4;
+    background: #ffffff;
+    min-width: 110px; width: 110px;
+    box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
+  }
+
+  /* Hover: mismo color en las celdas sticky para que no se vean raras */
+  tr:hover td.col-acciones,
+  tr:hover td.col-flota,
+  tr:hover td.col-patente {
+    background: #f8f9fa;
+  }
 
   .pk-badge {
     background:#fefcbf; color:#744210; padding:2px 6px;
@@ -268,7 +292,7 @@ function render() {
   const tbody = document.getElementById('maestroBody');
 
   // HEAD
-  let headHtml = '<tr><th class="col-acciones" style="width:140px;">Acciones</th>';
+  let headHtml = '<tr><th class="col-acciones">Acciones</th>';
   COLUMNS.forEach(col => {
     const pk = col.name === PRIMARY_KEY ? '<span class="pk-badge">PK</span>' : '';
     let cls = '';
