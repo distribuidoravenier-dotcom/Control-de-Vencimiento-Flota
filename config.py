@@ -72,3 +72,18 @@ class Config:
             ]
         }
     }
+
+    # Definición de solapas para el módulo "Control Documentario"
+    # Solo muestra un subconjunto de columnas de cada sheet (read-only)
+    CONTROL_DOCUMENTARIO = {
+        'camiones_t2': {
+            'sheet_key': 'camiones_t2',
+            'label': 'Camiones T2',
+            'columns': ['PATENTE', 'VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN']
+        },
+        'maestro_ae': {
+            'sheet_key': 'maestro_ae',
+            'label': 'Maestro AE',
+            'columns': ['PATENTE', 'VENC SEGURO', 'EXTINTOR']
+        }
+    }
