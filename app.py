@@ -138,19 +138,13 @@ def get_sheet_id(sheet_cfg):
 
 
 # ============================================================
-# RUTAS PRINCIPALES
+# RUTAS
 # ============================================================
 
 @app.route('/')
-def home():
-    """Página principal con los módulos disponibles."""
-    return render_template('home.html')
-
-
-@app.route('/maestro-flota')
-def maestro_flota():
-    """Módulo Maestro de Flota con solapas."""
-    return render_template('maestro_flota.html', sheets=SHEETS)
+def index():
+    """Página principal unificada con módulos y solapas."""
+    return render_template('index.html', sheets=SHEETS)
 
 
 # ============================================================
