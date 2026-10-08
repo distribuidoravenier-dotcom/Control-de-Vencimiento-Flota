@@ -9,10 +9,10 @@
   body {
     font-family: 'Segoe UI', Tahoma, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh; padding: 20px;
+    min-height: 100vh; padding: 10px;
   }
   .container {
-    max-width: 1600px; margin: 0 auto; background: #fff;
+    max-width: 100%; margin: 0 auto; background: #fff;
     border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
     padding: 26px;
   }
@@ -46,17 +46,43 @@
     overflow:auto; max-height: 620px;
     border:1px solid #e0e0e0; border-radius:8px;
   }
-  table { width:100%; border-collapse: collapse; font-size: 13px; }
+  table { width:100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
   th {
     background:#667eea; color:#fff; padding:10px 8px;
     text-align:left; position: sticky; top:0; z-index:5;
     white-space:nowrap; font-size:12px;
+    border-bottom: 1px solid #5a67d8;
   }
   td {
     padding:7px 9px; border-bottom:1px solid #eee;
     white-space:nowrap; vertical-align: middle;
+    background: #fff;
   }
   tr:hover td { background:#f8f9fa; }
+
+  /* === Columnas fijas (sticky horizontal) === */
+  /* Orden visual: 1) Acciones  2) FLOTA  3) PATENTE */
+  th.col-acciones, td.col-acciones {
+    position: sticky; left: 0; z-index: 6;
+    background: #667eea; color: #fff;
+  }
+  td.col-acciones { background: #fff; color: inherit; z-index: 4; }
+  tr:hover td.col-acciones { background:#f8f9fa; }
+
+  th.col-flota, td.col-flota {
+    position: sticky; left: 140px; z-index: 6;
+    background: #667eea; color: #fff;
+  }
+  td.col-flota { background: #fff; color: inherit; z-index: 4; }
+  tr:hover td.col-flota { background:#f8f9fa; }
+
+  th.col-patente, td.col-patente {
+    position: sticky; left: 240px; z-index: 6;
+    background: #667eea; color: #fff;
+    box-shadow: 2px 0 4px rgba(0,0,0,.08);
+  }
+  td.col-patente { background: #fff; color: inherit; z-index: 4; }
+  tr:hover td.col-patente { background:#f8f9fa; }
 
   .pk-badge {
     background:#fefcbf; color:#744210; padding:2px 6px;
@@ -242,10 +268,13 @@ function render() {
   const tbody = document.getElementById('maestroBody');
 
   // HEAD
-  let headHtml = '<tr><th style="width:140px;">Acciones</th>';
+  let headHtml = '<tr><th class="col-acciones" style="width:140px;">Acciones</th>';
   COLUMNS.forEach(col => {
     const pk = col.name === PRIMARY_KEY ? '<span class="pk-badge">PK</span>' : '';
-    headHtml += `<th>${escapeHtml(col.name)}${pk}</th>`;
+    let cls = '';
+    if (col.name === 'FLOTA') cls = ' class="col-flota"';
+    else if (col.name === PRIMARY_KEY) cls = ' class="col-patente"';
+    headHtml += `<th${cls}>${escapeHtml(col.name)}${pk}</th>`;
   });
   headHtml += '</tr>';
   thead.innerHTML = headHtml;
@@ -257,7 +286,7 @@ function render() {
     let bodyHtml = '';
     filteredRows.forEach(row => {
       bodyHtml += '<tr>';
-      bodyHtml += `<td>
+      bodyHtml += `<td class="col-acciones">
         <div class="actions">
           <button class="btn btn-sm" onclick="editRow(${row._row_number})">✏️</button>
           <button class="btn btn-danger btn-sm" onclick="deleteRow(${row._row_number})">🗑️</button>
@@ -266,19 +295,23 @@ function render() {
       COLUMNS.forEach(col => {
         const raw = row[col.name] || '';
         let cell = escapeHtml(raw);
+        let cls = '';
+        if (col.name === 'FLOTA') cls = 'col-flota';
+        else if (col.name === PRIMARY_KEY) cls = 'col-patente';
+
         if (col.name === 'STATUS') {
-          const cls = raw === 'SALE' ? 'status-sale' : (raw === 'NO SALE' ? 'status-nosale' : '');
-          cell = cls ? `<span class="${cls}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
+          const c = raw === 'SALE' ? 'status-sale' : (raw === 'NO SALE' ? 'status-nosale' : '');
+          cell = c ? `<span class="${c}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
         } else if (col.type === 'select' && (col.name === 'Cumple Polìtica?' || col.name === 'Tiene telemetria')) {
-          const cls = raw === 'SI' ? 'status-si' : (raw === 'NO' ? 'status-no' : '');
-          cell = cls ? `<span class="${cls}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
+          const c = raw === 'SI' ? 'status-si' : (raw === 'NO' ? 'status-no' : '');
+          cell = c ? `<span class="${c}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
         } else if (col.type === 'date' && raw) {
-          const cls = dateStatusClass(raw);
-          cell = cls ? `<span class="${cls}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
+          const c = dateStatusClass(raw);
+          cell = c ? `<span class="${c}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
         } else if (col.name === PRIMARY_KEY) {
           cell = `<b>${escapeHtml(raw)}</b>`;
         }
-        bodyHtml += `<td>${cell}</td>`;
+        bodyHtml += `<td class="${cls}">${cell}</td>`;
       });
       bodyHtml += '</tr>';
     });
@@ -312,7 +345,6 @@ function buildForm(values = {}) {
   COLUMNS.forEach(col => {
     const val = values[col.name] || '';
     const isPk = col.name === PRIMARY_KEY;
-    const label = col.name + (isPk ? ' <span style="color:#e53e3e;">*</span>' : '');
     const full = (col.name === 'CIA SEGURO' || col.name.includes('Capacidad')) ? ' full' : '';
 
     html += `<div class="form-group${full}">`;
@@ -361,14 +393,12 @@ async function submitRow() {
     const col = COLUMNS.find(c => c.name === field);
 
     if (col && col.type === 'date') {
-      // date input value = "YYYY-MM-DD" -> guardamos como "DD/MM/YYYY" (formato del Sheet)
       values[field] = inp.value ? formatDate(new Date(inp.value + 'T00:00:00')) : '';
     } else {
       values[field] = inp.value;
     }
   });
 
-  // Validar PK
   if (!String(values[PRIMARY_KEY] || '').trim()) {
     showAlert(`El campo ${PRIMARY_KEY} es obligatorio`, 'error');
     return;
