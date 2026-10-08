@@ -1,9 +1,10 @@
+<!-- templates/maestro_flota.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maestro de Flota - Camión T2</title>
+<title>Maestro de Flota</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
@@ -16,8 +17,29 @@
     border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
     padding: 26px;
   }
+  .breadcrumb {
+    font-size: 13px; color:#666; margin-bottom: 10px;
+  }
+  .breadcrumb a { color:#667eea; text-decoration:none; font-weight:600; }
+  .breadcrumb a:hover { text-decoration:underline; }
   h1 { color:#333; margin-bottom: 4px; font-size: 26px; }
   .subtitle { color:#666; margin-bottom: 20px; font-size: 14px; }
+
+  /* ===== SOLAPAS ===== */
+  .tabs {
+    display:flex; gap:4px; border-bottom:2px solid #e0e0e0;
+    margin-bottom: 18px;
+  }
+  .tab {
+    padding: 10px 22px; border:none; background:transparent;
+    cursor:pointer; font-size:14px; font-weight:600; color:#666;
+    border-bottom: 3px solid transparent; margin-bottom:-2px;
+    transition:.15s; font-family:inherit;
+  }
+  .tab:hover { color:#667eea; background:#f8f9fa; }
+  .tab.active {
+    color:#667eea; border-bottom-color:#667eea;
+  }
 
   .toolbar {
     display:flex; gap:10px; flex-wrap:wrap; align-items:center;
@@ -62,10 +84,8 @@
   tr:hover td { background:#f8f9fa; }
 
   /* ================================================
-     COLUMNAS FIJAS (sticky horizontal) - FONDO SÓLIDO
+     COLUMNAS FIJAS (sticky horizontal)
      ================================================ */
-
-  /* --- Encabezados sticky: fondo azul sólido --- */
   th.col-acciones {
     position: sticky; left: 0; z-index: 7;
     background: #667eea;
@@ -82,8 +102,6 @@
     min-width: 110px; width: 110px;
     box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
   }
-
-  /* --- Celdas sticky del cuerpo: fondo blanco sólido --- */
   td.col-acciones {
     position: sticky; left: 0; z-index: 4;
     background: #ffffff;
@@ -100,8 +118,6 @@
     min-width: 110px; width: 110px;
     box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
   }
-
-  /* Hover: mismo color en las celdas sticky para que no se vean raras */
   tr:hover td.col-acciones,
   tr:hover td.col-flota,
   tr:hover td.col-patente {
@@ -165,14 +181,25 @@
 </head>
 <body>
 <div class="container">
-  <h1>🚛 Maestro de Flota - Camión T2</h1>
+  <div class="breadcrumb">
+    <a href="/">🏠 Inicio</a> / Maestro de Flota
+  </div>
+  <h1>📋 Maestro de Flota</h1>
   <p class="subtitle">Administración de la flota · Primary Key: <b>PATENTE</b></p>
+
+  <div class="tabs" id="tabsContainer">
+    {% for key, cfg in sheets.items() %}
+    <button class="tab" data-sheet-key="{{ key }}" onclick="switchSheet('{{ key }}')">
+      {{ cfg.label }}
+    </button>
+    {% endfor %}
+  </div>
 
   <div id="alert-container"></div>
 
   <div class="toolbar">
-    <button class="btn btn-success" onclick="openAddModal()">➕ Agregar Vehículo</button>
-    <input type="text" id="filterInput" placeholder="🔍 Buscar por PATENTE, FLOTA, MARCA..." oninput="applyFilter()">
+    <button class="btn btn-success" onclick="openAddModal()">➕ Agregar</button>
+    <input type="text" id="filterInput" placeholder="🔍 Buscar..." oninput="applyFilter()">
     <button class="btn btn-cancel" onclick="clearFilter()">✖ Limpiar</button>
     <span id="recordCount" style="color:#666; font-size:14px;">Total: 0</span>
   </div>
@@ -188,7 +215,7 @@
 <!-- Modal Agregar / Editar -->
 <div class="modal" id="rowModal">
   <div class="modal-content">
-    <h2 id="rowModalTitle">➕ Agregar Vehículo</h2>
+    <h2 id="rowModalTitle">➕ Agregar</h2>
     <div class="form-grid" id="rowModalFields"></div>
     <div class="modal-buttons">
       <button class="btn btn-cancel" onclick="closeModal('rowModal')">Cancelar</button>
@@ -204,6 +231,7 @@ let allRows = [];
 let filteredRows = [];
 let editingRowNumber = null;
 let headers = [];
+let currentSheetKey = null;
 
 /* ============ HELPERS ============ */
 function showAlert(msg, type='success') {
@@ -262,9 +290,20 @@ function dateStatusClass(dateStr) {
   return 'date-ok';
 }
 
+/* ============ SOLAPAS ============ */
+async function switchSheet(sheetKey) {
+  currentSheetKey = sheetKey;
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.sheetKey === sheetKey);
+  });
+  document.getElementById('filterInput').value = '';
+  await loadConfig();
+  await loadRows();
+}
+
 /* ============ CARGA ============ */
 async function loadConfig() {
-  const res = await fetch('/api/config');
+  const res = await fetch('/api/config/' + currentSheetKey);
   const data = await res.json();
   if (data.success) {
     COLUMNS = data.columns;
@@ -275,7 +314,7 @@ async function loadConfig() {
 
 async function loadRows() {
   try {
-    const res = await fetch('/api/rows');
+    const res = await fetch('/api/rows/' + currentSheetKey);
     const data = await res.json();
     if (!data.success) { showAlert('Error: ' + data.error, 'error'); return; }
     allRows = data.rows || [];
@@ -396,7 +435,7 @@ function buildForm(values = {}) {
 
 function openAddModal() {
   editingRowNumber = null;
-  document.getElementById('rowModalTitle').textContent = '➕ Agregar Vehículo';
+  document.getElementById('rowModalTitle').textContent = '➕ Agregar';
   buildForm({});
   openModal('rowModal');
 }
@@ -405,7 +444,7 @@ function editRow(rowNumber) {
   const row = allRows.find(r => r._row_number === rowNumber);
   if (!row) return;
   editingRowNumber = rowNumber;
-  document.getElementById('rowModalTitle').textContent = '✏️ Editar Vehículo';
+  document.getElementById('rowModalTitle').textContent = '✏️ Editar';
   buildForm(row);
   openModal('rowModal');
 }
@@ -431,13 +470,13 @@ async function submitRow() {
   try {
     let res;
     if (editingRowNumber === null) {
-      res = await fetch('/api/rows', {
+      res = await fetch('/api/rows/' + currentSheetKey, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ values })
       });
     } else {
-      res = await fetch('/api/rows/' + editingRowNumber, {
+      res = await fetch('/api/rows/' + currentSheetKey + '/' + editingRowNumber, {
         method: 'PUT',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ values })
@@ -445,7 +484,7 @@ async function submitRow() {
     }
     const data = await res.json();
     if (data.success) {
-      showAlert(editingRowNumber === null ? '✅ Vehículo agregado' : '✅ Vehículo actualizado');
+      showAlert(editingRowNumber === null ? '✅ Registro agregado' : '✅ Registro actualizado');
       closeModal('rowModal');
       await loadRows();
     } else {
@@ -459,12 +498,12 @@ async function submitRow() {
 async function deleteRow(rowNumber) {
   const row = allRows.find(r => r._row_number === rowNumber);
   const label = row ? row[PRIMARY_KEY] : '';
-  if (!confirm(`¿Eliminar el vehículo "${label}"?`)) return;
+  if (!confirm(`¿Eliminar el registro "${label}"?`)) return;
   try {
-    const res = await fetch('/api/rows/' + rowNumber, { method:'DELETE' });
+    const res = await fetch('/api/rows/' + currentSheetKey + '/' + rowNumber, { method:'DELETE' });
     const data = await res.json();
     if (data.success) {
-      showAlert('✅ Vehículo eliminado');
+      showAlert('✅ Registro eliminado');
       await loadRows();
     } else {
       showAlert('❌ ' + data.error, 'error');
@@ -479,9 +518,12 @@ document.querySelectorAll('.modal').forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
 });
 
+/* Inicializar con la primera solapa */
 document.addEventListener('DOMContentLoaded', async () => {
-  await loadConfig();
-  await loadRows();
+  const firstTab = document.querySelector('.tab');
+  if (firstTab) {
+    await switchSheet(firstTab.dataset.sheetKey);
+  }
 });
 </script>
 </body>
