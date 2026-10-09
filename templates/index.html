@@ -172,9 +172,40 @@
   tr:hover td.col-cd-patente {
     background: #f8f9fa;
   }
+  /* Columna acciones de Control Documentario */
+  th.col-cd-acciones {
+    position: sticky; left: 0; z-index: 7;
+    background: #667eea;
+    min-width: 80px; width: 80px;
+  }
+  td.col-cd-acciones {
+    position: sticky; left: 0; z-index: 4;
+    background: #ffffff;
+    min-width: 80px; width: 80px;
+  }
+  th.col-cd-patente-2 {
+    position: sticky; left: 80px; z-index: 7;
+    background: #667eea;
+    min-width: 120px; width: 120px;
+    box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
+  }
+  td.col-cd-patente-2 {
+    position: sticky; left: 80px; z-index: 4;
+    background: #ffffff;
+    min-width: 120px; width: 120px;
+    box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
+  }
+  tr:hover td.col-cd-acciones,
+  tr:hover td.col-cd-patente-2 {
+    background: #f8f9fa;
+  }
 
   .pk-badge {
     background:#fefcbf; color:#744210; padding:2px 6px;
+    border-radius:4px; font-size:10px; font-weight:700; margin-left:4px;
+  }
+  .ro-badge {
+    background:#e2e8f0; color:#2d3748; padding:2px 6px;
     border-radius:4px; font-size:10px; font-weight:700; margin-left:4px;
   }
   .status-sale    { background:#c6f6d5; color:#22543d; padding:3px 8px; border-radius:4px; font-weight:700; font-size:11px; }
@@ -215,7 +246,11 @@
   }
   .form-group input:focus,
   .form-group select:focus { outline:none; border-color:#667eea; }
-  .form-group input[readonly] { background:#f0f0f0; cursor:not-allowed; }
+  .form-group input[readonly],
+  .form-group select[disabled] { background:#f0f0f0; cursor:not-allowed; color:#666; }
+  .field-hint {
+    font-size:11px; color:#a0aec0; margin-top:2px; font-style:italic;
+  }
   .modal-buttons {
     display:flex; gap:10px; justify-content:flex-end; margin-top:22px;
     padding-top:18px; border-top:1px solid #eee;
@@ -325,6 +360,19 @@
     <div class="modal-buttons">
       <button class="btn btn-cancel" onclick="closeModal('rowModal')">Cancelar</button>
       <button class="btn btn-success" onclick="submitRow()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editar Control Documentario -->
+<div class="modal" id="cdModal">
+  <div class="modal-content">
+    <h2 id="cdModalTitle">✏️ Editar vencimientos</h2>
+    <p class="subtitle" id="cdModalSubtitle" style="margin-bottom:14px;"></p>
+    <div class="form-grid" id="cdModalFields"></div>
+    <div class="modal-buttons">
+      <button class="btn btn-cancel" onclick="closeModal('cdModal')">Cancelar</button>
+      <button class="btn btn-success" onclick="submitCdRow()">💾 Guardar</button>
     </div>
   </div>
 </div>
@@ -467,10 +515,11 @@ function render() {
   let headHtml = '<tr><th class="col-acciones">Acciones</th>';
   COLUMNS.forEach(col => {
     const pk = col.name === PRIMARY_KEY ? '<span class="pk-badge">PK</span>' : '';
+    const ro = col.readonly ? '<span class="ro-badge">🔒</span>' : '';
     let cls = '';
     if (col.name === 'FLOTA') cls = ' class="col-flota"';
     else if (col.name === PRIMARY_KEY) cls = ' class="col-patente"';
-    headHtml += `<th${cls}>${escapeHtml(col.name)}${pk}</th>`;
+    headHtml += `<th${cls}>${escapeHtml(col.name)}${pk}${ro}</th>`;
   });
   headHtml += '</tr>';
   thead.innerHTML = headHtml;
@@ -541,13 +590,14 @@ function buildForm(values = {}) {
   COLUMNS.forEach(col => {
     const val = values[col.name] || '';
     const isPk = col.name === PRIMARY_KEY;
+    const isRo = !!col.readonly;
     const full = (col.name === 'CIA SEGURO' || col.name.includes('Capacidad')) ? ' full' : '';
 
     html += `<div class="form-group${full}">`;
-    html += `<label>${escapeHtml(col.name)}${isPk ? ' <span style="color:#e53e3e;">*</span>' : ''}</label>`;
+    html += `<label>${escapeHtml(col.name)}${isPk ? ' <span style="color:#e53e3e;">*</span>' : ''}${isRo ? ' <span class="ro-badge">🔒 solo Control Documentario</span>' : ''}</label>`;
 
     if (col.type === 'select') {
-      html += `<select data-field="${escapeHtml(col.name)}">`;
+      html += `<select data-field="${escapeHtml(col.name)}" ${isRo ? 'disabled' : ''}>`;
       html += `<option value="">-- Seleccionar --</option>`;
       col.options.forEach(opt => {
         const sel = (val === opt) ? ' selected' : '';
@@ -555,12 +605,13 @@ function buildForm(values = {}) {
       });
       html += `</select>`;
     } else if (col.type === 'date') {
-      html += `<input type="date" data-field="${escapeHtml(col.name)}" value="${dateToInputValue(val)}">`;
+      html += `<input type="date" data-field="${escapeHtml(col.name)}" value="${dateToInputValue(val)}" ${isRo ? 'readonly' : ''}>`;
     } else if (col.type === 'number') {
-      html += `<input type="number" step="any" data-field="${escapeHtml(col.name)}" value="${escapeHtml(val)}">`;
+      html += `<input type="number" step="any" data-field="${escapeHtml(col.name)}" value="${escapeHtml(val)}" ${isRo ? 'readonly' : ''}>`;
     } else {
-      html += `<input type="text" data-field="${escapeHtml(col.name)}" value="${escapeHtml(val)}">`;
+      html += `<input type="text" data-field="${escapeHtml(col.name)}" value="${escapeHtml(val)}" ${isRo ? 'readonly' : ''}>`;
     }
+    if (isRo) html += `<span class="field-hint">Editable desde Control Documentario</span>`;
     html += `</div>`;
   });
   document.getElementById('rowModalFields').innerHTML = html;
@@ -587,6 +638,9 @@ async function submitRow() {
   document.querySelectorAll('#rowModalFields [data-field]').forEach(inp => {
     const field = inp.dataset.field;
     const col = COLUMNS.find(c => c.name === field);
+
+    // Ignorar readonly: no se envían (el backend conserva el valor actual)
+    if (col && col.readonly) return;
 
     if (col && col.type === 'date') {
       values[field] = inp.value ? formatDate(new Date(inp.value + 'T00:00:00')) : '';
@@ -658,6 +712,7 @@ document.querySelectorAll('.modal').forEach(m => {
 let cdData = {};
 let cdCurrentKey = null;
 let cdFilteredRows = [];
+let cdEditingRowNumber = null;
 
 function cdShowAlert(msg, type='success') {
   const c = document.getElementById('cd-alert-container');
@@ -700,10 +755,10 @@ function renderCd() {
 
   const columns = cfg.columns;
 
-  // HEAD
-  let headHtml = '<tr>';
-  columns.forEach(col => {
-    const cls = col === 'PATENTE' ? ' class="col-cd-patente"' : '';
+  // HEAD (columna acciones + columnas de la config)
+  let headHtml = '<tr><th class="col-cd-acciones">Acciones</th>';
+  columns.forEach((col, idx) => {
+    const cls = col === 'PATENTE' ? ' class="col-cd-patente-2"' : '';
     headHtml += `<th${cls}>${escapeHtml(col)}</th>`;
   });
   headHtml += '</tr>';
@@ -711,17 +766,20 @@ function renderCd() {
 
   // BODY
   if (cdFilteredRows.length === 0) {
-    tbody.innerHTML = `<tr><td class="no-data" colspan="${columns.length}">Sin registros</td></tr>`;
+    tbody.innerHTML = `<tr><td class="no-data" colspan="${columns.length + 1}">Sin registros</td></tr>`;
   } else {
     let bodyHtml = '';
     cdFilteredRows.forEach(row => {
       bodyHtml += '<tr>';
+      bodyHtml += `<td class="col-cd-acciones">
+        <button class="btn btn-sm" onclick="editCdRow(${row._row_number})">✏️</button>
+      </td>`;
       columns.forEach(col => {
         const raw = row[col] || '';
         let cell = escapeHtml(raw);
         let cls = '';
         if (col === 'PATENTE') {
-          cls = 'col-cd-patente';
+          cls = 'col-cd-patente-2';
           cell = `<b>${escapeHtml(raw)}</b>`;
         } else if (raw) {
           const c = dateStatusClass(raw);
@@ -750,6 +808,68 @@ function clearCdFilter() {
   document.getElementById('cdFilterInput').value = '';
   cdFilteredRows = (cdData[cdCurrentKey]?.rows || []).slice();
   renderCd();
+}
+
+/* ============ MODAL EDICIÓN CONTROL DOCUMENTARIO ============ */
+function editCdRow(rowNumber) {
+  const cfg = cdData[cdCurrentKey];
+  if (!cfg) return;
+  const row = (cfg.rows || []).find(r => r._row_number === rowNumber);
+  if (!row) return;
+
+  cdEditingRowNumber = rowNumber;
+
+  document.getElementById('cdModalTitle').textContent = '✏️ Editar vencimientos';
+  document.getElementById('cdModalSubtitle').textContent =
+    `Vehículo: ${row['PATENTE'] || ''} · Solapa: ${cfg.label}`;
+
+  // Construir formulario: PATENTE readonly + columnas editables (fechas)
+  let html = '';
+  cfg.columns.forEach(colName => {
+    const val = row[colName] || '';
+    const isPk = (colName === 'PATENTE');
+    html += `<div class="form-group">`;
+    html += `<label>${escapeHtml(colName)}${isPk ? ' <span class="ro-badge">🔒</span>' : ''}</label>`;
+    if (isPk) {
+      html += `<input type="text" data-field="${escapeHtml(colName)}" value="${escapeHtml(val)}" readonly>`;
+    } else {
+      html += `<input type="date" data-field="${escapeHtml(colName)}" value="${dateToInputValue(val)}">`;
+    }
+    html += `</div>`;
+  });
+  document.getElementById('cdModalFields').innerHTML = html;
+  openModal('cdModal');
+}
+
+async function submitCdRow() {
+  const values = {};
+  document.querySelectorAll('#cdModalFields [data-field]').forEach(inp => {
+    const field = inp.dataset.field;
+    if (field === 'PATENTE') return; // readonly
+    values[field] = inp.value ? formatDate(new Date(inp.value + 'T00:00:00')) : '';
+  });
+
+  try {
+    const res = await fetch('/api/control-documentario/' + cdCurrentKey + '/' + cdEditingRowNumber, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ values })
+    });
+    const data = await res.json();
+    if (data.success) {
+      cdShowAlert('✅ Vencimientos actualizados');
+      closeModal('cdModal');
+      // Refrescar datos del módulo
+      cdData = {};
+      await loadControlDocumentario();
+      cdFilteredRows = (cdData[cdCurrentKey]?.rows || []).slice();
+      renderCd();
+    } else {
+      cdShowAlert('❌ ' + data.error, 'error');
+    }
+  } catch (e) {
+    cdShowAlert('Error: ' + e.message, 'error');
+  }
 }
 
 </script>
