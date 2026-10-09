@@ -1,6 +1,7 @@
 # app.py
 import os
 import json
+from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -21,6 +22,64 @@ SCOPES = [
 ]
 
 _service_cache = None
+
+# Columnas de vencimiento por solapa (las que definen STATUS)
+FECHAS_VENCIMIENTO = {
+    'camiones_t2': ['VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN'],
+    'maestro_ae':  ['VENC SEGURO', 'EXTINTOR'],
+}
+
+
+# ============================================================
+# CÁLCULOS AUTOMÁTICOS
+# ============================================================
+
+def parse_date_any(str_val):
+    """Intenta parsear dd/mm/yyyy, dd/mm/yy, yyyy-mm-dd. Devuelve date o None."""
+    if not str_val:
+        return None
+    s = str(str_val).strip()
+    if not s:
+        return None
+    formatos = ('%d/%m/%Y', '%d/%m/%y', '%Y-%m-%d', '%d-%m-%Y', '%d-%m-%y')
+    for fmt in formatos:
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def calc_cumple_politica(valor_antiguedad):
+    """ANTIGÜEDAD > 10 => 'NO', si no => 'SI'."""
+    try:
+        ant = float(str(valor_antiguedad).replace(',', '.').strip())
+    except (ValueError, TypeError):
+        return ''
+    return 'NO' if ant > 10 else 'SI'
+
+
+def calc_status(sheet_key, row_dict):
+    """
+    Si CUALQUIERA de las fechas de vencimiento es menor a hoy => 'NO SALE'.
+    Si no hay fechas cargadas o todas son futuras => 'SALE'.
+    """
+    fechas = FECHAS_VENCIMIENTO.get(sheet_key, [])
+    hoy = datetime.now().date()
+    for col in fechas:
+        d = parse_date_any(row_dict.get(col, ''))
+        if d and d < hoy:
+            return 'NO SALE'
+    return 'SALE'
+
+
+def recalcular_campos_auto(sheet_key, row_dict):
+    """Aplica los cálculos automáticos sobre un dict de fila (in-place)."""
+    if 'Cumple Polìtica?' in row_dict:
+        row_dict['Cumple Polìtica?'] = calc_cumple_politica(row_dict.get('ANTIGÜEDAD', ''))
+    if 'STATUS' in row_dict:
+        row_dict['STATUS'] = calc_status(sheet_key, row_dict)
+    return row_dict
 
 
 # ============================================================
@@ -119,6 +178,8 @@ def get_all_data(sheet_cfg):
             for j, h in enumerate(headers):
                 row_data[h] = raw[j] if j < len(raw) else ''
             row_data['_row_number'] = i
+            # recalcular campos automáticos al leer
+            recalcular_campos_auto(sheet_cfg['key'], row_data)
             rows.append(row_data)
         return {'headers': headers, 'rows': rows}
     except HttpError as err:
@@ -211,7 +272,7 @@ def api_add_row(sheet_key):
     """
     Body: { "values": { "PATENTE": "AB123CD", ... } }
     Valida que PATENTE no esté vacía ni duplicada.
-    Las columnas marcadas como readonly se ignoran (se guardan vacías).
+    Las columnas readonly se calculan automáticamente.
     """
     sheet_cfg = get_sheet_config(sheet_key)
     if not sheet_cfg:
@@ -233,14 +294,15 @@ def api_add_row(sheet_key):
             if (r.get(pk) or '').strip().upper() == pk_value.upper():
                 return jsonify({'success': False, 'error': f'Ya existe un registro con {pk} = {pk_value}'}), 400
 
-        # Armar la fila respetando readonly (esas columnas se guardan vacías)
-        readonly_names = {c['name'] for c in sheet_cfg['columns'] if c.get('readonly')}
-        row_values = []
+        # Armar dict de la fila nueva
+        row_dict = {}
         for h in headers:
-            if h in readonly_names:
-                row_values.append('')
-            else:
-                row_values.append(str(values.get(h, '') or ''))
+            row_dict[h] = str(values.get(h, '') or '')
+
+        # Recalcular campos automáticos
+        recalcular_campos_auto(sheet_key, row_dict)
+
+        row_values = [row_dict.get(h, '') for h in headers]
 
         service = get_sheets_service()
         service.spreadsheets().values().append(
@@ -262,7 +324,8 @@ def api_update_row(sheet_key, row_number):
     """
     Body: { "values": { "PATENTE": "AB123CD", ... } }
     Valida que la nueva PATENTE no duplique otra fila.
-    Las columnas readonly NO se modifican: se conserva el valor actual del Sheet.
+    Las columnas readonly NO se modifican desde Maestro (fechas) o
+    se recalculan (Cumple Polìtica?, STATUS).
     """
     sheet_cfg = get_sheet_config(sheet_key)
     if not sheet_cfg:
@@ -288,13 +351,22 @@ def api_update_row(sheet_key, row_number):
                 return jsonify({'success': False, 'error': f'Otra fila ya tiene {pk} = {pk_value}'}), 400
 
         readonly_names = {c['name'] for c in sheet_cfg['columns'] if c.get('readonly')}
-        row_values = []
+        fechas = set(FECHAS_VENCIMIENTO.get(sheet_key, []))
+
+        # Construir fila final
+        new_row = {}
         for h in headers:
-            if h in readonly_names:
-                # conservar el valor actual del Sheet (no editable desde Maestro)
-                row_values.append(str(current_row.get(h, '') if current_row else ''))
+            if h in fechas:
+                # Fechas: se conserva el valor actual (solo se editan desde Control Documentario)
+                new_row[h] = str(current_row.get(h, '') if current_row else '')
+            elif h in readonly_names:
+                # Cumple Polìtica? / STATUS: se recalculan abajo
+                new_row[h] = str(values.get(h, '') or '')
             else:
-                row_values.append(str(values.get(h, '') or ''))
+                new_row[h] = str(values.get(h, '') or '')
+
+        recalcular_campos_auto(sheet_key, new_row)
+        row_values = [new_row.get(h, '') for h in headers]
 
         service = get_sheets_service()
         service.spreadsheets().values().update(
@@ -315,6 +387,7 @@ def api_update_control_documentario(sheet_key, row_number):
     """
     Edita SOLO las columnas del módulo Control Documentario de una fila.
     Body: { "values": { "VENC VTV": "01/01/2026", ... } }
+    Recalcula Cumple Polìtica? y STATUS automáticamente.
     """
     if sheet_key not in CONTROL_DOCUMENTARIO:
         return jsonify({'success': False, 'error': 'Solapa no encontrada'}), 404
@@ -342,12 +415,16 @@ def api_update_control_documentario(sheet_key, row_number):
         last_col = sheet_cfg['last_col']
 
         # Armar fila nueva: lo que viene del body solo pisa las columnas editables
-        new_row_values = []
+        new_row = {}
         for h in headers:
             if h in editable_cols:
-                new_row_values.append(str(values.get(h, '') or ''))
+                new_row[h] = str(values.get(h, '') or '')
             else:
-                new_row_values.append(str(current_row.get(h, '') or ''))
+                new_row[h] = str(current_row.get(h, '') or '')
+
+        # Recalcular campos automáticos (STATUS depende de las fechas)
+        recalcular_campos_auto(sheet_key, new_row)
+        new_row_values = [new_row.get(h, '') for h in headers]
 
         service = get_sheets_service()
         service.spreadsheets().values().update(
