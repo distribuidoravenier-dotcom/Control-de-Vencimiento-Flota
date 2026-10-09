@@ -1,7 +1,7 @@
 # app.py
 import os
 import json
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from flask import Flask, render_template, request, jsonify
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -178,7 +178,6 @@ def get_all_data(sheet_cfg):
             for j, h in enumerate(headers):
                 row_data[h] = raw[j] if j < len(raw) else ''
             row_data['_row_number'] = i
-            # recalcular campos automáticos al leer
             recalcular_campos_auto(sheet_cfg['key'], row_data)
             rows.append(row_data)
         return {'headers': headers, 'rows': rows}
@@ -197,6 +196,129 @@ def get_sheet_id(sheet_cfg):
         if s['properties']['title'] == sheet_cfg['name']:
             return s['properties']['sheetId']
     return None
+
+
+# ============================================================
+# HISTORIAL DE VENCIMIENTOS
+# ============================================================
+
+def get_historial_config():
+    """Configuración de la solapa Historial de Vencimiento."""
+    cfg = {
+        'name': Config.HISTORIAL_SHEET_NAME,
+        'label': 'Historial de Vencimientos',
+        'primary_key': None,
+        'columns': Config.HISTORIAL_COLUMNS,
+    }
+    headers = [c['name'] for c in cfg['columns']]
+    return {
+        'key': 'historial_vencimientos',
+        'name': cfg['name'],
+        'label': cfg['label'],
+        'primary_key': None,
+        'columns': cfg['columns'],
+        'headers': headers,
+        'last_col': col_letter(len(headers))
+    }
+
+
+def semana_del_anio(fecha):
+    """Devuelve el número de semana ISO de una fecha date."""
+    if not fecha:
+        return ''
+    return fecha.isocalendar()[1]
+
+
+def get_historial_data():
+    """Lee todas las filas de la solapa Historial."""
+    sheet_cfg = get_historial_config()
+    ensure_sheet_headers(sheet_cfg)
+    return get_all_data(sheet_cfg)
+
+
+def ensure_historial_headers():
+    sheet_cfg = get_historial_config()
+    return ensure_sheet_headers(sheet_cfg)
+
+
+def cargar_historial_automatico():
+    """
+    Recorre todas las solapas del Maestro, detecta vencimientos a <= 30 días
+    y agrega filas nuevas en 'Historial de Vencimiento' que no existan ya
+    (mismo TIPO + DESCRIPCION + FECHA VENCIMIENTO).
+    Devuelve la cantidad de filas agregadas.
+    """
+    historial_cfg = get_historial_config()
+    ensure_sheet_headers(historial_cfg)
+
+    # Leer historial existente para evitar duplicados
+    hist_data = get_all_data(historial_cfg)
+    existentes = set()
+    for r in hist_data['rows']:
+        key = (
+            (r.get('TIPO') or '').strip().upper(),
+            (r.get('DESCRIPCION') or '').strip().upper(),
+            (r.get('FECHA VENCIMIENTO') or '').strip(),
+        )
+        existentes.add(key)
+
+    hoy = date.today()
+    limite = hoy + timedelta(days=Config.HISTORIAL_DIAS_ALERTA)
+
+    nuevas_filas = []
+
+    for sheet_key, sheet_cfg_orig in SHEETS.items():
+        sheet_cfg = get_sheet_config(sheet_key)
+        if not sheet_cfg:
+            continue
+        data = get_all_data(sheet_cfg)
+        for row in data['rows']:
+            patente = (row.get('PATENTE') or '').strip()
+            if not patente:
+                continue
+            for col_name in FECHAS_VENCIMIENTO.get(sheet_key, []):
+                fecha_str = row.get(col_name, '')
+                fecha_v = parse_date_any(fecha_str)
+                if not fecha_v:
+                    continue
+                # Solo vencimientos dentro de los próximos 30 días (incluye ya vencidos)
+                if fecha_v > limite:
+                    continue
+
+                tipo = Config.HISTORIAL_TIPO_MAP.get(col_name, col_name)
+                descripcion = patente
+                fecha_venc_str = fecha_v.strftime('%d/%m/%Y')
+
+                key = (tipo.strip().upper(),
+                       descripcion.strip().upper(),
+                       fecha_venc_str.strip())
+                if key in existentes:
+                    continue
+
+                fila = {
+                    'FECHA':                 hoy.strftime('%d/%m/%Y'),
+                    'TIPO':                  tipo,
+                    'DESCRIPCION':           descripcion,
+                    'FECHA VENCIMIENTO':     fecha_venc_str,
+                    'ESTADO':                'EN PROCESO',
+                    'SEMANA DE VENCIMIENTO': str(semana_del_anio(fecha_v)),
+                }
+                nuevas_filas.append(fila)
+                existentes.add(key)
+
+    if nuevas_filas:
+        headers = historial_cfg['headers']
+        values = [[fila.get(h, '') for h in headers] for fila in nuevas_filas]
+        service = get_sheets_service()
+        service.spreadsheets().values().append(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f"'{historial_cfg['name']}'!A:{historial_cfg['last_col']}",
+            valueInputOption='RAW',
+            insertDataOption='INSERT_ROWS',
+            body={'values': values}
+        ).execute()
+
+    return len(nuevas_filas)
 
 
 # ============================================================
@@ -288,20 +410,16 @@ def api_add_row(sheet_key):
         if not pk_value:
             return jsonify({'success': False, 'error': f'El campo {pk} es obligatorio'}), 400
 
-        # Chequear duplicado
         data = get_all_data(sheet_cfg)
         for r in data['rows']:
             if (r.get(pk) or '').strip().upper() == pk_value.upper():
                 return jsonify({'success': False, 'error': f'Ya existe un registro con {pk} = {pk_value}'}), 400
 
-        # Armar dict de la fila nueva
         row_dict = {}
         for h in headers:
             row_dict[h] = str(values.get(h, '') or '')
 
-        # Recalcular campos automáticos
         recalcular_campos_auto(sheet_key, row_dict)
-
         row_values = [row_dict.get(h, '') for h in headers]
 
         service = get_sheets_service()
@@ -324,8 +442,6 @@ def api_update_row(sheet_key, row_number):
     """
     Body: { "values": { "PATENTE": "AB123CD", ... } }
     Valida que la nueva PATENTE no duplique otra fila.
-    Las columnas readonly NO se modifican desde Maestro (fechas) o
-    se recalculan (Cumple Polìtica?, STATUS).
     """
     sheet_cfg = get_sheet_config(sheet_key)
     if not sheet_cfg:
@@ -353,14 +469,11 @@ def api_update_row(sheet_key, row_number):
         readonly_names = {c['name'] for c in sheet_cfg['columns'] if c.get('readonly')}
         fechas = set(FECHAS_VENCIMIENTO.get(sheet_key, []))
 
-        # Construir fila final
         new_row = {}
         for h in headers:
             if h in fechas:
-                # Fechas: se conserva el valor actual (solo se editan desde Control Documentario)
                 new_row[h] = str(current_row.get(h, '') if current_row else '')
             elif h in readonly_names:
-                # Cumple Polìtica? / STATUS: se recalculan abajo
                 new_row[h] = str(values.get(h, '') or '')
             else:
                 new_row[h] = str(values.get(h, '') or '')
@@ -386,7 +499,6 @@ def api_update_row(sheet_key, row_number):
 def api_update_control_documentario(sheet_key, row_number):
     """
     Edita SOLO las columnas del módulo Control Documentario de una fila.
-    Body: { "values": { "VENC VTV": "01/01/2026", ... } }
     Recalcula Cumple Polìtica? y STATUS automáticamente.
     """
     if sheet_key not in CONTROL_DOCUMENTARIO:
@@ -398,10 +510,9 @@ def api_update_control_documentario(sheet_key, row_number):
         body = request.get_json() or {}
         values = body.get('values', {})
 
-        cd_cols = CONTROL_DOCUMENTARIO[sheet_key]['columns']  # incluye PATENTE
+        cd_cols = CONTROL_DOCUMENTARIO[sheet_key]['columns']
         editable_cols = [c for c in cd_cols if c != sheet_cfg['primary_key']]
 
-        # Leer fila actual para conservar el resto de columnas intactas
         data = get_all_data(sheet_cfg)
         current_row = None
         for r in data['rows']:
@@ -414,7 +525,6 @@ def api_update_control_documentario(sheet_key, row_number):
         headers = sheet_cfg['headers']
         last_col = sheet_cfg['last_col']
 
-        # Armar fila nueva: lo que viene del body solo pisa las columnas editables
         new_row = {}
         for h in headers:
             if h in editable_cols:
@@ -422,7 +532,6 @@ def api_update_control_documentario(sheet_key, row_number):
             else:
                 new_row[h] = str(current_row.get(h, '') or '')
 
-        # Recalcular campos automáticos (STATUS depende de las fechas)
         recalcular_campos_auto(sheet_key, new_row)
         new_row_values = [new_row.get(h, '') for h in headers]
 
@@ -469,6 +578,71 @@ def api_delete_row(sheet_key, row_number):
         return jsonify({'success': True})
     except Exception as e:
         print(f"❌ delete_row: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================
+# API HISTORIAL DE VENCIMIENTOS
+# ============================================================
+
+@app.route('/api/historial-vencimientos', methods=['GET'])
+def api_historial_vencimientos():
+    """
+    Devuelve las filas del historial.
+    Antes de leer, corre la carga automática de vencimientos próximos (<= 30 días).
+    """
+    try:
+        # Carga automática (solo agrega lo que falte)
+        agregadas = cargar_historial_automatico()
+    except Exception as e:
+        print(f"⚠️ Error en carga automática: {e}")
+        agregadas = 0
+
+    sheet_cfg = get_historial_config()
+    ensure_sheet_headers(sheet_cfg)
+    data = get_all_data(sheet_cfg)
+    return jsonify({
+        'success': True,
+        'headers': data['headers'],
+        'rows': data['rows'],
+        'agregadas': agregadas,
+        'estados': Config.HISTORIAL_ESTADOS
+    })
+
+
+@app.route('/api/historial-vencimientos/<int:row_number>', methods=['PUT'])
+def api_update_historial(row_number):
+    """
+    Actualiza el ESTADO de una fila del historial.
+    Body: { "estado": "EN PROCESO" | "VENCIDO" | "COMPLETO" }
+    """
+    if row_number < 2:
+        return jsonify({'success': False, 'error': 'Fila inválida'}), 400
+    try:
+        body = request.get_json() or {}
+        nuevo_estado = (body.get('estado') or '').strip().upper()
+        if nuevo_estado not in [e.upper() for e in Config.HISTORIAL_ESTADOS]:
+            return jsonify({'success': False, 'error': 'Estado inválido'}), 400
+
+        sheet_cfg = get_historial_config()
+        headers = sheet_cfg['headers']
+        if 'ESTADO' not in headers:
+            return jsonify({'success': False, 'error': 'Columna ESTADO no encontrada'}), 500
+
+        col_idx = headers.index('ESTADO')  # 0-based
+        col_letra = col_letter(col_idx + 1)
+
+        service = get_sheets_service()
+        service.spreadsheets().values().update(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f"'{sheet_cfg['name']}'!{col_letra}{row_number}",
+            valueInputOption='RAW',
+            body={'values': [[nuevo_estado]]}
+        ).execute()
+
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"❌ update_historial: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
