@@ -1,887 +1,119 @@
-<!-- templates/index.html -->
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión de Flota</title>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    font-family: 'Segoe UI', Tahoma, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh; padding: 10px;
-    font-size: 17px; /* letra base más grande */
-  }
-  .container {
-    max-width: 100%; margin: 0 auto; background: #fff;
-    border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
-    padding: 26px;
-  }
-  h1 { color:#333; margin-bottom: 4px; font-size: 30px; }
-  .subtitle { color:#666; margin-bottom: 20px; font-size: 16px; }
+# config.py
+import os
+from dotenv import load_dotenv
 
-  /* ===== VISTA HOME (MÓDULOS) ===== */
-  .home-view {
-    display:flex; flex-direction:column; align-items:center;
-    justify-content:center; min-height: 70vh; text-align:center;
-  }
-  .home-view h1 { font-size: 40px; margin-bottom: 8px; }
-  .home-view .subtitle { font-size: 19px; margin-bottom: 40px; }
-  .modules {
-    display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px; width:100%; max-width: 760px;
-  }
-  .module-card {
-    background:#f8f9fa; border:2px solid #e0e0e0; border-radius:12px;
-    padding: 32px 22px; cursor:pointer; transition:.2s;
-    display:block; text-align:center;
-  }
-  .module-card:hover {
-    border-color:#667eea; background:#fff; transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(102,126,234,.25);
-  }
-  .module-icon { font-size: 56px; margin-bottom: 12px; }
-  .module-title { font-size: 21px; font-weight:700; color:#333; margin-bottom:6px; }
-  .module-desc { font-size: 15px; color:#666; }
+load_dotenv()
 
-  /* ===== VISTA MÓDULO ===== */
-  .module-view { display:none; }
-  .module-view.active { display:block; }
-  .home-view.hidden { display:none; }
+class Config:
+    # ID del Google Sheet
+    SPREADSHEET_ID = os.getenv(
+        'SPREADSHEET_ID',
+        '1Rdq1lsHQgSSTZHPUj_CLIeky-lTTzjEquyKB5IZMp50'
+    )
 
-  .breadcrumb {
-    font-size: 15px; color:#666; margin-bottom: 10px;
-  }
-  .breadcrumb a {
-    color:#667eea; text-decoration:none; font-weight:600; cursor:pointer;
-  }
-  .breadcrumb a:hover { text-decoration:underline; }
+    # Credenciales
+    CREDENTIALS_FILE = 'credentials.json'
+    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key-change-me')
 
-  /* ===== SOLAPAS ===== */
-  .tabs {
-    display:flex; gap:4px; border-bottom:2px solid #e0e0e0;
-    margin-bottom: 18px;
-  }
-  .tab {
-    padding: 12px 24px; border:none; background:transparent;
-    cursor:pointer; font-size:16px; font-weight:600; color:#666;
-    border-bottom: 3px solid transparent; margin-bottom:-2px;
-    transition:.15s; font-family:inherit;
-  }
-  .tab:hover { color:#667eea; background:#f8f9fa; }
-  .tab.active {
-    color:#667eea; border-bottom-color:#667eea;
-  }
-
-  .toolbar {
-    display:flex; gap:10px; flex-wrap:wrap; align-items:center;
-    background:#f8f9fa; padding:14px; border-radius:8px; margin-bottom:16px;
-  }
-  .toolbar input[type="text"] {
-    flex:1; min-width:220px; padding:10px 13px; border:1px solid #ddd;
-    border-radius:6px; font-size:16px;
-  }
-  .btn {
-    background:#667eea; color:#fff; border:none; padding:11px 20px;
-    border-radius:6px; cursor:pointer; font-weight:600; font-size:16px;
-    transition:.15s; white-space: nowrap;
-  }
-  .btn:hover { background:#5a67d8; transform: translateY(-1px); }
-  .btn-success { background:#38a169; } .btn-success:hover { background:#2f855a; }
-  .btn-danger  { background:#e53e3e; } .btn-danger:hover  { background:#c53030; }
-  .btn-cancel  { background:#718096; } .btn-cancel:hover  { background:#4a5568; }
-  .btn-sm { padding:6px 11px; font-size:14px; }
-
-  .alert { padding:13px 17px; border-radius:6px; margin-bottom:14px; font-weight:600; font-size:16px; }
-  .alert-success { background:#c6f6d5; color:#22543d; }
-  .alert-error   { background:#fed7d7; color:#742a2a; }
-
-  .table-wrapper {
-    overflow:auto; max-height: 640px;
-    border:1px solid #e0e0e0; border-radius:8px;
-    position: relative;
-  }
-  table { width:100%; border-collapse: separate; border-spacing: 0; font-size: 15px; }
-  th {
-    background:#667eea; color:#fff; padding:12px 10px;
-    text-align:left; position: sticky; top:0; z-index:5;
-    white-space:nowrap; font-size:14px;
-    border-bottom: 1px solid #5a67d8;
-  }
-  td {
-    padding:9px 11px; border-bottom:1px solid #eee;
-    white-space:nowrap; vertical-align: middle;
-    background: #ffffff;
-  }
-  tr:hover td { background:#f8f9fa; }
-
-  /* ================================================
-     COLUMNAS FIJAS (sticky horizontal)
-     ================================================ */
-  th.col-acciones {
-    position: sticky; left: 0; z-index: 7;
-    background: #667eea;
-    min-width: 120px; width: 120px;
-  }
-  th.col-flota {
-    position: sticky; left: 120px; z-index: 7;
-    background: #667eea;
-    min-width: 105px; width: 105px;
-  }
-  th.col-patente {
-    position: sticky; left: 225px; z-index: 7;
-    background: #667eea;
-    min-width: 120px; width: 120px;
-    box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
-  }
-  td.col-acciones {
-    position: sticky; left: 0; z-index: 4;
-    background: #ffffff;
-    min-width: 120px; width: 120px;
-  }
-  td.col-flota {
-    position: sticky; left: 120px; z-index: 4;
-    background: #ffffff;
-    min-width: 105px; width: 105px;
-  }
-  td.col-patente {
-    position: sticky; left: 225px; z-index: 4;
-    background: #ffffff;
-    min-width: 120px; width: 120px;
-    box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
-  }
-  tr:hover td.col-acciones,
-  tr:hover td.col-flota,
-  tr:hover td.col-patente {
-    background: #f8f9fa;
-  }
-
-  /* Variante para tablas de Control Documentario: solo PATENTE sticky */
-  th.col-cd-patente {
-    position: sticky; left: 0; z-index: 7;
-    background: #667eea;
-    min-width: 130px; width: 130px;
-    box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
-  }
-  td.col-cd-patente {
-    position: sticky; left: 0; z-index: 4;
-    background: #ffffff;
-    min-width: 130px; width: 130px;
-    box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
-  }
-  tr:hover td.col-cd-patente {
-    background: #f8f9fa;
-  }
-  /* Columna acciones de Control Documentario */
-  th.col-cd-acciones {
-    position: sticky; left: 0; z-index: 7;
-    background: #667eea;
-    min-width: 90px; width: 90px;
-  }
-  td.col-cd-acciones {
-    position: sticky; left: 0; z-index: 4;
-    background: #ffffff;
-    min-width: 90px; width: 90px;
-  }
-  th.col-cd-patente-2 {
-    position: sticky; left: 90px; z-index: 7;
-    background: #667eea;
-    min-width: 130px; width: 130px;
-    box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
-  }
-  td.col-cd-patente-2 {
-    position: sticky; left: 90px; z-index: 4;
-    background: #ffffff;
-    min-width: 130px; width: 130px;
-    box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
-  }
-  tr:hover td.col-cd-acciones,
-  tr:hover td.col-cd-patente-2 {
-    background: #f8f9fa;
-  }
-
-  .pk-badge {
-    background:#fefcbf; color:#744210; padding:2px 6px;
-    border-radius:4px; font-size:11px; font-weight:700; margin-left:4px;
-  }
-  .ro-badge {
-    background:#e2e8f0; color:#2d3748; padding:2px 6px;
-    border-radius:4px; font-size:11px; font-weight:700; margin-left:4px;
-  }
-  .status-sale    { background:#38a169; color:#fff; padding:4px 10px; border-radius:4px; font-weight:700; font-size:13px; }
-  .status-nosale  { background:#e53e3e; color:#fff; padding:4px 10px; border-radius:4px; font-weight:700; font-size:13px; }
-  .status-si      { background:#38a169; color:#fff; padding:4px 10px; border-radius:4px; font-weight:700; font-size:13px; }
-  .status-no      { background:#e53e3e; color:#fff; padding:4px 10px; border-radius:4px; font-weight:700; font-size:13px; }
-  .date-ok        { background:#c6f6d5; color:#22543d; padding:4px 10px; border-radius:4px; font-weight:600; font-size:13px; }
-  .date-warning   { background:#fefcbf; color:#744210; padding:4px 10px; border-radius:4px; font-weight:600; font-size:13px; }
-  .date-danger    { background:#fed7d7; color:#742a2a; padding:4px 10px; border-radius:4px; font-weight:600; font-size:13px; }
-
-  .actions { display:flex; gap:4px; }
-
-  .modal {
-    display:none; position:fixed; inset:0; background:rgba(0,0,0,.55);
-    z-index:100; align-items:flex-start; justify-content:center;
-    overflow-y:auto; padding: 30px 16px;
-  }
-  .modal.open { display:flex; }
-  .modal-content {
-    background:#fff; border-radius:10px; padding:26px;
-    width:100%; max-width:880px;
-    box-shadow: 0 20px 60px rgba(0,0,0,.35);
-  }
-  .modal-content h2 { margin-bottom:18px; color:#333; font-size: 23px; }
-  .form-grid {
-    display:grid; grid-template-columns: 1fr 1fr; gap:14px;
-  }
-  .form-group { display:flex; flex-direction:column; }
-  .form-group.full { grid-column: 1 / -1; }
-  .form-group label {
-    font-weight:600; margin-bottom:4px; color:#333; font-size:13px;
-    text-transform: uppercase; letter-spacing: .3px;
-  }
-  .form-group input,
-  .form-group select {
-    padding:10px 12px; border:1px solid #ddd; border-radius:6px; font-size:16px;
-    font-family: inherit;
-  }
-  .form-group input:focus,
-  .form-group select:focus { outline:none; border-color:#667eea; }
-  .form-group input[readonly],
-  .form-group select[disabled] { background:#f0f0f0; cursor:not-allowed; color:#666; }
-  .field-hint {
-    font-size:12px; color:#a0aec0; margin-top:2px; font-style:italic;
-  }
-  .modal-buttons {
-    display:flex; gap:10px; justify-content:flex-end; margin-top:22px;
-    padding-top:18px; border-top:1px solid #eee;
-  }
-  .no-data { text-align:center; padding:40px; color:#999; font-size:16px; }
-
-  @media (max-width: 720px) {
-    .form-grid { grid-template-columns: 1fr; }
-    td, th { font-size: 13px; }
-    body { font-size: 15px; }
-  }
-</style>
-</head>
-<body>
-<div class="container">
-
-  <!-- ===================== VISTA HOME ===================== -->
-  <div class="home-view" id="homeView">
-    <h1>🚛 Gestión de Flota</h1>
-    <p class="subtitle">Seleccioná un módulo para comenzar</p>
-
-    <div class="modules">
-      <div class="module-card" onclick="openModule('maestro_flota')">
-        <div class="module-icon">📋</div>
-        <div class="module-title">Maestro de Flota</div>
-        <div class="module-desc">Camiones T2 · Maestro AE</div>
-      </div>
-      <div class="module-card" onclick="openModule('control_documentario')">
-        <div class="module-icon">📄</div>
-        <div class="module-title">Control Documentario</div>
-        <div class="module-desc">Vencimientos de documentación</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===================== VISTA MÓDULO MAESTRO DE FLOTA ===================== -->
-  <div class="module-view" id="moduleViewMaestro">
-    <div class="breadcrumb">
-      <a onclick="goHome()">🏠 Inicio</a> / <span>Maestro de Flota</span>
-    </div>
-    <h1>📋 Maestro de Flota</h1>
-    <p class="subtitle">Administración de la flota · Primary Key: <b>PATENTE</b></p>
-
-    <div class="tabs" id="tabsContainer">
-      {% for key, cfg in sheets.items() %}
-      <button class="tab" data-sheet-key="{{ key }}" onclick="switchSheet('{{ key }}')">
-        {{ cfg.label }}
-      </button>
-      {% endfor %}
-    </div>
-
-    <div id="alert-container"></div>
-
-    <div class="toolbar">
-      <button class="btn btn-success" onclick="openAddModal()">➕ Agregar</button>
-      <input type="text" id="filterInput" placeholder="🔍 Buscar..." oninput="applyFilter()">
-      <button class="btn btn-cancel" onclick="clearFilter()">✖ Limpiar</button>
-      <span id="recordCount" style="color:#666; font-size:16px;">Total: 0</span>
-    </div>
-
-    <div class="table-wrapper">
-      <table id="maestroTable">
-        <thead id="maestroHead"></thead>
-        <tbody id="maestroBody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ===================== VISTA MÓDULO CONTROL DOCUMENTARIO ===================== -->
-  <div class="module-view" id="moduleViewControl">
-    <div class="breadcrumb">
-      <a onclick="goHome()">🏠 Inicio</a> / <span>Control Documentario</span>
-    </div>
-    <h1>📄 Control Documentario</h1>
-    <p class="subtitle">Vencimientos de documentación por vehículo</p>
-
-    <div class="tabs" id="cdTabsContainer">
-      {% for key, cfg in control.items() %}
-      <button class="tab" data-cd-key="{{ key }}" onclick="switchCdSheet('{{ key }}')">
-        {{ cfg.label }}
-      </button>
-      {% endfor %}
-    </div>
-
-    <div id="cd-alert-container"></div>
-
-    <div class="toolbar">
-      <input type="text" id="cdFilterInput" placeholder="🔍 Buscar por PATENTE..." oninput="applyCdFilter()">
-      <button class="btn btn-cancel" onclick="clearCdFilter()">✖ Limpiar</button>
-      <span id="cdRecordCount" style="color:#666; font-size:16px;">Total: 0</span>
-    </div>
-
-    <div class="table-wrapper">
-      <table id="cdTable">
-        <thead id="cdHead"></thead>
-        <tbody id="cdBody"></tbody>
-      </table>
-    </div>
-  </div>
-
-</div>
-
-<!-- Modal Agregar / Editar (solo Maestro de Flota) -->
-<div class="modal" id="rowModal">
-  <div class="modal-content">
-    <h2 id="rowModalTitle">➕ Agregar</h2>
-    <div class="form-grid" id="rowModalFields"></div>
-    <div class="modal-buttons">
-      <button class="btn btn-cancel" onclick="closeModal('rowModal')">Cancelar</button>
-      <button class="btn btn-success" onclick="submitRow()">💾 Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Editar Control Documentario -->
-<div class="modal" id="cdModal">
-  <div class="modal-content">
-    <h2 id="cdModalTitle">✏️ Editar vencimientos</h2>
-    <p class="subtitle" id="cdModalSubtitle" style="margin-bottom:14px;"></p>
-    <div class="form-grid" id="cdModalFields"></div>
-    <div class="modal-buttons">
-      <button class="btn btn-cancel" onclick="closeModal('cdModal')">Cancelar</button>
-      <button class="btn btn-success" onclick="submitCdRow()">💾 Guardar</button>
-    </div>
-  </div>
-</div>
-
-<script>
-/* ============================================================
-   MAESTRO DE FLOTA
-   ============================================================ */
-let COLUMNS = [];
-let PRIMARY_KEY = 'PATENTE';
-let allRows = [];
-let filteredRows = [];
-let editingRowNumber = null;
-let headers = [];
-let currentSheetKey = null;
-
-/* ============ HELPERS ============ */
-function showAlert(msg, type='success') {
-  const c = document.getElementById('alert-container');
-  const div = document.createElement('div');
-  div.className = 'alert alert-' + type;
-  div.textContent = msg;
-  c.appendChild(div);
-  setTimeout(() => div.remove(), 4500);
-}
-function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  })[c]);
-}
-
-/* ============ NAVEGACIÓN ============ */
-function openModule(moduleKey) {
-  document.getElementById('homeView').classList.add('hidden');
-  document.getElementById('moduleViewMaestro').classList.remove('active');
-  document.getElementById('moduleViewControl').classList.remove('active');
-
-  if (moduleKey === 'maestro_flota') {
-    document.getElementById('moduleViewMaestro').classList.add('active');
-    const firstTab = document.querySelector('#tabsContainer .tab');
-    if (firstTab) switchSheet(firstTab.dataset.sheetKey);
-  } else if (moduleKey === 'control_documentario') {
-    document.getElementById('moduleViewControl').classList.add('active');
-    const firstTab = document.querySelector('#cdTabsContainer .tab');
-    if (firstTab) switchCdSheet(firstTab.dataset.cdKey);
-  }
-}
-
-function goHome() {
-  document.getElementById('moduleViewMaestro').classList.remove('active');
-  document.getElementById('moduleViewControl').classList.remove('active');
-  document.getElementById('homeView').classList.remove('hidden');
-  document.getElementById('alert-container').innerHTML = '';
-  document.getElementById('cd-alert-container').innerHTML = '';
-}
-
-/* ============ CÁLCULO DE VENCIMIENTOS ============ */
-function parseDate(str) {
-  if (!str) return null;
-  str = String(str).trim();
-  if (!str) return null;
-  let m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-  if (m) {
-    let [_, d, mo, y] = m;
-    if (y.length === 2) y = '20' + y;
-    return new Date(+y, +mo - 1, +d);
-  }
-  m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
-  const d = new Date(str);
-  return isNaN(d) ? null : d;
-}
-function formatDate(date) {
-  if (!date) return '';
-  const d = String(date.getDate()).padStart(2,'0');
-  const m = String(date.getMonth()+1).padStart(2,'0');
-  const y = date.getFullYear();
-  return `${d}/${m}/${y}`;
-}
-function dateToInputValue(str) {
-  const d = parseDate(str);
-  if (!d) return '';
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth()+1).padStart(2,'0');
-  const dd = String(d.getDate()).padStart(2,'0');
-  return `${yyyy}-${mm}-${dd}`;
-}
-function dateStatusClass(dateStr) {
-  const d = parseDate(dateStr);
-  if (!d) return '';
-  const today = new Date(); today.setHours(0,0,0,0);
-  d.setHours(0,0,0,0);
-  const diff = Math.ceil((d - today) / 86400000);
-  if (diff < 0) return 'date-danger';
-  if (diff <= 30) return 'date-warning';
-  return 'date-ok';
-}
-
-/* ============ SOLAPAS ============ */
-async function switchSheet(sheetKey) {
-  currentSheetKey = sheetKey;
-  document.querySelectorAll('#tabsContainer .tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.sheetKey === sheetKey);
-  });
-  document.getElementById('filterInput').value = '';
-  await loadConfig();
-  await loadRows();
-}
-
-/* ============ CARGA ============ */
-async function loadConfig() {
-  const res = await fetch('/api/config/' + currentSheetKey);
-  const data = await res.json();
-  if (data.success) {
-    COLUMNS = data.columns;
-    PRIMARY_KEY = data.primaryKey;
-    headers = COLUMNS.map(c => c.name);
-  }
-}
-
-async function loadRows() {
-  try {
-    const res = await fetch('/api/rows/' + currentSheetKey);
-    const data = await res.json();
-    if (!data.success) { showAlert('Error: ' + data.error, 'error'); return; }
-    allRows = data.rows || [];
-    filteredRows = allRows.slice();
-    render();
-  } catch (e) {
-    showAlert('Error de conexión: ' + e.message, 'error');
-  }
-}
-
-/* ============ RENDER ============ */
-function render() {
-  const thead = document.getElementById('maestroHead');
-  const tbody = document.getElementById('maestroBody');
-
-  // HEAD
-  let headHtml = '<tr><th class="col-acciones">Acciones</th>';
-  COLUMNS.forEach(col => {
-    const pk = col.name === PRIMARY_KEY ? '<span class="pk-badge">PK</span>' : '';
-    const ro = col.readonly ? '<span class="ro-badge">🔒</span>' : '';
-    let cls = '';
-    if (col.name === 'FLOTA') cls = ' class="col-flota"';
-    else if (col.name === PRIMARY_KEY) cls = ' class="col-patente"';
-    headHtml += `<th${cls}>${escapeHtml(col.name)}${pk}${ro}</th>`;
-  });
-  headHtml += '</tr>';
-  thead.innerHTML = headHtml;
-
-  // BODY
-  if (filteredRows.length === 0) {
-    tbody.innerHTML = `<tr><td class="no-data" colspan="${COLUMNS.length + 1}">Sin registros</td></tr>`;
-  } else {
-    let bodyHtml = '';
-    filteredRows.forEach(row => {
-      bodyHtml += '<tr>';
-      bodyHtml += `<td class="col-acciones">
-        <div class="actions">
-          <button class="btn btn-sm" onclick="editRow(${row._row_number})">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteRow(${row._row_number})">🗑️</button>
-        </div>
-      </td>`;
-      COLUMNS.forEach(col => {
-        const raw = row[col.name] || '';
-        let cell = escapeHtml(raw);
-        let cls = '';
-        if (col.name === 'FLOTA') cls = 'col-flota';
-        else if (col.name === PRIMARY_KEY) cls = 'col-patente';
-
-        if (col.name === 'STATUS') {
-          const c = raw === 'SALE' ? 'status-sale' : (raw === 'NO SALE' ? 'status-nosale' : '');
-          cell = c ? `<span class="${c}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
-        } else if (col.name === 'Cumple Polìtica?') {
-          const c = raw === 'SI' ? 'status-si' : (raw === 'NO' ? 'status-no' : '');
-          cell = c ? `<span class="${c}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
-        } else if (col.type === 'date' && raw) {
-          const c = dateStatusClass(raw);
-          cell = c ? `<span class="${c}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
-        } else if (col.name === PRIMARY_KEY) {
-          cell = `<b>${escapeHtml(raw)}</b>`;
+    # Definición de solapas (sheets) dentro del mismo spreadsheet
+    SHEETS = {
+        'camiones_t2': {
+            'name': 'Maestro de Flota - Camion T2',
+            'label': 'Camiones T2',
+            'primary_key': 'PATENTE',
+            'columns': [
+                {'name': 'FLOTA',                    'type': 'text',   'options': []},
+                {'name': 'PATENTE',                  'type': 'text',   'options': [], 'pk': True},
+                {'name': 'CODIGO DE CAMIÓN',         'type': 'number', 'options': []},
+                {'name': 'PROPIETARIO',              'type': 'text',   'options': []},
+                {'name': 'CIA SEGURO',               'type': 'text',   'options': []},
+                {'name': 'MARCA',                    'type': 'text',   'options': []},
+                {'name': 'MODELO',                   'type': 'text',   'options': []},
+                {'name': 'AÑO',                      'type': 'number', 'options': []},
+                {'name': 'ANTIGÜEDAD',               'type': 'number', 'options': []},
+                {'name': 'ODOMETRO',                 'type': 'number', 'options': []},
+                {'name': 'Cumple Polìtica?',         'type': 'select', 'options': ['SI', 'NO'], 'readonly': True},
+                {'name': 'TIPO',                     'type': 'text',   'options': []},
+                {'name': 'Operación',                'type': 'text',   'options': []},
+                {'name': 'Tara',                     'type': 'number', 'options': []},
+                {'name': 'Capacidad Maxima (kg)',    'type': 'number', 'options': []},
+                {'name': 'Capacidad Maxima (pal)',   'type': 'number', 'options': []},
+                {'name': 'Tiene telemetria',         'type': 'select', 'options': ['SI', 'NO']},
+                {'name': 'STATUS',                   'type': 'select', 'options': ['SALE', 'NO SALE'], 'readonly': True},
+                {'name': 'VENC VTV',                 'type': 'date',   'options': [], 'readonly': True},
+                {'name': 'VENC SEGURO',              'type': 'date',   'options': [], 'readonly': True},
+                {'name': 'UTA',                      'type': 'date',   'options': [], 'readonly': True},
+                {'name': 'EXTINTOR',                 'type': 'date',   'options': [], 'readonly': True},
+                {'name': 'BOTIQUIN',                 'type': 'date',   'options': [], 'readonly': True},
+            ]
+        },
+        'maestro_ae': {
+            'name': 'Maestro de Flota - AE',
+            'label': 'Maestro AE',
+            'primary_key': 'PATENTE',
+            'columns': [
+                {'name': 'FLOTA',                  'type': 'text',   'options': []},
+                {'name': 'PATENTE',                'type': 'text',   'options': [], 'pk': True},
+                {'name': 'CODIGO DE AE',           'type': 'text',   'options': []},
+                {'name': 'PROPIETARIO',            'type': 'text',   'options': []},
+                {'name': 'CIA SEGURO',             'type': 'text',   'options': []},
+                {'name': 'MARCA',                  'type': 'text',   'options': []},
+                {'name': 'MODELO',                 'type': 'text',   'options': []},
+                {'name': 'AÑO',                    'type': 'number', 'options': []},
+                {'name': 'Motor',                  'type': 'text',   'options': []},
+                {'name': 'HORAS',                  'type': 'number', 'options': []},
+                {'name': 'ANTIGÜEDAD',             'type': 'number', 'options': []},
+                {'name': 'Cumple Polìtica?',       'type': 'select', 'options': ['SI', 'NO'], 'readonly': True},
+                {'name': 'TIPO',                   'type': 'text',   'options': []},
+                {'name': 'Operación',              'type': 'text',   'options': []},
+                {'name': 'Capacidad de Carga',     'type': 'text',   'options': []},
+                {'name': 'VENC SEGURO',            'type': 'date',   'options': [], 'readonly': True},
+                {'name': 'EXTINTOR',               'type': 'date',   'options': [], 'readonly': True},
+            ]
         }
-        bodyHtml += `<td class="${cls}">${cell}</td>`;
-      });
-      bodyHtml += '</tr>';
-    });
-    tbody.innerHTML = bodyHtml;
-  }
-
-  document.getElementById('recordCount').textContent = 'Total: ' + filteredRows.length;
-}
-
-/* ============ FILTRO ============ */
-function applyFilter() {
-  const q = document.getElementById('filterInput').value.toLowerCase().trim();
-  if (!q) filteredRows = allRows.slice();
-  else filteredRows = allRows.filter(r =>
-    headers.some(h => String(r[h] || '').toLowerCase().includes(q))
-  );
-  render();
-}
-function clearFilter() {
-  document.getElementById('filterInput').value = '';
-  filteredRows = allRows.slice();
-  render();
-}
-
-/* ============ MODAL ============ */
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-function buildForm(values = {}) {
-  let html = '';
-  COLUMNS.forEach(col => {
-    const val = values[col.name] || '';
-    const isPk = col.name === PRIMARY_KEY;
-    const isRo = !!col.readonly;
-    const full = (col.name === 'CIA SEGURO' || col.name.includes('Capacidad')) ? ' full' : '';
-
-    // Determinar si la columna readonly se calcula automáticamente (Cumple Polìtica? / STATUS)
-    const autoCalc = (col.name === 'Cumple Polìtica?' || col.name === 'STATUS');
-
-    html += `<div class="form-group${full}">`;
-    let labelExtra = '';
-    if (isPk) labelExtra += ' <span style="color:#e53e3e;">*</span>';
-    if (autoCalc) labelExtra += ' <span class="ro-badge">🤖 auto</span>';
-    else if (isRo) labelExtra += ' <span class="ro-badge">🔒 solo Control Documentario</span>';
-    html += `<label>${escapeHtml(col.name)}${labelExtra}</label>`;
-
-    if (col.type === 'select') {
-      html += `<select data-field="${escapeHtml(col.name)}" ${(isRo || autoCalc) ? 'disabled' : ''}>`;
-      html += `<option value="">-- Seleccionar --</option>`;
-      col.options.forEach(opt => {
-        const sel = (val === opt) ? ' selected' : '';
-        html += `<option value="${escapeHtml(opt)}"${sel}>${escapeHtml(opt)}</option>`;
-      });
-      html += `</select>`;
-    } else if (col.type === 'date') {
-      html += `<input type="date" data-field="${escapeHtml(col.name)}" value="${dateToInputValue(val)}" ${isRo ? 'readonly' : ''}>`;
-    } else if (col.type === 'number') {
-      html += `<input type="number" step="any" data-field="${escapeHtml(col.name)}" value="${escapeHtml(val)}" ${isRo ? 'readonly' : ''}>`;
-    } else {
-      html += `<input type="text" data-field="${escapeHtml(col.name)}" value="${escapeHtml(val)}" ${isRo ? 'readonly' : ''}>`;
     }
-    if (autoCalc) html += `<span class="field-hint">Se calcula automáticamente</span>`;
-    else if (isRo) html += `<span class="field-hint">Editable desde Control Documentario</span>`;
-    html += `</div>`;
-  });
-  document.getElementById('rowModalFields').innerHTML = html;
-}
 
-function openAddModal() {
-  editingRowNumber = null;
-  document.getElementById('rowModalTitle').textContent = '➕ Agregar';
-  buildForm({});
-  openModal('rowModal');
-}
-
-function editRow(rowNumber) {
-  const row = allRows.find(r => r._row_number === rowNumber);
-  if (!row) return;
-  editingRowNumber = rowNumber;
-  document.getElementById('rowModalTitle').textContent = '✏️ Editar';
-  buildForm(row);
-  openModal('rowModal');
-}
-
-async function submitRow() {
-  const values = {};
-  document.querySelectorAll('#rowModalFields [data-field]').forEach(inp => {
-    const field = inp.dataset.field;
-    const col = COLUMNS.find(c => c.name === field);
-
-    // Ignorar readonly (fechas) y auto-calculadas (Cumple Polìtica? / STATUS)
-    if (col && col.readonly) return;
-
-    if (col && col.type === 'date') {
-      values[field] = inp.value ? formatDate(new Date(inp.value + 'T00:00:00')) : '';
-    } else {
-      values[field] = inp.value;
-    }
-  });
-
-  if (!String(values[PRIMARY_KEY] || '').trim()) {
-    showAlert(`El campo ${PRIMARY_KEY} es obligatorio`, 'error');
-    return;
-  }
-
-  try {
-    let res;
-    if (editingRowNumber === null) {
-      res = await fetch('/api/rows/' + currentSheetKey, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ values })
-      });
-    } else {
-      res = await fetch('/api/rows/' + currentSheetKey + '/' + editingRowNumber, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ values })
-      });
-    }
-    const data = await res.json();
-    if (data.success) {
-      showAlert(editingRowNumber === null ? '✅ Registro agregado' : '✅ Registro actualizado');
-      closeModal('rowModal');
-      await loadRows();
-    } else {
-      showAlert('❌ ' + data.error, 'error');
-    }
-  } catch (e) {
-    showAlert('Error: ' + e.message, 'error');
-  }
-}
-
-async function deleteRow(rowNumber) {
-  const row = allRows.find(r => r._row_number === rowNumber);
-  const label = row ? row[PRIMARY_KEY] : '';
-  if (!confirm(`¿Eliminar el registro "${label}"?`)) return;
-  try {
-    const res = await fetch('/api/rows/' + currentSheetKey + '/' + rowNumber, { method:'DELETE' });
-    const data = await res.json();
-    if (data.success) {
-      showAlert('✅ Registro eliminado');
-      await loadRows();
-    } else {
-      showAlert('❌ ' + data.error, 'error');
-    }
-  } catch (e) {
-    showAlert('Error: ' + e.message, 'error');
-  }
-}
-
-/* Cerrar modal clickeando afuera */
-document.querySelectorAll('.modal').forEach(m => {
-  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
-});
-
-
-/* ============================================================
-   CONTROL DOCUMENTARIO
-   ============================================================ */
-let cdData = {};
-let cdCurrentKey = null;
-let cdFilteredRows = [];
-let cdEditingRowNumber = null;
-
-function cdShowAlert(msg, type='success') {
-  const c = document.getElementById('cd-alert-container');
-  const div = document.createElement('div');
-  div.className = 'alert alert-' + type;
-  div.textContent = msg;
-  c.appendChild(div);
-  setTimeout(() => div.remove(), 4500);
-}
-
-async function loadControlDocumentario() {
-  try {
-    const res = await fetch('/api/control-documentario');
-    const data = await res.json();
-    if (!data.success) { cdShowAlert('Error: ' + data.error, 'error'); return; }
-    cdData = data.data || {};
-  } catch (e) {
-    cdShowAlert('Error de conexión: ' + e.message, 'error');
-  }
-}
-
-async function switchCdSheet(key) {
-  cdCurrentKey = key;
-  document.querySelectorAll('#cdTabsContainer .tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.cdKey === key);
-  });
-  document.getElementById('cdFilterInput').value = '';
-  if (!cdData[key]) {
-    await loadControlDocumentario();
-  }
-  cdFilteredRows = (cdData[key]?.rows || []).slice();
-  renderCd();
-}
-
-function renderCd() {
-  const thead = document.getElementById('cdHead');
-  const tbody = document.getElementById('cdBody');
-  const cfg = cdData[cdCurrentKey];
-  if (!cfg) return;
-
-  const columns = cfg.columns;
-
-  // HEAD (columna acciones + columnas de la config)
-  let headHtml = '<tr><th class="col-cd-acciones">Acciones</th>';
-  columns.forEach((col, idx) => {
-    const cls = col === 'PATENTE' ? ' class="col-cd-patente-2"' : '';
-    headHtml += `<th${cls}>${escapeHtml(col)}</th>`;
-  });
-  headHtml += '</tr>';
-  thead.innerHTML = headHtml;
-
-  // BODY
-  if (cdFilteredRows.length === 0) {
-    tbody.innerHTML = `<tr><td class="no-data" colspan="${columns.length + 1}">Sin registros</td></tr>`;
-  } else {
-    let bodyHtml = '';
-    cdFilteredRows.forEach(row => {
-      bodyHtml += '<tr>';
-      bodyHtml += `<td class="col-cd-acciones">
-        <button class="btn btn-sm" onclick="editCdRow(${row._row_number})">✏️</button>
-      </td>`;
-      columns.forEach(col => {
-        const raw = row[col] || '';
-        let cell = escapeHtml(raw);
-        let cls = '';
-        if (col === 'PATENTE') {
-          cls = 'col-cd-patente-2';
-          cell = `<b>${escapeHtml(raw)}</b>`;
-        } else if (raw) {
-          const c = dateStatusClass(raw);
-          cell = c ? `<span class="${c}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
+    # Definición de solapas para el módulo "Control Documentario"
+    CONTROL_DOCUMENTARIO = {
+        'camiones_t2': {
+            'sheet_key': 'camiones_t2',
+            'label': 'Camiones T2',
+            'columns': ['PATENTE', 'VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN']
+        },
+        'maestro_ae': {
+            'sheet_key': 'maestro_ae',
+            'label': 'Maestro AE',
+            'columns': ['PATENTE', 'VENC SEGURO', 'EXTINTOR']
         }
-        bodyHtml += `<td class="${cls}">${cell}</td>`;
-      });
-      bodyHtml += '</tr>';
-    });
-    tbody.innerHTML = bodyHtml;
-  }
-
-  document.getElementById('cdRecordCount').textContent = 'Total: ' + cdFilteredRows.length;
-}
-
-function applyCdFilter() {
-  const q = document.getElementById('cdFilterInput').value.toLowerCase().trim();
-  const allCdRows = cdData[cdCurrentKey]?.rows || [];
-  if (!q) cdFilteredRows = allCdRows.slice();
-  else cdFilteredRows = allCdRows.filter(r =>
-    String(r['PATENTE'] || '').toLowerCase().includes(q)
-  );
-  renderCd();
-}
-function clearCdFilter() {
-  document.getElementById('cdFilterInput').value = '';
-  cdFilteredRows = (cdData[cdCurrentKey]?.rows || []).slice();
-  renderCd();
-}
-
-/* ============ MODAL EDICIÓN CONTROL DOCUMENTARIO ============ */
-function editCdRow(rowNumber) {
-  const cfg = cdData[cdCurrentKey];
-  if (!cfg) return;
-  const row = (cfg.rows || []).find(r => r._row_number === rowNumber);
-  if (!row) return;
-
-  cdEditingRowNumber = rowNumber;
-
-  document.getElementById('cdModalTitle').textContent = '✏️ Editar vencimientos';
-  document.getElementById('cdModalSubtitle').textContent =
-    `Vehículo: ${row['PATENTE'] || ''} · Solapa: ${cfg.label}`;
-
-  // Construir formulario: PATENTE readonly + columnas editables (fechas)
-  let html = '';
-  cfg.columns.forEach(colName => {
-    const val = row[colName] || '';
-    const isPk = (colName === 'PATENTE');
-    html += `<div class="form-group">`;
-    html += `<label>${escapeHtml(colName)}${isPk ? ' <span class="ro-badge">🔒</span>' : ''}</label>`;
-    if (isPk) {
-      html += `<input type="text" data-field="${escapeHtml(colName)}" value="${escapeHtml(val)}" readonly>`;
-    } else {
-      html += `<input type="date" data-field="${escapeHtml(colName)}" value="${dateToInputValue(val)}">`;
     }
-    html += `</div>`;
-  });
-  document.getElementById('cdModalFields').innerHTML = html;
-  openModal('cdModal');
-}
 
-async function submitCdRow() {
-  const values = {};
-  document.querySelectorAll('#cdModalFields [data-field]').forEach(inp => {
-    const field = inp.dataset.field;
-    if (field === 'PATENTE') return; // readonly
-    values[field] = inp.value ? formatDate(new Date(inp.value + 'T00:00:00')) : '';
-  });
+    # ============================================================
+    # MÓDULO HISTORIAL DE VENCIMIENTOS
+    # ============================================================
+    # Solapa destino donde se acumula el historial
+    HISTORIAL_SHEET_NAME = 'Historial de Vencimiento'
 
-  try {
-    const res = await fetch('/api/control-documentario/' + cdCurrentKey + '/' + cdEditingRowNumber, {
-      method: 'PUT',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ values })
-    });
-    const data = await res.json();
-    if (data.success) {
-      cdShowAlert('✅ Vencimientos actualizados');
-      closeModal('cdModal');
-      // Refrescar datos del módulo
-      cdData = {};
-      await loadControlDocumentario();
-      cdFilteredRows = (cdData[cdCurrentKey]?.rows || []).slice();
-      renderCd();
-    } else {
-      cdShowAlert('❌ ' + data.error, 'error');
+    # Mapeo: nombre de columna en Maestro -> valor de "TIPO" en Historial
+    HISTORIAL_TIPO_MAP = {
+        'VENC VTV':    'VTV',
+        'VENC SEGURO': 'SEGURO',
+        'UTA':         'UTA',
+        'EXTINTOR':    'MATAFUEGO',
+        'BOTIQUIN':    'BOTIQUIN',
     }
-  } catch (e) {
-    cdShowAlert('Error: ' + e.message, 'error');
-  }
-}
 
-</script>
-</body>
-</html>
+    # Días de anticipación para cargar automáticamente en el historial
+    HISTORIAL_DIAS_ALERTA = 30
+
+    # Estados permitidos en la columna ESTADO
+    HISTORIAL_ESTADOS = ['EN PROCESO', 'VENCIDO', 'COMPLETO']
+
+    # Columnas de la solapa "Historial de Vencimiento"
+    HISTORIAL_COLUMNS = [
+        {'name': 'FECHA',                 'type': 'date',   'options': []},
+        {'name': 'TIPO',                  'type': 'text',   'options': []},
+        {'name': 'DESCRIPCION',           'type': 'text',   'options': []},
+        {'name': 'FECHA VENCIMIENTO',     'type': 'date',   'options': []},
+        {'name': 'ESTADO',                'type': 'select', 'options': ['EN PROCESO', 'VENCIDO', 'COMPLETO']},
+        {'name': 'SEMANA DE VENCIMIENTO', 'type': 'number', 'options': []},
+    ]
