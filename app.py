@@ -211,6 +211,7 @@ def api_add_row(sheet_key):
     """
     Body: { "values": { "PATENTE": "AB123CD", ... } }
     Valida que PATENTE no esté vacía ni duplicada.
+    Las columnas marcadas como readonly se ignoran (se guardan vacías).
     """
     sheet_cfg = get_sheet_config(sheet_key)
     if not sheet_cfg:
@@ -232,7 +233,14 @@ def api_add_row(sheet_key):
             if (r.get(pk) or '').strip().upper() == pk_value.upper():
                 return jsonify({'success': False, 'error': f'Ya existe un registro con {pk} = {pk_value}'}), 400
 
-        row_values = [str(values.get(h, '') or '') for h in headers]
+        # Armar la fila respetando readonly (esas columnas se guardan vacías)
+        readonly_names = {c['name'] for c in sheet_cfg['columns'] if c.get('readonly')}
+        row_values = []
+        for h in headers:
+            if h in readonly_names:
+                row_values.append('')
+            else:
+                row_values.append(str(values.get(h, '') or ''))
 
         service = get_sheets_service()
         service.spreadsheets().values().append(
@@ -254,6 +262,7 @@ def api_update_row(sheet_key, row_number):
     """
     Body: { "values": { "PATENTE": "AB123CD", ... } }
     Valida que la nueva PATENTE no duplique otra fila.
+    Las columnas readonly NO se modifican: se conserva el valor actual del Sheet.
     """
     sheet_cfg = get_sheet_config(sheet_key)
     if not sheet_cfg:
@@ -270,13 +279,22 @@ def api_update_row(sheet_key, row_number):
             return jsonify({'success': False, 'error': f'El campo {pk} es obligatorio'}), 400
 
         data = get_all_data(sheet_cfg)
+        current_row = None
         for r in data['rows']:
             if r['_row_number'] == row_number:
+                current_row = r
                 continue
             if (r.get(pk) or '').strip().upper() == pk_value.upper():
                 return jsonify({'success': False, 'error': f'Otra fila ya tiene {pk} = {pk_value}'}), 400
 
-        row_values = [str(values.get(h, '') or '') for h in headers]
+        readonly_names = {c['name'] for c in sheet_cfg['columns'] if c.get('readonly')}
+        row_values = []
+        for h in headers:
+            if h in readonly_names:
+                # conservar el valor actual del Sheet (no editable desde Maestro)
+                row_values.append(str(current_row.get(h, '') if current_row else ''))
+            else:
+                row_values.append(str(values.get(h, '') or ''))
 
         service = get_sheets_service()
         service.spreadsheets().values().update(
@@ -289,6 +307,59 @@ def api_update_row(sheet_key, row_number):
         return jsonify({'success': True})
     except Exception as e:
         print(f"❌ update_row: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/control-documentario/<sheet_key>/<int:row_number>', methods=['PUT'])
+def api_update_control_documentario(sheet_key, row_number):
+    """
+    Edita SOLO las columnas del módulo Control Documentario de una fila.
+    Body: { "values": { "VENC VTV": "01/01/2026", ... } }
+    """
+    if sheet_key not in CONTROL_DOCUMENTARIO:
+        return jsonify({'success': False, 'error': 'Solapa no encontrada'}), 404
+    sheet_cfg = get_sheet_config(sheet_key)
+    if not sheet_cfg:
+        return jsonify({'success': False, 'error': 'Solapa no encontrada'}), 404
+    try:
+        body = request.get_json() or {}
+        values = body.get('values', {})
+
+        cd_cols = CONTROL_DOCUMENTARIO[sheet_key]['columns']  # incluye PATENTE
+        editable_cols = [c for c in cd_cols if c != sheet_cfg['primary_key']]
+
+        # Leer fila actual para conservar el resto de columnas intactas
+        data = get_all_data(sheet_cfg)
+        current_row = None
+        for r in data['rows']:
+            if r['_row_number'] == row_number:
+                current_row = r
+                break
+        if current_row is None:
+            return jsonify({'success': False, 'error': 'Fila no encontrada'}), 404
+
+        headers = sheet_cfg['headers']
+        last_col = sheet_cfg['last_col']
+
+        # Armar fila nueva: lo que viene del body solo pisa las columnas editables
+        new_row_values = []
+        for h in headers:
+            if h in editable_cols:
+                new_row_values.append(str(values.get(h, '') or ''))
+            else:
+                new_row_values.append(str(current_row.get(h, '') or ''))
+
+        service = get_sheets_service()
+        service.spreadsheets().values().update(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f"'{sheet_cfg['name']}'!A{row_number}:{last_col}{row_number}",
+            valueInputOption='RAW',
+            body={'values': [new_row_values]}
+        ).execute()
+
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"❌ update_control_documentario: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
