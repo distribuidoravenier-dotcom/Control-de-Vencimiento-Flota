@@ -74,7 +74,6 @@ class Config:
     }
 
     # Definición de solapas para el módulo "Control Documentario"
-    # Solo muestra un subconjunto de columnas de cada sheet (read-only)
     CONTROL_DOCUMENTARIO = {
         'camiones_t2': {
             'sheet_key': 'camiones_t2',
@@ -87,3 +86,34 @@ class Config:
             'columns': ['PATENTE', 'VENC SEGURO', 'EXTINTOR']
         }
     }
+
+    # ============================================================
+    # MÓDULO HISTORIAL DE VENCIMIENTOS
+    # ============================================================
+    # Solapa destino donde se acumula el historial
+    HISTORIAL_SHEET_NAME = 'Historial de Vencimiento'
+
+    # Mapeo: nombre de columna en Maestro -> valor de "TIPO" en Historial
+    HISTORIAL_TIPO_MAP = {
+        'VENC VTV':    'VTV',
+        'VENC SEGURO': 'SEGURO',
+        'UTA':         'UTA',
+        'EXTINTOR':    'MATAFUEGO',
+        'BOTIQUIN':    'BOTIQUIN',
+    }
+
+    # Días de anticipación para cargar automáticamente en el historial
+    HISTORIAL_DIAS_ALERTA = 30
+
+    # Estados permitidos en la columna ESTADO
+    HISTORIAL_ESTADOS = ['EN PROCESO', 'VENCIDO', 'COMPLETO']
+
+    # Columnas de la solapa "Historial de Vencimiento"
+    HISTORIAL_COLUMNS = [
+        {'name': 'FECHA',                 'type': 'date',   'options': []},
+        {'name': 'TIPO',                  'type': 'text',   'options': []},
+        {'name': 'DESCRIPCION',           'type': 'text',   'options': []},
+        {'name': 'FECHA VENCIMIENTO',     'type': 'date',   'options': []},
+        {'name': 'ESTADO',                'type': 'select', 'options': ['EN PROCESO', 'VENCIDO', 'COMPLETO']},
+        {'name': 'SEMANA DE VENCIMIENTO', 'type': 'number', 'options': []},
+    ]
