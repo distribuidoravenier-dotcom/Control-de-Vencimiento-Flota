@@ -40,11 +40,11 @@ class Config:
                 {'name': 'Capacidad Maxima (pal)',   'type': 'number', 'options': []},
                 {'name': 'Tiene telemetria',         'type': 'select', 'options': ['SI', 'NO']},
                 {'name': 'STATUS',                   'type': 'select', 'options': ['SALE', 'NO SALE']},
-                {'name': 'VENC VTV',                 'type': 'date',   'options': []},
-                {'name': 'VENC SEGURO',              'type': 'date',   'options': []},
-                {'name': 'UTA',                      'type': 'date',   'options': []},
-                {'name': 'EXTINTOR',                 'type': 'date',   'options': []},
-                {'name': 'BOTIQUIN',                 'type': 'date',   'options': []},
+                {'name': 'VENC VTV',                 'type': 'date',   'options': [], 'readonly': True},
+                {'name': 'VENC SEGURO',              'type': 'date',   'options': [], 'readonly': True},
+                {'name': 'UTA',                      'type': 'date',   'options': [], 'readonly': True},
+                {'name': 'EXTINTOR',                 'type': 'date',   'options': [], 'readonly': True},
+                {'name': 'BOTIQUIN',                 'type': 'date',   'options': [], 'readonly': True},
             ]
         },
         'maestro_ae': {
@@ -67,8 +67,8 @@ class Config:
                 {'name': 'TIPO',                   'type': 'text',   'options': []},
                 {'name': 'Operación',              'type': 'text',   'options': []},
                 {'name': 'Capacidad de Carga',     'type': 'text',   'options': []},
-                {'name': 'VENC SEGURO',            'type': 'date',   'options': []},
-                {'name': 'EXTINTOR',               'type': 'date',   'options': []},
+                {'name': 'VENC SEGURO',            'type': 'date',   'options': [], 'readonly': True},
+                {'name': 'EXTINTOR',               'type': 'date',   'options': [], 'readonly': True},
             ]
         }
     }
