@@ -70,7 +70,21 @@ class Config:
                 {'name': 'VENC SEGURO',            'type': 'date',   'options': [], 'readonly': True},
                 {'name': 'EXTINTOR',               'type': 'date',   'options': [], 'readonly': True},
             ]
-        }
+        },
+        'choferes_ayudantes': {
+            'name': 'Choferes y Ayudantes',
+            'label': 'Choferes y Ayudantes',
+            'primary_key': 'N°',
+            'columns': [
+                {'name': 'N°',                   'type': 'number', 'options': [], 'pk': True},
+                {'name': 'APELLIDO Y NOMBRE',    'type': 'text',   'options': []},
+                {'name': 'CONTRATACION',         'type': 'text',   'options': []},
+                {'name': 'Mail',                 'type': 'text',   'options': []},
+                {'name': 'STATUS',               'type': 'select', 'options': ['SALE', 'NO SALE'], 'readonly': True},
+                {'name': 'VENCIMIENTO REGISTRO', 'type': 'date',   'options': [], 'readonly': True},
+                {'name': 'LIBRETA SANITARIA',    'type': 'date',   'options': [], 'readonly': True},
+            ]
+        },
     }
 
     # Definición de solapas para el módulo "Control Documentario"
@@ -84,6 +98,11 @@ class Config:
             'sheet_key': 'maestro_ae',
             'label': 'Maestro AE',
             'columns': ['PATENTE', 'VENC SEGURO', 'EXTINTOR']
+        },
+        'choferes_ayudantes': {
+            'sheet_key': 'choferes_ayudantes',
+            'label': 'Choferes y Ayudantes',
+            'columns': ['APELLIDO Y NOMBRE', 'VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA']
         }
     }
 
@@ -95,11 +114,13 @@ class Config:
 
     # Mapeo: nombre de columna en Maestro -> valor de "TIPO" en Historial
     HISTORIAL_TIPO_MAP = {
-        'VENC VTV':    'VTV',
-        'VENC SEGURO': 'SEGURO',
-        'UTA':         'UTA',
-        'EXTINTOR':    'MATAFUEGO',
-        'BOTIQUIN':    'BOTIQUIN',
+        'VENC VTV':             'VTV',
+        'VENC SEGURO':          'SEGURO',
+        'UTA':                  'UTA',
+        'EXTINTOR':             'MATAFUEGO',
+        'BOTIQUIN':             'BOTIQUIN',
+        'VENCIMIENTO REGISTRO': 'CARNET DE CONDUCIR',
+        'LIBRETA SANITARIA':    'LIBRETA SANITARIA',
     }
 
     # Días de anticipación para cargar automáticamente en el historial
