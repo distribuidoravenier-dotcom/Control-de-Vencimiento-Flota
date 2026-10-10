@@ -25,8 +25,16 @@ _service_cache = None
 
 # Columnas de vencimiento por solapa (las que definen STATUS)
 FECHAS_VENCIMIENTO = {
-    'camiones_t2': ['VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN'],
-    'maestro_ae':  ['VENC SEGURO', 'EXTINTOR'],
+    'camiones_t2':        ['VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN'],
+    'maestro_ae':         ['VENC SEGURO', 'EXTINTOR'],
+    'choferes_ayudantes': ['VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA'],
+}
+
+# Columnas que se usan como DESCRIPCION en el historial por solapa
+DESCRIPCION_COL = {
+    'camiones_t2':        'PATENTE',
+    'maestro_ae':         'PATENTE',
+    'choferes_ayudantes': 'APELLIDO Y NOMBRE',
 }
 
 
@@ -271,10 +279,13 @@ def cargar_historial_automatico():
         sheet_cfg = get_sheet_config(sheet_key)
         if not sheet_cfg:
             continue
+        descripcion_col = DESCRIPCION_COL.get(sheet_key)
+        if not descripcion_col:
+            continue
         data = get_all_data(sheet_cfg)
         for row in data['rows']:
-            patente = (row.get('PATENTE') or '').strip()
-            if not patente:
+            descripcion_val = (row.get(descripcion_col) or '').strip()
+            if not descripcion_val:
                 continue
             for col_name in FECHAS_VENCIMIENTO.get(sheet_key, []):
                 fecha_str = row.get(col_name, '')
@@ -286,7 +297,7 @@ def cargar_historial_automatico():
                     continue
 
                 tipo = Config.HISTORIAL_TIPO_MAP.get(col_name, col_name)
-                descripcion = patente
+                descripcion = descripcion_val
                 fecha_venc_str = fecha_v.strftime('%d/%m/%Y')
 
                 key = (tipo.strip().upper(),
@@ -646,6 +657,4 @@ def api_update_historial(row_number):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+if __name
