@@ -138,3 +138,18 @@ class Config:
         {'name': 'ESTADO',                'type': 'select', 'options': ['EN PROCESO', 'VENCIDO', 'COMPLETO']},
         {'name': 'SEMANA DE VENCIMIENTO', 'type': 'number', 'options': []},
     ]
+
+    # ============================================================
+    # NOTIFICACIONES PDF (CARNET DE CONDUCIR / LIBRETA SANITARIA)
+    # ============================================================
+    # Tipos del historial que permiten generar PDF de notificación
+    NOTIFICACION_TIPOS = ['CARNET DE CONDUCIR', 'LIBRETA SANITARIA']
+
+    # Solapa donde se guarda el contador de N° de Orden correlativo
+    NOTIFICACION_CONTADOR_SHEET = 'Notificaciones Contador'
+
+    # Columnas de la solapa contador
+    NOTIFICACION_CONTADOR_COLUMNS = [
+        {'name': 'AÑO',           'type': 'number', 'options': []},
+        {'name': 'ULTIMO_NUMERO', 'type': 'number', 'options': []},
+    ]
