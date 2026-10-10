@@ -333,6 +333,84 @@ def cargar_historial_automatico():
 
 
 # ============================================================
+# CONTADOR DE NOTIFICACIONES (N° de Orden correlativo)
+# ============================================================
+
+def get_contador_config():
+    """Configuración de la solapa Contador de Notificaciones."""
+    cfg = {
+        'name': Config.NOTIFICACION_CONTADOR_SHEET,
+        'label': 'Notificaciones Contador',
+        'primary_key': 'AÑO',
+        'columns': Config.NOTIFICACION_CONTADOR_COLUMNS,
+    }
+    headers = [c['name'] for c in cfg['columns']]
+    return {
+        'key': 'notificaciones_contador',
+        'name': cfg['name'],
+        'label': cfg['label'],
+        'primary_key': 'AÑO',
+        'columns': cfg['columns'],
+        'headers': headers,
+        'last_col': col_letter(len(headers))
+    }
+
+
+def siguiente_numero_orden():
+    """
+    Devuelve el próximo N° de Orden correlativo para el año actual.
+    Formato: 'NNNN-AAAA'  (ej: '0001-2026')
+    Guarda el último número usado en la solapa 'Notificaciones Contador'.
+    """
+    contador_cfg = get_contador_config()
+    ensure_sheet_headers(contador_cfg)
+
+    anio_actual = str(date.today().year)
+    service = get_sheets_service()
+
+    # Leer toda la solapa
+    data = get_all_data(contador_cfg)
+    rows = data['rows']
+
+    fila_existente = None
+    fila_numero = None
+    ultimo = 0
+
+    for idx, r in enumerate(rows):
+        if (r.get('AÑO') or '').strip() == anio_actual:
+            fila_existente = r
+            fila_numero = r['_row_number']
+            try:
+                ultimo = int(str(r.get('ULTIMO_NUMERO', '0')).strip() or '0')
+            except (ValueError, TypeError):
+                ultimo = 0
+            break
+
+    nuevo = ultimo + 1
+
+    if fila_existente:
+        # Actualizar el número en la fila existente
+        service.spreadsheets().values().update(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f"'{contador_cfg['name']}'!B{fila_numero}",
+            valueInputOption='RAW',
+            body={'values': [[str(nuevo)]]}
+        ).execute()
+    else:
+        # Crear nueva fila para el año
+        service.spreadsheets().values().append(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f"'{contador_cfg['name']}'!A:{contador_cfg['last_col']}",
+            valueInputOption='RAW',
+            insertDataOption='INSERT_ROWS',
+            body={'values': [[anio_actual, str(nuevo)]]}
+        ).execute()
+
+    numero_formateado = str(nuevo).zfill(4)
+    return f"{numero_formateado}-{anio_actual}"
+
+
+# ============================================================
 # RUTAS
 # ============================================================
 
@@ -617,7 +695,8 @@ def api_historial_vencimientos():
         'headers': data['headers'],
         'rows': data['rows'],
         'agregadas': agregadas,
-        'estados': Config.HISTORIAL_ESTADOS
+        'estados': Config.HISTORIAL_ESTADOS,
+        'tipos_notificables': Config.NOTIFICACION_TIPOS
     })
 
 
@@ -654,6 +733,28 @@ def api_update_historial(row_number):
         return jsonify({'success': True})
     except Exception as e:
         print(f"❌ update_historial: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/notificacion/generar', methods=['POST'])
+def api_generar_notificacion():
+    """
+    Genera el N° de Orden correlativo para una notificación.
+    Body: { "tipo": "CARNET DE CONDUCIR" | "LIBRETA SANITARIA",
+            "descripcion": "APELLIDO Y NOMBRE",
+            "fecha_vencimiento": "dd/mm/yyyy" }
+    Devuelve: { "success": true, "numero_orden": "0001-2026" }
+    """
+    try:
+        body = request.get_json() or {}
+        tipo = (body.get('tipo') or '').strip().upper()
+        if tipo not in [t.upper() for t in Config.NOTIFICACION_TIPOS]:
+            return jsonify({'success': False, 'error': 'Tipo no permitido'}), 400
+
+        numero_orden = siguiente_numero_orden()
+        return jsonify({'success': True, 'numero_orden': numero_orden})
+    except Exception as e:
+        print(f"❌ generar_notificacion: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
