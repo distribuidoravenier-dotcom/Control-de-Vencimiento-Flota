@@ -308,7 +308,7 @@
       <div class="module-card" onclick="openModule('maestro_flota')">
         <div class="module-icon">📋</div>
         <div class="module-title">Maestro de Flota</div>
-        <div class="module-desc">Camiones T2 · Maestro AE</div>
+        <div class="module-desc">Camiones T2 · Maestro AE · Choferes y Ayudantes</div>
       </div>
       <div class="module-card" onclick="openModule('control_documentario')">
         <div class="module-icon">📄</div>
@@ -329,7 +329,7 @@
       <a onclick="goHome()">🏠 Inicio</a> / <span>Maestro de Flota</span>
     </div>
     <h1>📋 Maestro de Flota</h1>
-    <p class="subtitle">Administración de la flota · Primary Key: <b>PATENTE</b></p>
+    <p class="subtitle">Administración de la flota · Primary Key según solapa</p>
 
     <div class="tabs" id="tabsContainer">
       {% for key, cfg in sheets.items() %}
@@ -362,7 +362,7 @@
       <a onclick="goHome()">🏠 Inicio</a> / <span>Control Documentario</span>
     </div>
     <h1>📄 Control Documentario</h1>
-    <p class="subtitle">Vencimientos de documentación por vehículo</p>
+    <p class="subtitle">Vencimientos de documentación por vehículo / persona</p>
 
     <div class="tabs" id="cdTabsContainer">
       {% for key, cfg in control.items() %}
@@ -375,7 +375,7 @@
     <div id="cd-alert-container"></div>
 
     <div class="toolbar">
-      <input type="text" id="cdFilterInput" placeholder="🔍 Buscar por PATENTE..." oninput="applyCdFilter()">
+      <input type="text" id="cdFilterInput" placeholder="🔍 Buscar por PATENTE o APELLIDO Y NOMBRE..." oninput="applyCdFilter()">
       <button class="btn btn-cancel" onclick="clearCdFilter()">✖ Limpiar</button>
       <span id="cdRecordCount" style="color:#666; font-size:16px;">Total: 0</span>
     </div>
@@ -399,7 +399,7 @@
     <div id="hist-alert-container"></div>
 
     <div class="toolbar">
-      <input type="text" id="histFilterInput" placeholder="🔍 Buscar por TIPO, PATENTE o ESTADO..." oninput="applyHistFilter()">
+      <input type="text" id="histFilterInput" placeholder="🔍 Buscar por TIPO, DESCRIPCION o ESTADO..." oninput="applyHistFilter()">
       <button class="btn btn-cancel" onclick="clearHistFilter()">✖ Limpiar</button>
       <button class="btn" onclick="reloadHistorial()">🔄 Actualizar</button>
       <span id="histRecordCount" style="color:#666; font-size:16px;">Total: 0</span>
@@ -868,7 +868,8 @@ function applyCdFilter() {
   const allCdRows = cdData[cdCurrentKey]?.rows || [];
   if (!q) cdFilteredRows = allCdRows.slice();
   else cdFilteredRows = allCdRows.filter(r =>
-    String(r['PATENTE'] || '').toLowerCase().includes(q)
+    String(r['PATENTE'] || '').toLowerCase().includes(q) ||
+    String(r['APELLIDO Y NOMBRE'] || '').toLowerCase().includes(q)
   );
   renderCd();
 }
@@ -887,13 +888,14 @@ function editCdRow(rowNumber) {
   cdEditingRowNumber = rowNumber;
 
   document.getElementById('cdModalTitle').textContent = '✏️ Editar vencimientos';
+  const idLabel = row['PATENTE'] || row['APELLIDO Y NOMBRE'] || '';
   document.getElementById('cdModalSubtitle').textContent =
-    `Vehículo: ${row['PATENTE'] || ''} · Solapa: ${cfg.label}`;
+    `Vehículo/Persona: ${idLabel} · Solapa: ${cfg.label}`;
 
   let html = '';
   cfg.columns.forEach(colName => {
     const val = row[colName] || '';
-    const isPk = (colName === 'PATENTE');
+    const isPk = (colName === 'PATENTE' || colName === 'APELLIDO Y NOMBRE');
     html += `<div class="form-group">`;
     html += `<label>${escapeHtml(colName)}${isPk ? ' <span class="ro-badge">🔒</span>' : ''}</label>`;
     if (isPk) {
@@ -911,7 +913,7 @@ async function submitCdRow() {
   const values = {};
   document.querySelectorAll('#cdModalFields [data-field]').forEach(inp => {
     const field = inp.dataset.field;
-    if (field === 'PATENTE') return;
+    if (field === 'PATENTE' || field === 'APELLIDO Y NOMBRE') return;
     values[field] = inp.value ? formatDate(new Date(inp.value + 'T00:00:00')) : '';
   });
 
