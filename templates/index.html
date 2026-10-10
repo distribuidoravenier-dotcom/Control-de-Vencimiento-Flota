@@ -402,6 +402,7 @@
       <input type="text" id="histFilterInput" placeholder="🔍 Buscar por TIPO, DESCRIPCION o ESTADO..." oninput="applyHistFilter()">
       <button class="btn btn-cancel" onclick="clearHistFilter()">✖ Limpiar</button>
       <button class="btn" onclick="reloadHistorial()">🔄 Actualizar</button>
+      <button class="btn btn-success" onclick="imprimirHistorial()">🖨️ Imprimir / PDF</button>
       <span id="histRecordCount" style="color:#666; font-size:16px;">Total: 0</span>
     </div>
 
@@ -946,6 +947,7 @@ async function submitCdRow() {
 let histAllRows = [];
 let histFilteredRows = [];
 let histHeaders = [];
+let histTiposNotificables = ['CARNET DE CONDUCIR', 'LIBRETA SANITARIA'];
 
 function histShowAlert(msg, type='success') {
   const c = document.getElementById('hist-alert-container');
@@ -966,8 +968,8 @@ async function loadHistorial() {
     histAllRows = data.rows || [];
     histHeaders = data.headers || [];
     histFilteredRows = histAllRows.slice();
+    if (data.tipos_notificables) histTiposNotificables = data.tipos_notificables;
 
-    // limpiar alertas y mostrar resumen
     document.getElementById('hist-alert-container').innerHTML = '';
     if (data.agregadas > 0) {
       histShowAlert(`✅ Se agregaron ${data.agregadas} vencimiento(s) nuevo(s) al historial`, 'success');
@@ -983,20 +985,17 @@ async function reloadHistorial() {
   await loadHistorial();
 }
 
-function estadoClass(estado) {
-  const e = String(estado || '').toUpperCase().trim();
-  if (e === 'EN PROCESO') return 'hist-en-proceso';
-  if (e === 'VENCIDO')    return 'hist-vencido';
-  if (e === 'COMPLETO')   return 'hist-completo';
-  return '';
-}
-
 function estadoSelectClass(estado) {
   const e = String(estado || '').toUpperCase().trim();
   if (e === 'EN PROCESO') return 'en-proceso';
   if (e === 'VENCIDO')    return 'vencido';
   if (e === 'COMPLETO')   return 'completo';
   return '';
+}
+
+function esTipoNotificable(tipo) {
+  const t = String(tipo || '').toUpperCase().trim();
+  return histTiposNotificables.map(x => x.toUpperCase()).includes(t);
 }
 
 function renderHist() {
@@ -1009,12 +1008,13 @@ function renderHist() {
     const cls = (h === 'FECHA') ? ' class="col-hist-fecha"' : '';
     headHtml += `<th${cls}>${escapeHtml(h)}</th>`;
   });
+  headHtml += '<th>Notificación</th>';
   headHtml += '</tr>';
   thead.innerHTML = headHtml;
 
   // BODY
   if (histFilteredRows.length === 0) {
-    tbody.innerHTML = `<tr><td class="no-data" colspan="${histHeaders.length}">Sin registros</td></tr>`;
+    tbody.innerHTML = `<tr><td class="no-data" colspan="${histHeaders.length + 1}">Sin registros</td></tr>`;
   } else {
     let bodyHtml = '';
     histFilteredRows.forEach(row => {
@@ -1027,7 +1027,6 @@ function renderHist() {
         if (h === 'FECHA') {
           cls = 'col-hist-fecha';
         } else if (h === 'ESTADO') {
-          // Select con 3 estados
           const estados = ['EN PROCESO', 'VENCIDO', 'COMPLETO'];
           const selCls = estadoSelectClass(raw);
           let opts = '';
@@ -1049,6 +1048,16 @@ function renderHist() {
 
         bodyHtml += `<td class="${cls}">${cell}</td>`;
       });
+
+      // Columna Notificación (solo botón si el tipo es notificable)
+      if (esTipoNotificable(row['TIPO'])) {
+        bodyHtml += `<td>
+          <button class="btn btn-sm" onclick="generarNotificacion(${row._row_number})">📄 Generar PDF</button>
+        </td>`;
+      } else {
+        bodyHtml += `<td style="color:#ccc;">—</td>`;
+      }
+
       bodyHtml += '</tr>';
     });
     tbody.innerHTML = bodyHtml;
@@ -1080,7 +1089,6 @@ async function cambiarEstado(rowNumber, nuevoEstado) {
     });
     const data = await res.json();
     if (data.success) {
-      // actualizar localmente
       const r = histAllRows.find(x => x._row_number === rowNumber);
       if (r) r['ESTADO'] = nuevoEstado;
       histShowAlert(`✅ Estado actualizado a "${nuevoEstado}"`, 'success');
@@ -1093,6 +1101,286 @@ async function cambiarEstado(rowNumber, nuevoEstado) {
     histShowAlert('Error: ' + e.message, 'error');
     renderHist();
   }
+}
+
+/* ============================================================
+   GENERAR NOTIFICACIÓN PDF
+   ============================================================ */
+async function generarNotificacion(rowNumber) {
+  const row = histAllRows.find(x => x._row_number === rowNumber);
+  if (!row) return;
+
+  const tipo = String(row['TIPO'] || '').toUpperCase().trim();
+  const descripcion = row['DESCRIPCION'] || '';
+  const fechaVenc = row['FECHA VENCIMIENTO'] || '';
+
+  // Pedir N° de orden correlativo al backend
+  let numeroOrden = '';
+  try {
+    const res = await fetch('/api/notificacion/generar', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        tipo: tipo,
+        descripcion: descripcion,
+        fecha_vencimiento: fechaVenc
+      })
+    });
+    const data = await res.json();
+    if (!data.success) {
+      histShowAlert('❌ ' + (data.error || 'Error al generar N° de orden'), 'error');
+      return;
+    }
+    numeroOrden = data.numero_orden;
+  } catch (e) {
+    histShowAlert('Error de conexión: ' + e.message, 'error');
+    return;
+  }
+
+  const hoy = new Date();
+  const fechaNotificacion = String(hoy.getDate()).padStart(2,'0') + '/' +
+                            String(hoy.getMonth()+1).padStart(2,'0') + '/' +
+                            hoy.getFullYear();
+
+  // Armar contenido según tipo
+  let titulo = '';
+  let parrafo = '';
+  if (tipo === 'CARNET DE CONDUCIR') {
+    titulo = 'NOTIFICACION VENCIMIENTO DE LICENCIA DE CONDUCIR';
+    parrafo = 'Por medio de la presente queda usted debidamente notificado que su licencia de conducir vence en los próximos 30 días, razón por la cual le recordamos que deberá dirigirse a la dependencia correspondiente para su renovación.';
+  } else if (tipo === 'LIBRETA SANITARIA') {
+    titulo = 'NOTIFICACION VENCIMIENTO DE LIBRETA SANITARIA';
+    parrafo = `Por medio de la presente queda usted debidamente notificado que su libreta sanitaria vence el día ${fechaVenc}.`;
+  } else {
+    histShowAlert('Tipo no soportado para notificación', 'error');
+    return;
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <title>${titulo} - ${descripcion}</title>
+      <style>
+        * { box-sizing: border-box; }
+        body {
+          font-family: Arial, Helvetica, sans-serif;
+          margin: 40px;
+          color: #000;
+          font-size: 14px;
+        }
+        .nro-orden {
+          text-align: right;
+          font-size: 14px;
+          font-weight: bold;
+          margin-bottom: 30px;
+        }
+        h1 {
+          text-align: center;
+          font-size: 17px;
+          font-weight: bold;
+          text-transform: uppercase;
+          margin: 20px 0 40px 0;
+          text-decoration: underline;
+        }
+        .campo {
+          margin-bottom: 22px;
+          font-size: 14px;
+        }
+        .campo b {
+          font-weight: bold;
+        }
+        .parrafo {
+          text-align: justify;
+          line-height: 1.6;
+          margin: 40px 0 60px 0;
+          font-size: 14px;
+        }
+        .firmas {
+          margin-top: 80px;
+        }
+        .firma-linea {
+          border-top: 1px solid #000;
+          width: 320px;
+          margin-top: 60px;
+          margin-bottom: 6px;
+        }
+        .firma-label {
+          font-size: 13px;
+          margin-bottom: 18px;
+        }
+        @media print {
+          body { margin: 20mm; }
+          @page { size: A4; margin: 20mm; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="nro-orden">Nº Orden: ${numeroOrden}</div>
+
+      <h1>${titulo}</h1>
+
+      <div class="campo"><b>Apellido y Nombre:</b> ${escapeHtml(descripcion)}</div>
+      <div class="campo"><b>Fecha de Vencimiento de Licencia:</b> ${escapeHtml(fechaVenc)}</div>
+      <div class="campo"><b>Fecha de Notificación:</b> ${fechaNotificacion}</div>
+
+      <div class="parrafo">${parrafo}</div>
+
+      <div class="firmas">
+        <div class="firma-linea"></div>
+        <div class="firma-label"><b>FIRMA</b></div>
+
+        <div class="firma-linea"></div>
+        <div class="firma-label"><b>NOMBRE Y APELLIDO:</b></div>
+
+        <div class="firma-linea"></div>
+        <div class="firma-label"><b>DNI:</b></div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const ventana = window.open('', '_blank', 'width=900,height=700');
+  if (!ventana) {
+    histShowAlert('Habilitá las ventanas emergentes para generar el PDF', 'error');
+    return;
+  }
+  ventana.document.open();
+  ventana.document.write(html);
+  ventana.document.close();
+
+  ventana.onload = function() {
+    ventana.focus();
+    ventana.print();
+  };
+  setTimeout(() => {
+    try { ventana.focus(); ventana.print(); } catch(e) {}
+  }, 500);
+}
+
+/* ============================================================
+   IMPRIMIR HISTORIAL (Guardar como PDF)
+   ============================================================ */
+function imprimirHistorial() {
+  if (!histFilteredRows || histFilteredRows.length === 0) {
+    histShowAlert('No hay registros para imprimir', 'error');
+    return;
+  }
+
+  const hoy = new Date();
+  const fechaImpresion = String(hoy.getDate()).padStart(2,'0') + '/' +
+                         String(hoy.getMonth()+1).padStart(2,'0') + '/' +
+                         hoy.getFullYear();
+
+  let filasHtml = '';
+  histFilteredRows.forEach(row => {
+    filasHtml += '<tr>';
+    histHeaders.forEach(h => {
+      const raw = row[h] || '';
+      filasHtml += `<td>${escapeHtml(raw)}</td>`;
+    });
+    filasHtml += '</tr>';
+  });
+
+  let headHtml = '';
+  histHeaders.forEach(h => {
+    headHtml += `<th>${escapeHtml(h)}</th>`;
+  });
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <title>Historial de Vencimientos - ${fechaImpresion}</title>
+      <style>
+        * { box-sizing: border-box; }
+        body {
+          font-family: Arial, Helvetica, sans-serif;
+          margin: 20px;
+          color: #222;
+        }
+        .header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          border-bottom: 2px solid #333;
+          padding-bottom: 8px;
+          margin-bottom: 16px;
+        }
+        .header h1 {
+          font-size: 20px;
+          margin: 0;
+        }
+        .header .fecha {
+          font-size: 13px;
+          color: #555;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 12px;
+        }
+        th {
+          background: #667eea;
+          color: #fff;
+          padding: 8px 6px;
+          text-align: left;
+          border: 1px solid #4c51bf;
+          font-size: 11px;
+          text-transform: uppercase;
+        }
+        td {
+          padding: 6px;
+          border: 1px solid #ccc;
+        }
+        tr:nth-child(even) td {
+          background: #f7f7fa;
+        }
+        .footer {
+          margin-top: 16px;
+          font-size: 11px;
+          color: #666;
+          text-align: right;
+        }
+        @media print {
+          body { margin: 10mm; }
+          .header h1 { font-size: 18px; }
+          th { background: #667eea !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>🗓️ Historial de Vencimientos</h1>
+        <div class="fecha">Generado: ${fechaImpresion}</div>
+      </div>
+      <table>
+        <thead><tr>${headHtml}</tr></thead>
+        <tbody>${filasHtml}</tbody>
+      </table>
+      <div class="footer">Total de registros: ${histFilteredRows.length}</div>
+    </body>
+    </html>
+  `;
+
+  const ventana = window.open('', '_blank', 'width=900,height=700');
+  if (!ventana) {
+    histShowAlert('Habilitá las ventanas emergentes para imprimir', 'error');
+    return;
+  }
+  ventana.document.open();
+  ventana.document.write(html);
+  ventana.document.close();
+
+  ventana.onload = function() {
+    ventana.focus();
+    ventana.print();
+  };
+  setTimeout(() => {
+    try { ventana.focus(); ventana.print(); } catch(e) {}
+  }, 500);
 }
 
 </script>
