@@ -289,6 +289,20 @@
   .estado-select.vencido    { background:#e53e3e; color:#fff; border-color:#c53030; }
   .estado-select.completo   { background:#38a169; color:#fff; border-color:#2f855a; }
 
+  /* Tilde verde PDF generado */
+  .pdf-ok {
+    display:inline-flex; align-items:center; gap:6px;
+    background:#c6f6d5; color:#22543d;
+    padding:6px 12px; border-radius:6px;
+    font-size:13px; font-weight:700;
+    border:1px solid #9ae6b4;
+  }
+  .pdf-ok .check {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:18px; height:18px; border-radius:50%;
+    background:#38a169; color:#fff; font-size:12px; font-weight:900;
+  }
+
   @media (max-width: 720px) {
     .form-grid { grid-template-columns: 1fr; }
     td, th { font-size: 13px; }
@@ -948,6 +962,7 @@ let histAllRows = [];
 let histFilteredRows = [];
 let histHeaders = [];
 let histTiposNotificables = ['CARNET DE CONDUCIR', 'LIBRETA SANITARIA'];
+const PDF_COL = 'PDF GENERADO';
 
 function histShowAlert(msg, type='success') {
   const c = document.getElementById('hist-alert-container');
@@ -1002,9 +1017,11 @@ function renderHist() {
   const thead = document.getElementById('histHead');
   const tbody = document.getElementById('histBody');
 
-  // HEAD
+  // HEAD: excluimos la columna PDF GENERADO de la vista de tabla
+  const visibleHeaders = histHeaders.filter(h => h !== PDF_COL);
+
   let headHtml = '<tr>';
-  histHeaders.forEach(h => {
+  visibleHeaders.forEach(h => {
     const cls = (h === 'FECHA') ? ' class="col-hist-fecha"' : '';
     headHtml += `<th${cls}>${escapeHtml(h)}</th>`;
   });
@@ -1014,12 +1031,12 @@ function renderHist() {
 
   // BODY
   if (histFilteredRows.length === 0) {
-    tbody.innerHTML = `<tr><td class="no-data" colspan="${histHeaders.length + 1}">Sin registros</td></tr>`;
+    tbody.innerHTML = `<tr><td class="no-data" colspan="${visibleHeaders.length + 1}">Sin registros</td></tr>`;
   } else {
     let bodyHtml = '';
     histFilteredRows.forEach(row => {
       bodyHtml += '<tr>';
-      histHeaders.forEach(h => {
+      visibleHeaders.forEach(h => {
         const raw = row[h] || '';
         let cell = escapeHtml(raw);
         let cls = '';
@@ -1049,11 +1066,20 @@ function renderHist() {
         bodyHtml += `<td class="${cls}">${cell}</td>`;
       });
 
-      // Columna Notificación (solo botón si el tipo es notificable)
+      // Columna Notificación: botón o tilde verde
+      const yaGenerado = String(row[PDF_COL] || '').trim().toUpperCase() === 'SI';
       if (esTipoNotificable(row['TIPO'])) {
-        bodyHtml += `<td>
-          <button class="btn btn-sm" onclick="generarNotificacion(${row._row_number})">📄 Generar PDF</button>
-        </td>`;
+        if (yaGenerado) {
+          bodyHtml += `<td>
+            <span class="pdf-ok" title="PDF ya generado">
+              <span class="check">✓</span> PDF generado
+            </span>
+          </td>`;
+        } else {
+          bodyHtml += `<td>
+            <button class="btn btn-sm" onclick="generarNotificacion(${row._row_number})">📄 Generar PDF</button>
+          </td>`;
+        }
       } else {
         bodyHtml += `<td style="color:#ccc;">—</td>`;
       }
@@ -1114,7 +1140,7 @@ async function generarNotificacion(rowNumber) {
   const descripcion = row['DESCRIPCION'] || '';
   const fechaVenc = row['FECHA VENCIMIENTO'] || '';
 
-  // Pedir N° de orden correlativo al backend
+  // Pedir N° de orden correlativo al backend y marcar PDF generado
   let numeroOrden = '';
   try {
     const res = await fetch('/api/notificacion/generar', {
@@ -1123,7 +1149,8 @@ async function generarNotificacion(rowNumber) {
       body: JSON.stringify({
         tipo: tipo,
         descripcion: descripcion,
-        fecha_vencimiento: fechaVenc
+        fecha_vencimiento: fechaVenc,
+        row_number: rowNumber
       })
     });
     const data = await res.json();
@@ -1142,15 +1169,18 @@ async function generarNotificacion(rowNumber) {
                             String(hoy.getMonth()+1).padStart(2,'0') + '/' +
                             hoy.getFullYear();
 
-  // Armar contenido según tipo
+  // Armar contenido según tipo (cada uno con su etiqueta correcta)
   let titulo = '';
   let parrafo = '';
+  let etiquetaFecha = '';
   if (tipo === 'CARNET DE CONDUCIR') {
     titulo = 'NOTIFICACION VENCIMIENTO DE LICENCIA DE CONDUCIR';
     parrafo = 'Por medio de la presente queda usted debidamente notificado que su licencia de conducir vence en los próximos 30 días, razón por la cual le recordamos que deberá dirigirse a la dependencia correspondiente para su renovación.';
+    etiquetaFecha = 'Fecha de Vencimiento de Licencia';
   } else if (tipo === 'LIBRETA SANITARIA') {
     titulo = 'NOTIFICACION VENCIMIENTO DE LIBRETA SANITARIA';
     parrafo = `Por medio de la presente queda usted debidamente notificado que su libreta sanitaria vence el día ${fechaVenc}.`;
+    etiquetaFecha = 'Fecha de Vencimiento de Libreta Sanitaria';
   } else {
     histShowAlert('Tipo no soportado para notificación', 'error');
     return;
@@ -1222,7 +1252,7 @@ async function generarNotificacion(rowNumber) {
       <h1>${titulo}</h1>
 
       <div class="campo"><b>Apellido y Nombre:</b> ${escapeHtml(descripcion)}</div>
-      <div class="campo"><b>Fecha de Vencimiento de Licencia:</b> ${escapeHtml(fechaVenc)}</div>
+      <div class="campo"><b>${etiquetaFecha}:</b> ${escapeHtml(fechaVenc)}</div>
       <div class="campo"><b>Fecha de Notificación:</b> ${fechaNotificacion}</div>
 
       <div class="parrafo">${parrafo}</div>
@@ -1257,6 +1287,10 @@ async function generarNotificacion(rowNumber) {
   setTimeout(() => {
     try { ventana.focus(); ventana.print(); } catch(e) {}
   }, 500);
+
+  // Refrescar la fila en memoria y volver a renderizar (para mostrar el tilde verde)
+  row[PDF_COL] = 'SI';
+  renderHist();
 }
 
 /* ============================================================
@@ -1273,10 +1307,13 @@ function imprimirHistorial() {
                          String(hoy.getMonth()+1).padStart(2,'0') + '/' +
                          hoy.getFullYear();
 
+  // Excluimos la columna PDF GENERADO del listado impreso
+  const visibleHeaders = histHeaders.filter(h => h !== PDF_COL);
+
   let filasHtml = '';
   histFilteredRows.forEach(row => {
     filasHtml += '<tr>';
-    histHeaders.forEach(h => {
+    visibleHeaders.forEach(h => {
       const raw = row[h] || '';
       filasHtml += `<td>${escapeHtml(raw)}</td>`;
     });
@@ -1284,7 +1321,7 @@ function imprimirHistorial() {
   });
 
   let headHtml = '';
-  histHeaders.forEach(h => {
+  visibleHeaders.forEach(h => {
     headHtml += `<th>${escapeHtml(h)}</th>`;
   });
 
