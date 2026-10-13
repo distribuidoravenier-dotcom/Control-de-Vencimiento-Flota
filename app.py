@@ -140,8 +140,34 @@ def get_sheet_config(sheet_key):
     }
 
 
+def ensure_sheet_exists(sheet_cfg):
+    """Crea la solapa si no existe en el spreadsheet."""
+    try:
+        service = get_sheets_service()
+        spreadsheet = service.spreadsheets().get(
+            spreadsheetId=SPREADSHEET_ID,
+            fields='sheets.properties(title)'
+        ).execute()
+        titles = [s['properties']['title'] for s in spreadsheet.get('sheets', [])]
+        if sheet_cfg['name'] in titles:
+            return True
+        # Crear la solapa
+        service.spreadsheets().batchUpdate(
+            spreadsheetId=SPREADSHEET_ID,
+            body={'requests': [{'addSheet': {'properties': {'title': sheet_cfg['name']}}}]}
+        ).execute()
+        print(f"✅ Solapa '{sheet_cfg['name']}' creada.")
+        return True
+    except HttpError as err:
+        print(f"❌ Error creando solapa '{sheet_cfg['name']}': {err}")
+        return False
+
+
 def ensure_sheet_headers(sheet_cfg):
     """Verifica que la fila 1 del Sheet tenga exactamente nuestros headers."""
+    # Primero asegurar que la solapa exista
+    if not ensure_sheet_exists(sheet_cfg):
+        return False
     try:
         service = get_sheets_service()
         current = service.spreadsheets().values().get(
@@ -363,7 +389,9 @@ def siguiente_numero_orden():
     Guarda el último número usado en la solapa 'Notificaciones Contador'.
     """
     contador_cfg = get_contador_config()
-    ensure_sheet_headers(contador_cfg)
+    # Asegura que la solapa exista y tenga headers correctos
+    if not ensure_sheet_headers(contador_cfg):
+        raise RuntimeError(f"No se pudo preparar la solapa '{contador_cfg['name']}'")
 
     anio_actual = str(date.today().year)
     service = get_sheets_service()
