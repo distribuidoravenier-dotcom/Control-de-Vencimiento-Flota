@@ -37,6 +37,9 @@ DESCRIPCION_COL = {
     'choferes_ayudantes': 'APELLIDO Y NOMBRE',
 }
 
+# Columna extra (solo en app.py) para marcar si ya se generó el PDF
+HISTORIAL_PDF_COL = 'PDF GENERADO'
+
 
 # ============================================================
 # CÁLCULOS AUTOMÁTICOS
@@ -164,7 +167,10 @@ def ensure_sheet_exists(sheet_cfg):
 
 
 def ensure_sheet_headers(sheet_cfg):
-    """Verifica que la fila 1 del Sheet tenga exactamente nuestros headers."""
+    """
+    Verifica que la fila 1 del Sheet tenga exactamente nuestros headers.
+    Si faltan columnas al final, las agrega SIN borrar las existentes.
+    """
     # Primero asegurar que la solapa exista
     if not ensure_sheet_exists(sheet_cfg):
         return False
@@ -176,14 +182,27 @@ def ensure_sheet_headers(sheet_cfg):
         ).execute().get('values', [[]])
         current_headers = current[0] if current else []
 
-        if current_headers != sheet_cfg['headers']:
-            service.spreadsheets().values().update(
-                spreadsheetId=SPREADSHEET_ID,
-                range=f"'{sheet_cfg['name']}'!A1",
-                valueInputOption='RAW',
-                body={'values': [sheet_cfg['headers']]}
-            ).execute()
-            print(f"✅ Headers sincronizados en '{sheet_cfg['name']}'.")
+        expected = sheet_cfg['headers']
+
+        # Si los headers actuales ya contienen TODOS los esperados
+        # (posiblemente con columnas extra), no tocamos nada.
+        if current_headers[:len(expected)] == expected and len(current_headers) >= len(expected):
+            return True
+
+        # Si la fila está vacía o no coincide, la reescribimos completa.
+        # Preservamos columnas extra existentes DESPUÉS de las esperadas.
+        extras = []
+        if len(current_headers) > len(expected):
+            extras = current_headers[len(expected):]
+        new_headers = expected + extras
+
+        service.spreadsheets().values().update(
+            spreadsheetId=SPREADSHEET_ID,
+            range=f"'{sheet_cfg['name']}'!A1",
+            valueInputOption='RAW',
+            body={'values': [new_headers]}
+        ).execute()
+        print(f"✅ Headers sincronizados en '{sheet_cfg['name']}'.")
         return True
     except HttpError as err:
         print(f"❌ Error asegurando headers: {err}")
@@ -237,12 +256,19 @@ def get_sheet_id(sheet_cfg):
 # ============================================================
 
 def get_historial_config():
-    """Configuración de la solapa Historial de Vencimiento."""
+    """
+    Configuración de la solapa Historial de Vencimiento.
+    Agrega la columna extra 'PDF GENERADO' (definida en app.py) para
+    no modificar config.py.
+    """
+    columns = list(Config.HISTORIAL_COLUMNS) + [
+        {'name': HISTORIAL_PDF_COL, 'type': 'select', 'options': ['SI', '']}
+    ]
     cfg = {
         'name': Config.HISTORIAL_SHEET_NAME,
         'label': 'Historial de Vencimientos',
         'primary_key': None,
-        'columns': Config.HISTORIAL_COLUMNS,
+        'columns': columns,
     }
     headers = [c['name'] for c in cfg['columns']]
     return {
@@ -339,6 +365,7 @@ def cargar_historial_automatico():
                     'FECHA VENCIMIENTO':     fecha_venc_str,
                     'ESTADO':                'EN PROCESO',
                     'SEMANA DE VENCIMIENTO': str(semana_del_anio(fecha_v)),
+                    HISTORIAL_PDF_COL:       '',
                 }
                 nuevas_filas.append(fila)
                 existentes.add(key)
@@ -356,6 +383,25 @@ def cargar_historial_automatico():
         ).execute()
 
     return len(nuevas_filas)
+
+
+def marcar_pdf_generado(row_number):
+    """Marca 'SI' en la columna PDF GENERADO de la fila indicada."""
+    sheet_cfg = get_historial_config()
+    ensure_sheet_headers(sheet_cfg)
+    headers = sheet_cfg['headers']
+    if HISTORIAL_PDF_COL not in headers:
+        return False
+    col_idx = headers.index(HISTORIAL_PDF_COL)  # 0-based
+    col_letra = col_letter(col_idx + 1)
+    service = get_sheets_service()
+    service.spreadsheets().values().update(
+        spreadsheetId=SPREADSHEET_ID,
+        range=f"'{sheet_cfg['name']}'!{col_letra}{row_number}",
+        valueInputOption='RAW',
+        body={'values': [['SI']]}
+    ).execute()
+    return True
 
 
 # ============================================================
@@ -767,10 +813,12 @@ def api_update_historial(row_number):
 @app.route('/api/notificacion/generar', methods=['POST'])
 def api_generar_notificacion():
     """
-    Genera el N° de Orden correlativo para una notificación.
+    Genera el N° de Orden correlativo para una notificación y
+    marca la fila del historial como PDF generado.
     Body: { "tipo": "CARNET DE CONDUCIR" | "LIBRETA SANITARIA",
             "descripcion": "APELLIDO Y NOMBRE",
-            "fecha_vencimiento": "dd/mm/yyyy" }
+            "fecha_vencimiento": "dd/mm/yyyy",
+            "row_number": 12 }
     Devuelve: { "success": true, "numero_orden": "0001-2026" }
     """
     try:
@@ -779,7 +827,18 @@ def api_generar_notificacion():
         if tipo not in [t.upper() for t in Config.NOTIFICACION_TIPOS]:
             return jsonify({'success': False, 'error': 'Tipo no permitido'}), 400
 
+        row_number = body.get('row_number')
+        if not row_number or int(row_number) < 2:
+            return jsonify({'success': False, 'error': 'row_number inválido'}), 400
+
         numero_orden = siguiente_numero_orden()
+
+        # Marcar el historial como PDF generado
+        try:
+            marcar_pdf_generado(int(row_number))
+        except Exception as e:
+            print(f"⚠️ No se pudo marcar PDF generado en fila {row_number}: {e}")
+
         return jsonify({'success': True, 'numero_orden': numero_orden})
     except Exception as e:
         print(f"❌ generar_notificacion: {e}")
