@@ -600,8 +600,11 @@ function render() {
     const pk = col.name === PRIMARY_KEY ? '<span class="pk-badge">PK</span>' : '';
     const ro = col.readonly ? '<span class="ro-badge">🔒</span>' : '';
     let cls = '';
-    if (col.name === 'FLOTA') cls = ' class="col-flota"';
+    // Corrección: usar 'col-flota' solo si es la primera columna de la tabla (y no es PK)
+    const idx = COLUMNS.indexOf(col);
+    if (idx === 0 && col.name !== PRIMARY_KEY) cls = ' class="col-flota"';
     else if (col.name === PRIMARY_KEY) cls = ' class="col-patente"';
+    
     headHtml += `<th${cls}>${escapeHtml(col.name)}${pk}${ro}</th>`;
   });
   headHtml += '</tr>';
@@ -623,7 +626,8 @@ function render() {
         const raw = row[col.name] || '';
         let cell = escapeHtml(raw);
         let cls = '';
-        if (col.name === 'FLOTA') cls = 'col-flota';
+        const idx = COLUMNS.indexOf(col);
+        if (idx === 0 && col.name !== PRIMARY_KEY) cls = 'col-flota';
         else if (col.name === PRIMARY_KEY) cls = 'col-patente';
 
         if (col.name === 'STATUS') {
@@ -842,7 +846,9 @@ function renderCd() {
 
   let headHtml = '<tr><th class="col-cd-acciones">Acciones</th>';
   columns.forEach((col, idx) => {
-    const cls = col === 'PATENTE' ? ' class="col-cd-patente-2"' : '';
+    let cls = '';
+    if (idx === 0) cls = ' class="col-cd-patente-2"';
+    else if (col === 'STATUS') cls = ''; // No sticky para status
     headHtml += `<th${cls}>${escapeHtml(col)}</th>`;
   });
   headHtml += '</tr>';
@@ -857,13 +863,18 @@ function renderCd() {
       bodyHtml += `<td class="col-cd-acciones">
         <button class="btn btn-sm" onclick="editCdRow(${row._row_number})">✏️</button>
       </td>`;
-      columns.forEach(col => {
+      columns.forEach((col, idx) => {
         const raw = row[col] || '';
         let cell = escapeHtml(raw);
         let cls = '';
-        if (col === 'PATENTE') {
+        
+        if (idx === 0) {
           cls = 'col-cd-patente-2';
           cell = `<b>${escapeHtml(raw)}</b>`;
+        } else if (col === 'STATUS') {
+          // Renderizado especial para STATUS
+          const c = raw === 'SALE' ? 'status-sale' : (raw === 'NO SALE' ? 'status-nosale' : '');
+          cell = c ? `<span class="${c}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
         } else if (raw) {
           const c = dateStatusClass(raw);
           cell = c ? `<span class="${c}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
@@ -911,9 +922,14 @@ function editCdRow(rowNumber) {
   cfg.columns.forEach(colName => {
     const val = row[colName] || '';
     const isPk = (colName === 'PATENTE' || colName === 'APELLIDO Y NOMBRE');
+    const isStatus = (colName === 'STATUS');
+    
     html += `<div class="form-group">`;
     html += `<label>${escapeHtml(colName)}${isPk ? ' <span class="ro-badge">🔒</span>' : ''}</label>`;
     if (isPk) {
+      html += `<input type="text" data-field="${escapeHtml(colName)}" value="${escapeHtml(val)}" readonly>`;
+    } else if (isStatus) {
+      // STATUS es de solo lectura en Control Documentario, se calcula automáticamente
       html += `<input type="text" data-field="${escapeHtml(colName)}" value="${escapeHtml(val)}" readonly>`;
     } else {
       html += `<input type="date" data-field="${escapeHtml(colName)}" value="${dateToInputValue(val)}">`;
@@ -928,7 +944,8 @@ async function submitCdRow() {
   const values = {};
   document.querySelectorAll('#cdModalFields [data-field]').forEach(inp => {
     const field = inp.dataset.field;
-    if (field === 'PATENTE' || field === 'APELLIDO Y NOMBRE') return;
+    // Ignorar campos de solo lectura que no son editables
+    if (field === 'PATENTE' || field === 'APELLIDO Y NOMBRE' || field === 'STATUS') return;
     values[field] = inp.value ? formatDate(new Date(inp.value + 'T00:00:00')) : '';
   });
 
