@@ -626,7 +626,13 @@ def api_update_control_documentario(sheet_key, row_number):
         values = body.get('values', {})
 
         cd_cols = CONTROL_DOCUMENTARIO[sheet_key]['columns']
-        editable_cols = [c for c in cd_cols if c != sheet_cfg['primary_key']]
+        # Columnas que NO se pueden editar desde Control Documentario
+        non_editable = {sheet_cfg['primary_key']}
+        if 'APELLIDO Y NOMBRE' in sheet_cfg['headers']:
+            non_editable.add('APELLIDO Y NOMBRE')
+        if 'PATENTE' in sheet_cfg['headers']:
+            non_editable.add('PATENTE')
+        non_editable.add('STATUS')  # STATUS siempre se recalcula
 
         data = get_all_data(sheet_cfg)
         current_row = None
@@ -640,11 +646,18 @@ def api_update_control_documentario(sheet_key, row_number):
         headers = sheet_cfg['headers']
         last_col = sheet_cfg['last_col']
 
+        # Construir la nueva fila: solo se actualizan las columnas que vienen en values
+        # y que NO están en non_editable. El resto se preserva del current_row.
         new_row = {}
         for h in headers:
-            if h in editable_cols:
+            if h in non_editable:
+                # Preservar el valor existente
+                new_row[h] = str(current_row.get(h, '') or '')
+            elif h in values:
+                # Actualizar con el valor enviado
                 new_row[h] = str(values.get(h, '') or '')
             else:
+                # Columna no enviada: preservar el valor existente
                 new_row[h] = str(current_row.get(h, '') or '')
 
         recalcular_campos_auto(sheet_key, new_row)
