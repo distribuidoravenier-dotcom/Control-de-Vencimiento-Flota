@@ -92,19 +92,16 @@ class Config:
         'camiones_t2': {
             'sheet_key': 'camiones_t2',
             'label': 'Camiones T2',
-            # Se agregó STATUS a la derecha de PATENTE
             'columns': ['PATENTE', 'STATUS', 'VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN']
         },
         'maestro_ae': {
             'sheet_key': 'maestro_ae',
             'label': 'Maestro AE',
-            # Se agregó STATUS a la derecha de PATENTE
             'columns': ['PATENTE', 'STATUS', 'VENC SEGURO', 'EXTINTOR']
         },
         'choferes_ayudantes': {
             'sheet_key': 'choferes_ayudantes',
             'label': 'Choferes y Ayudantes',
-            # Se agregó STATUS a la derecha de APELLIDO Y NOMBRE
             'columns': ['APELLIDO Y NOMBRE', 'STATUS', 'VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA']
         }
     }
@@ -112,10 +109,8 @@ class Config:
     # ============================================================
     # MÓDULO HISTORIAL DE VENCIMIENTOS
     # ============================================================
-    # Solapa destino donde se acumula el historial
     HISTORIAL_SHEET_NAME = 'Historial de Vencimiento'
 
-    # Mapeo: nombre de columna en Maestro -> valor de "TIPO" en Historial
     HISTORIAL_TIPO_MAP = {
         'VENC VTV':             'VTV',
         'VENC SEGURO':          'SEGURO',
@@ -126,13 +121,10 @@ class Config:
         'LIBRETA SANITARIA':    'LIBRETA SANITARIA',
     }
 
-    # Días de anticipación para cargar automáticamente en el historial
     HISTORIAL_DIAS_ALERTA = 30
 
-    # Estados permitidos en la columna ESTADO
     HISTORIAL_ESTADOS = ['EN PROCESO', 'VENCIDO', 'COMPLETO']
 
-    # Columnas de la solapa "Historial de Vencimiento"
     HISTORIAL_COLUMNS = [
         {'name': 'FECHA',                 'type': 'date',   'options': []},
         {'name': 'TIPO',                  'type': 'text',   'options': []},
@@ -142,16 +134,10 @@ class Config:
         {'name': 'SEMANA DE VENCIMIENTO', 'type': 'number', 'options': []},
     ]
 
-    # ============================================================
-    # NOTIFICACIONES PDF (CARNET DE CONDUCIR / LIBRETA SANITARIA)
-    # ============================================================
-    # Tipos del historial que permiten generar PDF de notificación
     NOTIFICACION_TIPOS = ['CARNET DE CONDUCIR', 'LIBRETA SANITARIA']
 
-    # Solapa donde se guarda el contador de N° de Orden correlativo
     NOTIFICACION_CONTADOR_SHEET = 'Notificaciones Contador'
 
-    # Columnas de la solapa contador
     NOTIFICACION_CONTADOR_COLUMNS = [
         {'name': 'AÑO',           'type': 'number', 'options': []},
         {'name': 'ULTIMO_NUMERO', 'type': 'number', 'options': []},
