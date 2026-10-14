@@ -154,7 +154,6 @@ def ensure_sheet_exists(sheet_cfg):
         titles = [s['properties']['title'] for s in spreadsheet.get('sheets', [])]
         if sheet_cfg['name'] in titles:
             return True
-        # Crear la solapa
         service.spreadsheets().batchUpdate(
             spreadsheetId=SPREADSHEET_ID,
             body={'requests': [{'addSheet': {'properties': {'title': sheet_cfg['name']}}}]}
@@ -171,7 +170,6 @@ def ensure_sheet_headers(sheet_cfg):
     Verifica que la fila 1 del Sheet tenga exactamente nuestros headers.
     Si faltan columnas al final, las agrega SIN borrar las existentes.
     """
-    # Primero asegurar que la solapa exista
     if not ensure_sheet_exists(sheet_cfg):
         return False
     try:
@@ -184,13 +182,9 @@ def ensure_sheet_headers(sheet_cfg):
 
         expected = sheet_cfg['headers']
 
-        # Si los headers actuales ya contienen TODOS los esperados
-        # (posiblemente con columnas extra), no tocamos nada.
         if current_headers[:len(expected)] == expected and len(current_headers) >= len(expected):
             return True
 
-        # Si la fila está vacía o no coincide, la reescribimos completa.
-        # Preservamos columnas extra existentes DESPUÉS de las esperadas.
         extras = []
         if len(current_headers) > len(expected):
             extras = current_headers[len(expected):]
@@ -226,7 +220,7 @@ def get_all_data(sheet_cfg):
         rows = []
         for i, raw in enumerate(values[1:], start=2):
             if not any(cell.strip() for cell in raw):
-                continue  # fila vacía
+                continue
             row_data = {}
             for j, h in enumerate(headers):
                 row_data[h] = raw[j] if j < len(raw) else ''
@@ -256,11 +250,6 @@ def get_sheet_id(sheet_cfg):
 # ============================================================
 
 def get_historial_config():
-    """
-    Configuración de la solapa Historial de Vencimiento.
-    Agrega la columna extra 'PDF GENERADO' (definida en app.py) para
-    no modificar config.py.
-    """
     columns = list(Config.HISTORIAL_COLUMNS) + [
         {'name': HISTORIAL_PDF_COL, 'type': 'select', 'options': ['SI', '']}
     ]
@@ -283,14 +272,12 @@ def get_historial_config():
 
 
 def semana_del_anio(fecha):
-    """Devuelve el número de semana ISO de una fecha date."""
     if not fecha:
         return ''
     return fecha.isocalendar()[1]
 
 
 def get_historial_data():
-    """Lee todas las filas de la solapa Historial."""
     sheet_cfg = get_historial_config()
     ensure_sheet_headers(sheet_cfg)
     return get_all_data(sheet_cfg)
@@ -302,16 +289,9 @@ def ensure_historial_headers():
 
 
 def cargar_historial_automatico():
-    """
-    Recorre todas las solapas del Maestro, detecta vencimientos a <= 30 días
-    y agrega filas nuevas en 'Historial de Vencimiento' que no existan ya
-    (mismo TIPO + DESCRIPCION + FECHA VENCIMIENTO).
-    Devuelve la cantidad de filas agregadas.
-    """
     historial_cfg = get_historial_config()
     ensure_sheet_headers(historial_cfg)
 
-    # Leer historial existente para evitar duplicados
     hist_data = get_all_data(historial_cfg)
     existentes = set()
     for r in hist_data['rows']:
@@ -344,7 +324,6 @@ def cargar_historial_automatico():
                 fecha_v = parse_date_any(fecha_str)
                 if not fecha_v:
                     continue
-                # Solo vencimientos dentro de los próximos 30 días (incluye ya vencidos)
                 if fecha_v > limite:
                     continue
 
@@ -386,13 +365,12 @@ def cargar_historial_automatico():
 
 
 def marcar_pdf_generado(row_number):
-    """Marca 'SI' en la columna PDF GENERADO de la fila indicada."""
     sheet_cfg = get_historial_config()
     ensure_sheet_headers(sheet_cfg)
     headers = sheet_cfg['headers']
     if HISTORIAL_PDF_COL not in headers:
         return False
-    col_idx = headers.index(HISTORIAL_PDF_COL)  # 0-based
+    col_idx = headers.index(HISTORIAL_PDF_COL)
     col_letra = col_letter(col_idx + 1)
     service = get_sheets_service()
     service.spreadsheets().values().update(
@@ -409,7 +387,6 @@ def marcar_pdf_generado(row_number):
 # ============================================================
 
 def get_contador_config():
-    """Configuración de la solapa Contador de Notificaciones."""
     cfg = {
         'name': Config.NOTIFICACION_CONTADOR_SHEET,
         'label': 'Notificaciones Contador',
@@ -429,20 +406,13 @@ def get_contador_config():
 
 
 def siguiente_numero_orden():
-    """
-    Devuelve el próximo N° de Orden correlativo para el año actual.
-    Formato: 'NNNN-AAAA'  (ej: '0001-2026')
-    Guarda el último número usado en la solapa 'Notificaciones Contador'.
-    """
     contador_cfg = get_contador_config()
-    # Asegura que la solapa exista y tenga headers correctos
     if not ensure_sheet_headers(contador_cfg):
         raise RuntimeError(f"No se pudo preparar la solapa '{contador_cfg['name']}'")
 
     anio_actual = str(date.today().year)
     service = get_sheets_service()
 
-    # Leer toda la solapa
     data = get_all_data(contador_cfg)
     rows = data['rows']
 
@@ -463,7 +433,6 @@ def siguiente_numero_orden():
     nuevo = ultimo + 1
 
     if fila_existente:
-        # Actualizar el número en la fila existente
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
             range=f"'{contador_cfg['name']}'!B{fila_numero}",
@@ -471,7 +440,6 @@ def siguiente_numero_orden():
             body={'values': [[str(nuevo)]]}
         ).execute()
     else:
-        # Crear nueva fila para el año
         service.spreadsheets().values().append(
             spreadsheetId=SPREADSHEET_ID,
             range=f"'{contador_cfg['name']}'!A:{contador_cfg['last_col']}",
@@ -490,7 +458,6 @@ def siguiente_numero_orden():
 
 @app.route('/')
 def index():
-    """Página principal unificada con módulos y solapas."""
     return render_template('index.html', sheets=SHEETS, control=CONTROL_DOCUMENTARIO)
 
 
@@ -500,7 +467,6 @@ def index():
 
 @app.route('/api/config/<sheet_key>', methods=['GET'])
 def api_config(sheet_key):
-    """Devuelve la definición de columnas para que el frontend sepa tipos y opciones."""
     sheet_cfg = get_sheet_config(sheet_key)
     if not sheet_cfg:
         return jsonify({'success': False, 'error': 'Solapa no encontrada'}), 404
@@ -529,7 +495,6 @@ def api_get_rows(sheet_key):
 
 @app.route('/api/control-documentario', methods=['GET'])
 def api_control_documentario():
-    """Devuelve los datos filtrados (solo columnas de documentos) para ambas solapas."""
     result = {}
     for key, cfg in CONTROL_DOCUMENTARIO.items():
         sheet_cfg = get_sheet_config(cfg['sheet_key'])
@@ -554,11 +519,6 @@ def api_control_documentario():
 
 @app.route('/api/rows/<sheet_key>', methods=['POST'])
 def api_add_row(sheet_key):
-    """
-    Body: { "values": { "PATENTE": "AB123CD", ... } }
-    Valida que PATENTE no esté vacía ni duplicada.
-    Las columnas readonly se calculan automáticamente.
-    """
     sheet_cfg = get_sheet_config(sheet_key)
     if not sheet_cfg:
         return jsonify({'success': False, 'error': 'Solapa no encontrada'}), 404
@@ -602,10 +562,6 @@ def api_add_row(sheet_key):
 
 @app.route('/api/rows/<sheet_key>/<int:row_number>', methods=['PUT'])
 def api_update_row(sheet_key, row_number):
-    """
-    Body: { "values": { "PATENTE": "AB123CD", ... } }
-    Valida que la nueva PATENTE no duplique otra fila.
-    """
     sheet_cfg = get_sheet_config(sheet_key)
     if not sheet_cfg:
         return jsonify({'success': False, 'error': 'Solapa no encontrada'}), 404
@@ -660,10 +616,6 @@ def api_update_row(sheet_key, row_number):
 
 @app.route('/api/control-documentario/<sheet_key>/<int:row_number>', methods=['PUT'])
 def api_update_control_documentario(sheet_key, row_number):
-    """
-    Edita SOLO las columnas del módulo Control Documentario de una fila.
-    Recalcula Cumple Polìtica? y STATUS automáticamente.
-    """
     if sheet_key not in CONTROL_DOCUMENTARIO:
         return jsonify({'success': False, 'error': 'Solapa no encontrada'}), 404
     sheet_cfg = get_sheet_config(sheet_key)
@@ -714,7 +666,6 @@ def api_update_control_documentario(sheet_key, row_number):
 
 @app.route('/api/rows/<sheet_key>/<int:row_number>', methods=['DELETE'])
 def api_delete_row(sheet_key, row_number):
-    """Elimina una fila por número de fila real del Sheet."""
     sheet_cfg = get_sheet_config(sheet_key)
     if not sheet_cfg:
         return jsonify({'success': False, 'error': 'Solapa no encontrada'}), 404
@@ -750,12 +701,7 @@ def api_delete_row(sheet_key, row_number):
 
 @app.route('/api/historial-vencimientos', methods=['GET'])
 def api_historial_vencimientos():
-    """
-    Devuelve las filas del historial.
-    Antes de leer, corre la carga automática de vencimientos próximos (<= 30 días).
-    """
     try:
-        # Carga automática (solo agrega lo que falte)
         agregadas = cargar_historial_automatico()
     except Exception as e:
         print(f"⚠️ Error en carga automática: {e}")
@@ -776,10 +722,6 @@ def api_historial_vencimientos():
 
 @app.route('/api/historial-vencimientos/<int:row_number>', methods=['PUT'])
 def api_update_historial(row_number):
-    """
-    Actualiza el ESTADO de una fila del historial.
-    Body: { "estado": "EN PROCESO" | "VENCIDO" | "COMPLETO" }
-    """
     if row_number < 2:
         return jsonify({'success': False, 'error': 'Fila inválida'}), 400
     try:
@@ -793,7 +735,7 @@ def api_update_historial(row_number):
         if 'ESTADO' not in headers:
             return jsonify({'success': False, 'error': 'Columna ESTADO no encontrada'}), 500
 
-        col_idx = headers.index('ESTADO')  # 0-based
+        col_idx = headers.index('ESTADO')
         col_letra = col_letter(col_idx + 1)
 
         service = get_sheets_service()
@@ -812,15 +754,6 @@ def api_update_historial(row_number):
 
 @app.route('/api/notificacion/generar', methods=['POST'])
 def api_generar_notificacion():
-    """
-    Genera el N° de Orden correlativo para una notificación y
-    marca la fila del historial como PDF generado.
-    Body: { "tipo": "CARNET DE CONDUCIR" | "LIBRETA SANITARIA",
-            "descripcion": "APELLIDO Y NOMBRE",
-            "fecha_vencimiento": "dd/mm/yyyy",
-            "row_number": 12 }
-    Devuelve: { "success": true, "numero_orden": "0001-2026" }
-    """
     try:
         body = request.get_json() or {}
         tipo = (body.get('tipo') or '').strip().upper()
@@ -833,7 +766,6 @@ def api_generar_notificacion():
 
         numero_orden = siguiente_numero_orden()
 
-        # Marcar el historial como PDF generado
         try:
             marcar_pdf_generado(int(row_number))
         except Exception as e:
