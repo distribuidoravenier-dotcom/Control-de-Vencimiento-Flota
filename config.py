@@ -92,17 +92,20 @@ class Config:
         'camiones_t2': {
             'sheet_key': 'camiones_t2',
             'label': 'Camiones T2',
-            'columns': ['PATENTE', 'VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN']
+            # Se agregó STATUS a la derecha de PATENTE
+            'columns': ['PATENTE', 'STATUS', 'VENC VTV', 'VENC SEGURO', 'UTA', 'EXTINTOR', 'BOTIQUIN']
         },
         'maestro_ae': {
             'sheet_key': 'maestro_ae',
             'label': 'Maestro AE',
-            'columns': ['PATENTE', 'VENC SEGURO', 'EXTINTOR']
+            # Se agregó STATUS a la derecha de PATENTE
+            'columns': ['PATENTE', 'STATUS', 'VENC SEGURO', 'EXTINTOR']
         },
         'choferes_ayudantes': {
             'sheet_key': 'choferes_ayudantes',
             'label': 'Choferes y Ayudantes',
-            'columns': ['APELLIDO Y NOMBRE', 'VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA']
+            # Se agregó STATUS a la derecha de APELLIDO Y NOMBRE
+            'columns': ['APELLIDO Y NOMBRE', 'STATUS', 'VENCIMIENTO REGISTRO', 'LIBRETA SANITARIA']
         }
     }
 
