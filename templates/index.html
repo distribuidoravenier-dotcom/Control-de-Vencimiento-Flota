@@ -1092,11 +1092,9 @@ async function reloadHistorial() {
 
 /* ============ RESUMEN (TARJETAS) ============ */
 function getSemanaISO(fecha) {
-  // Devuelve { anio, semana } para una fecha
   const d = new Date(fecha.getTime());
   d.setHours(0,0,0,0);
-  // Jueves de la semana (para ISO week)
-  const day = d.getDay() || 7; // 1..7 (Lunes=1, Domingo=7)
+  const day = d.getDay() || 7;
   d.setDate(d.getDate() + 4 - day);
   const yearStart = new Date(d.getFullYear(), 0, 1);
   const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
@@ -1118,18 +1116,21 @@ function actualizarResumen() {
   let n3 = 0;
 
   histAllRows.forEach(row => {
+    // "Vencidos" ahora cuenta solo si ESTADO === 'VENCIDO'
+    const estado = String(row['ESTADO'] || '').toUpperCase().trim();
+    if (estado === 'VENCIDO') {
+      vencidos++;
+    }
+
+    // Las demás tarjetas siguen contando por fecha de vencimiento
     const fechaStr = row['FECHA VENCIMIENTO'] || '';
     const fecha = parseDate(fechaStr);
     if (!fecha) return;
     fecha.setHours(0,0,0,0);
 
-    if (fecha < hoy) {
-      vencidos++;
-      return;
-    }
+    if (fecha < hoy) return; // ya vencidos por fecha no cuentan en semanas futuras
 
     const sem = getSemanaISO(fecha);
-    // Solo contar si es del mismo año (o cercano) para evitar cruces de año
     const diffSemanas = (sem.anio - anioActual) * 52 + (sem.semana - semanaActualNum);
 
     if (diffSemanas === 0) {
@@ -1163,6 +1164,18 @@ function esTipoNotificable(tipo) {
   return histTiposNotificables.map(x => x.toUpperCase()).includes(t);
 }
 
+/* Ordena las filas del historial por FECHA VENCIMIENTO descendente */
+function ordenarPorFechaVencDesc(rows) {
+  return rows.slice().sort((a, b) => {
+    const fa = parseDate(a['FECHA VENCIMIENTO']);
+    const fb = parseDate(b['FECHA VENCIMIENTO']);
+    if (!fa && !fb) return 0;
+    if (!fa) return 1;
+    if (!fb) return -1;
+    return fb - fa; // descendente: más reciente primero
+  });
+}
+
 function renderHist() {
   const thead = document.getElementById('histHead');
   const tbody = document.getElementById('histBody');
@@ -1178,11 +1191,14 @@ function renderHist() {
   headHtml += '</tr>';
   thead.innerHTML = headHtml;
 
-  if (histFilteredRows.length === 0) {
+  // Ordenar antes de renderizar
+  const rowsOrdenadas = ordenarPorFechaVencDesc(histFilteredRows);
+
+  if (rowsOrdenadas.length === 0) {
     tbody.innerHTML = `<tr><td class="no-data" colspan="${visibleHeaders.length + 1}">Sin registros</td></tr>`;
   } else {
     let bodyHtml = '';
-    histFilteredRows.forEach(row => {
+    rowsOrdenadas.forEach(row => {
       bodyHtml += '<tr>';
       visibleHeaders.forEach(h => {
         const raw = row[h] || '';
@@ -1201,7 +1217,6 @@ function renderHist() {
           });
           cell = `<select class="estado-select ${selCls}" onchange="cambiarEstado(${row._row_number}, this.value)">${opts}</select>`;
         } else if (h === 'FECHA VENCIMIENTO') {
-          // Sin formato condicional: texto plano
           cell = escapeHtml(raw);
         } else if (h === 'SEMANA DE VENCIMIENTO') {
           cell = raw ? `Semana ${escapeHtml(raw)}` : '';
@@ -1454,8 +1469,11 @@ function imprimirHistorial() {
 
   const visibleHeaders = histHeaders.filter(h => h !== PDF_COL);
 
+  // Ordenar también al imprimir
+  const rowsOrdenadas = ordenarPorFechaVencDesc(histFilteredRows);
+
   let filasHtml = '';
-  histFilteredRows.forEach(row => {
+  rowsOrdenadas.forEach(row => {
     filasHtml += '<tr>';
     visibleHeaders.forEach(h => {
       const raw = row[h] || '';
