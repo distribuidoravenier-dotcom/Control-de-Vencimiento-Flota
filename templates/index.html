@@ -252,6 +252,42 @@
   .hist-vencido    { background:#e53e3e; color:#fff; padding:4px 10px; border-radius:4px; font-weight:700; font-size:13px; }
   .hist-completo   { background:#38a169; color:#fff; padding:4px 10px; border-radius:4px; font-weight:700; font-size:13px; }
 
+  /* Tarjetas de resumen del Historial */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .summary-card {
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,.12);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 80px;
+  }
+  .summary-card .label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    opacity: .95;
+    margin-bottom: 6px;
+  }
+  .summary-card .value {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .summary-card.vencidos   { background: linear-gradient(135deg, #e53e3e, #c53030); }
+  .summary-card.semana-actual { background: linear-gradient(135deg, #dd6b20, #c05621); }
+  .summary-card.n1         { background: linear-gradient(135deg, #d69e2e, #b7791f); }
+  .summary-card.n2         { background: linear-gradient(135deg, #3182ce, #2b6cb0); }
+  .summary-card.n3         { background: linear-gradient(135deg, #38a169, #2f855a); }
+
   .actions { display:flex; gap:4px; }
 
   .modal {
@@ -320,6 +356,7 @@
     .form-grid { grid-template-columns: 1fr; }
     td, th { font-size: 13px; }
     body { font-size: 15px; }
+    .summary-card .value { font-size: 22px; }
   }
 </style>
 </head>
@@ -422,6 +459,30 @@
     </div>
     <h1>🗓️ Historial de Vencimientos</h1>
     <p class="subtitle">Vencimientos detectados automáticamente (30 días de anticipación)</p>
+
+    <!-- Tarjetas de resumen -->
+    <div class="summary-cards" id="summaryCards">
+      <div class="summary-card vencidos">
+        <div class="label">🔴 Vencidos</div>
+        <div class="value" id="cardVencidos">0</div>
+      </div>
+      <div class="summary-card semana-actual">
+        <div class="label">🟠 Vence esta semana</div>
+        <div class="value" id="cardSemanaActual">0</div>
+      </div>
+      <div class="summary-card n1">
+        <div class="label">🟡 Semana N+1</div>
+        <div class="value" id="cardN1">0</div>
+      </div>
+      <div class="summary-card n2">
+        <div class="label">🔵 Semana N+2</div>
+        <div class="value" id="cardN2">0</div>
+      </div>
+      <div class="summary-card n3">
+        <div class="label">🟢 Semana N+3</div>
+        <div class="value" id="cardN3">0</div>
+      </div>
+    </div>
 
     <div id="hist-alert-container"></div>
 
@@ -608,10 +669,8 @@ function render() {
   const thead = document.getElementById('maestroHead');
   const tbody = document.getElementById('maestroBody');
 
-  // Detectar si existe una columna "FLOTA" antes de la PK
   const tieneFlota = COLUMNS.some(c => c.name === 'FLOTA');
   const pkEsPrimera = (COLUMNS[0] && COLUMNS[0].name === PRIMARY_KEY);
-  // Clase para la PK: si es la primera columna (y no hay FLOTA antes), usar 'col-patente-solo'
   const pkClass = pkEsPrimera ? 'col-patente-solo' : 'col-patente';
 
   let headHtml = '<tr><th class="col-acciones">Acciones</th>';
@@ -1021,6 +1080,7 @@ async function loadHistorial() {
     }
 
     renderHist();
+    actualizarResumen();
   } catch (e) {
     histShowAlert('Error de conexión: ' + e.message, 'error');
   }
@@ -1028,6 +1088,66 @@ async function loadHistorial() {
 
 async function reloadHistorial() {
   await loadHistorial();
+}
+
+/* ============ RESUMEN (TARJETAS) ============ */
+function getSemanaISO(fecha) {
+  // Devuelve { anio, semana } para una fecha
+  const d = new Date(fecha.getTime());
+  d.setHours(0,0,0,0);
+  // Jueves de la semana (para ISO week)
+  const day = d.getDay() || 7; // 1..7 (Lunes=1, Domingo=7)
+  d.setDate(d.getDate() + 4 - day);
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return { anio: d.getFullYear(), semana: weekNo };
+}
+
+function actualizarResumen() {
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+
+  const semanas = getSemanaISO(hoy);
+  const semanaActualNum = semanas.semana;
+  const anioActual = semanas.anio;
+
+  let vencidos = 0;
+  let semanaActual = 0;
+  let n1 = 0;
+  let n2 = 0;
+  let n3 = 0;
+
+  histAllRows.forEach(row => {
+    const fechaStr = row['FECHA VENCIMIENTO'] || '';
+    const fecha = parseDate(fechaStr);
+    if (!fecha) return;
+    fecha.setHours(0,0,0,0);
+
+    if (fecha < hoy) {
+      vencidos++;
+      return;
+    }
+
+    const sem = getSemanaISO(fecha);
+    // Solo contar si es del mismo año (o cercano) para evitar cruces de año
+    const diffSemanas = (sem.anio - anioActual) * 52 + (sem.semana - semanaActualNum);
+
+    if (diffSemanas === 0) {
+      semanaActual++;
+    } else if (diffSemanas === 1) {
+      n1++;
+    } else if (diffSemanas === 2) {
+      n2++;
+    } else if (diffSemanas === 3) {
+      n3++;
+    }
+  });
+
+  document.getElementById('cardVencidos').textContent = vencidos;
+  document.getElementById('cardSemanaActual').textContent = semanaActual;
+  document.getElementById('cardN1').textContent = n1;
+  document.getElementById('cardN2').textContent = n2;
+  document.getElementById('cardN3').textContent = n3;
 }
 
 function estadoSelectClass(estado) {
@@ -1081,8 +1201,8 @@ function renderHist() {
           });
           cell = `<select class="estado-select ${selCls}" onchange="cambiarEstado(${row._row_number}, this.value)">${opts}</select>`;
         } else if (h === 'FECHA VENCIMIENTO') {
-          const c = dateStatusClass(raw);
-          cell = c ? `<span class="${c}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
+          // Sin formato condicional: texto plano
+          cell = escapeHtml(raw);
         } else if (h === 'SEMANA DE VENCIMIENTO') {
           cell = raw ? `Semana ${escapeHtml(raw)}` : '';
         } else if (h === 'TIPO') {
@@ -1146,6 +1266,7 @@ async function cambiarEstado(rowNumber, nuevoEstado) {
       if (r) r['ESTADO'] = nuevoEstado;
       histShowAlert(`✅ Estado actualizado a "${nuevoEstado}"`, 'success');
       renderHist();
+      actualizarResumen();
     } else {
       histShowAlert('❌ ' + data.error, 'error');
       renderHist();
