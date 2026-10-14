@@ -133,7 +133,13 @@
   th.col-patente {
     position: sticky; left: 225px; z-index: 7;
     background: #667eea;
-    min-width: 120px; width: 120px;
+    min-width: 140px; width: 140px;
+    box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
+  }
+  th.col-patente-solo {
+    position: sticky; left: 120px; z-index: 7;
+    background: #667eea;
+    min-width: 140px; width: 140px;
     box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
   }
   td.col-acciones {
@@ -149,12 +155,19 @@
   td.col-patente {
     position: sticky; left: 225px; z-index: 4;
     background: #ffffff;
-    min-width: 120px; width: 120px;
+    min-width: 140px; width: 140px;
+    box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
+  }
+  td.col-patente-solo {
+    position: sticky; left: 120px; z-index: 4;
+    background: #ffffff;
+    min-width: 140px; width: 140px;
     box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
   }
   tr:hover td.col-acciones,
   tr:hover td.col-flota,
-  tr:hover td.col-patente {
+  tr:hover td.col-patente,
+  tr:hover td.col-patente-solo {
     background: #f8f9fa;
   }
 
@@ -187,13 +200,13 @@
   th.col-cd-patente-2 {
     position: sticky; left: 90px; z-index: 7;
     background: #667eea;
-    min-width: 130px; width: 130px;
+    min-width: 150px; width: 150px;
     box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
   }
   td.col-cd-patente-2 {
     position: sticky; left: 90px; z-index: 4;
     background: #ffffff;
-    min-width: 130px; width: 130px;
+    min-width: 150px; width: 150px;
     box-shadow: 3px 0 6px -2px rgba(0,0,0,.25);
   }
   tr:hover td.col-cd-acciones,
@@ -595,15 +608,20 @@ function render() {
   const thead = document.getElementById('maestroHead');
   const tbody = document.getElementById('maestroBody');
 
+  // Detectar si existe una columna "FLOTA" antes de la PK
+  const tieneFlota = COLUMNS.some(c => c.name === 'FLOTA');
+  const pkEsPrimera = (COLUMNS[0] && COLUMNS[0].name === PRIMARY_KEY);
+  // Clase para la PK: si es la primera columna (y no hay FLOTA antes), usar 'col-patente-solo'
+  const pkClass = pkEsPrimera ? 'col-patente-solo' : 'col-patente';
+
   let headHtml = '<tr><th class="col-acciones">Acciones</th>';
   COLUMNS.forEach(col => {
     const pk = col.name === PRIMARY_KEY ? '<span class="pk-badge">PK</span>' : '';
     const ro = col.readonly ? '<span class="ro-badge">🔒</span>' : '';
     let cls = '';
-    // Corrección: usar 'col-flota' solo si es la primera columna de la tabla (y no es PK)
     const idx = COLUMNS.indexOf(col);
-    if (idx === 0 && col.name !== PRIMARY_KEY) cls = ' class="col-flota"';
-    else if (col.name === PRIMARY_KEY) cls = ' class="col-patente"';
+    if (col.name === 'FLOTA') cls = ' class="col-flota"';
+    else if (col.name === PRIMARY_KEY) cls = ` class="${pkClass}"`;
     
     headHtml += `<th${cls}>${escapeHtml(col.name)}${pk}${ro}</th>`;
   });
@@ -626,9 +644,8 @@ function render() {
         const raw = row[col.name] || '';
         let cell = escapeHtml(raw);
         let cls = '';
-        const idx = COLUMNS.indexOf(col);
-        if (idx === 0 && col.name !== PRIMARY_KEY) cls = 'col-flota';
-        else if (col.name === PRIMARY_KEY) cls = 'col-patente';
+        if (col.name === 'FLOTA') cls = 'col-flota';
+        else if (col.name === PRIMARY_KEY) cls = pkClass;
 
         if (col.name === 'STATUS') {
           const c = raw === 'SALE' ? 'status-sale' : (raw === 'NO SALE' ? 'status-nosale' : '');
@@ -848,7 +865,6 @@ function renderCd() {
   columns.forEach((col, idx) => {
     let cls = '';
     if (idx === 0) cls = ' class="col-cd-patente-2"';
-    else if (col === 'STATUS') cls = ''; // No sticky para status
     headHtml += `<th${cls}>${escapeHtml(col)}</th>`;
   });
   headHtml += '</tr>';
@@ -872,7 +888,6 @@ function renderCd() {
           cls = 'col-cd-patente-2';
           cell = `<b>${escapeHtml(raw)}</b>`;
         } else if (col === 'STATUS') {
-          // Renderizado especial para STATUS
           const c = raw === 'SALE' ? 'status-sale' : (raw === 'NO SALE' ? 'status-nosale' : '');
           cell = c ? `<span class="${c}">${escapeHtml(raw)}</span>` : escapeHtml(raw);
         } else if (raw) {
@@ -929,7 +944,6 @@ function editCdRow(rowNumber) {
     if (isPk) {
       html += `<input type="text" data-field="${escapeHtml(colName)}" value="${escapeHtml(val)}" readonly>`;
     } else if (isStatus) {
-      // STATUS es de solo lectura en Control Documentario, se calcula automáticamente
       html += `<input type="text" data-field="${escapeHtml(colName)}" value="${escapeHtml(val)}" readonly>`;
     } else {
       html += `<input type="date" data-field="${escapeHtml(colName)}" value="${dateToInputValue(val)}">`;
@@ -944,7 +958,6 @@ async function submitCdRow() {
   const values = {};
   document.querySelectorAll('#cdModalFields [data-field]').forEach(inp => {
     const field = inp.dataset.field;
-    // Ignorar campos de solo lectura que no son editables
     if (field === 'PATENTE' || field === 'APELLIDO Y NOMBRE' || field === 'STATUS') return;
     values[field] = inp.value ? formatDate(new Date(inp.value + 'T00:00:00')) : '';
   });
@@ -1034,7 +1047,6 @@ function renderHist() {
   const thead = document.getElementById('histHead');
   const tbody = document.getElementById('histBody');
 
-  // HEAD: excluimos la columna PDF GENERADO de la vista de tabla
   const visibleHeaders = histHeaders.filter(h => h !== PDF_COL);
 
   let headHtml = '<tr>';
@@ -1046,7 +1058,6 @@ function renderHist() {
   headHtml += '</tr>';
   thead.innerHTML = headHtml;
 
-  // BODY
   if (histFilteredRows.length === 0) {
     tbody.innerHTML = `<tr><td class="no-data" colspan="${visibleHeaders.length + 1}">Sin registros</td></tr>`;
   } else {
@@ -1083,7 +1094,6 @@ function renderHist() {
         bodyHtml += `<td class="${cls}">${cell}</td>`;
       });
 
-      // Columna Notificación: botón o tilde verde
       const yaGenerado = String(row[PDF_COL] || '').trim().toUpperCase() === 'SI';
       if (esTipoNotificable(row['TIPO'])) {
         if (yaGenerado) {
@@ -1157,7 +1167,6 @@ async function generarNotificacion(rowNumber) {
   const descripcion = row['DESCRIPCION'] || '';
   const fechaVenc = row['FECHA VENCIMIENTO'] || '';
 
-  // Pedir N° de orden correlativo al backend y marcar PDF generado
   let numeroOrden = '';
   try {
     const res = await fetch('/api/notificacion/generar', {
@@ -1186,7 +1195,6 @@ async function generarNotificacion(rowNumber) {
                             String(hoy.getMonth()+1).padStart(2,'0') + '/' +
                             hoy.getFullYear();
 
-  // Armar contenido según tipo (cada uno con su etiqueta correcta)
   let titulo = '';
   let parrafo = '';
   let etiquetaFecha = '';
@@ -1305,7 +1313,6 @@ async function generarNotificacion(rowNumber) {
     try { ventana.focus(); ventana.print(); } catch(e) {}
   }, 500);
 
-  // Refrescar la fila en memoria y volver a renderizar (para mostrar el tilde verde)
   row[PDF_COL] = 'SI';
   renderHist();
 }
@@ -1324,7 +1331,6 @@ function imprimirHistorial() {
                          String(hoy.getMonth()+1).padStart(2,'0') + '/' +
                          hoy.getFullYear();
 
-  // Excluimos la columna PDF GENERADO del listado impreso
   const visibleHeaders = histHeaders.filter(h => h !== PDF_COL);
 
   let filasHtml = '';
