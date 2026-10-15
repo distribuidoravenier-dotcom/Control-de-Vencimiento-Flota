@@ -353,95 +353,236 @@
   }
 
   /* ================================================
-     EVIDENCIAS DE DOCUMENTACIÓN
+     EVIDENCIAS DE DOCUMENTACIÓN - ESTILO EXPLORADOR
      ================================================ */
-  .evidencias-layout {
+  .explorer {
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 78vh;
+    min-height: 560px;
+    font-size: 14px;
+  }
+
+  /* Barra superior tipo Windows Explorer */
+  .explorer-topbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    background: #f3f3f3;
+    border-bottom: 1px solid #e0e0e0;
+    flex-wrap: wrap;
+  }
+  .explorer-nav-btn {
+    width: 34px; height: 34px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #ffffff; border: 1px solid #d0d7de; border-radius: 5px;
+    cursor: pointer; font-size: 16px; color: #444;
+    transition: .12s; user-select: none;
+  }
+  .explorer-nav-btn:hover:not(:disabled) { background: #eef1f6; border-color: #98a6b5; }
+  .explorer-nav-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  .explorer-address {
+    flex: 1; min-width: 220px;
+    display: flex; align-items: center;
+    background: #ffffff; border: 1px solid #d0d7de; border-radius: 5px;
+    padding: 0 8px; height: 34px; overflow: hidden;
+  }
+  .explorer-address .addr-label {
+    font-size: 13px; color: #666; margin-right: 6px; white-space: nowrap;
+  }
+  .explorer-address .addr-path {
+    display: flex; align-items: center; gap: 2px;
+    flex: 1; overflow: hidden; white-space: nowrap;
+  }
+  .explorer-address .addr-crumb {
+    padding: 3px 7px; border-radius: 3px;
+    cursor: pointer; color: #333; font-size: 13px;
+    white-space: nowrap;
+  }
+  .explorer-address .addr-crumb:hover { background: #eef1f6; }
+  .explorer-address .addr-crumb.current { font-weight: 700; color: #111; }
+  .explorer-address .addr-sep { color: #aaa; font-size: 12px; }
+
+  .explorer-search {
+    width: 200px; height: 34px;
+    padding: 0 10px; border: 1px solid #d0d7de; border-radius: 5px;
+    font-size: 13px; font-family: inherit;
+  }
+  .explorer-search:focus { outline: none; border-color: #667eea; }
+
+  /* Toolbar de acciones (Nueva carpeta, subir, etc.) */
+  .explorer-toolbar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 10px;
+    background: #fafbfc;
+    border-bottom: 1px solid #e8e8e8;
+    flex-wrap: wrap;
+  }
+  .explorer-action {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 12px;
+    background: transparent; border: 1px solid transparent; border-radius: 5px;
+    cursor: pointer; font-size: 13.5px; color: #24292f;
+    font-family: inherit; transition: .12s; white-space: nowrap;
+  }
+  .explorer-action:hover { background: #eef1f6; border-color: #d0d7de; }
+  .explorer-action .icon { font-size: 15px; }
+  .explorer-action.primary {
+    background: #2f6fce; color: #fff; border-color: #2f6fce;
+  }
+  .explorer-action.primary:hover { background: #255bb0; border-color: #255bb0; }
+  .explorer-toolbar .sep {
+    width: 1px; height: 22px; background: #e0e0e0; margin: 0 4px;
+  }
+
+  /* Cuerpo: sidebar + contenido */
+  .explorer-body {
+    flex: 1;
     display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 18px;
-  }
-  .evidencias-sidebar {
-    background:#f8f9fa; border:1px solid #e0e0e0; border-radius:10px;
-    padding: 14px;
-    max-height: 720px; overflow:auto;
-  }
-  .evidencias-sidebar h3 {
-    font-size: 15px; color:#333; margin-bottom: 10px;
-    text-transform: uppercase; letter-spacing:.5px;
-  }
-  .folder-tree {
-    list-style: none; padding-left: 0;
-  }
-  .folder-tree ul { list-style: none; padding-left: 16px; }
-  .folder-tree li {
-    padding: 4px 6px; border-radius: 5px; cursor: pointer;
-    font-size: 15px; display:flex; align-items:center; gap:6px;
-    user-select:none;
-  }
-  .folder-tree li:hover { background:#e9edf5; }
-  .folder-tree li.selected { background:#667eea; color:#fff; }
-  .folder-tree li.selected .folder-count { color:#e0e7ff; }
-  .folder-tree .folder-icon { font-size:16px; }
-  .folder-tree .folder-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .folder-tree .folder-count { font-size:12px; color:#888; }
-
-  .evidencias-main {
-    display:flex; flex-direction:column; gap: 14px;
-  }
-  .evidencias-header {
-    display:flex; justify-content:space-between; align-items:center;
-    gap: 10px; flex-wrap: wrap;
-  }
-  .evidencias-breadcrumb {
-    font-size:15px; color:#555;
-    display:flex; flex-wrap:wrap; align-items:center; gap:4px;
-  }
-  .evidencias-breadcrumb .crumb {
-    cursor:pointer; color:#667eea; font-weight:600;
-  }
-  .evidencias-breadcrumb .crumb:hover { text-decoration: underline; }
-  .evidencias-breadcrumb .sep { color:#aaa; }
-
-  .drop-zone {
-    border:2px dashed #c3cfe2; border-radius:10px;
-    padding: 22px; text-align:center; color:#666;
-    background:#fbfcff; transition:.15s;
-  }
-  .drop-zone.dragover {
-    border-color:#667eea; background:#eef1fb;
-  }
-  .drop-zone input[type="file"] { display:none; }
-  .drop-zone .dz-icon { font-size: 34px; margin-bottom: 6px; }
-
-  .imagenes-grid {
-    display:grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 14px;
-  }
-  .imagen-card {
-    background:#fff; border:1px solid #e0e0e0; border-radius:10px;
-    overflow:hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06);
-    display:flex; flex-direction:column;
-    transition:.15s;
-  }
-  .imagen-card:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(0,0,0,.12); }
-  .imagen-thumb {
-    width:100%; height: 140px; object-fit: cover;
-    background:#f0f0f0; cursor:pointer;
-    display:block;
-  }
-  .imagen-meta {
-    padding: 8px 10px; display:flex; flex-direction:column; gap:4px;
-  }
-  .imagen-nombre {
-    font-size: 13px; font-weight:600; color:#333;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  }
-  .imagen-sub { font-size:11px; color:#888; }
-  .imagen-acciones {
-    display:flex; gap:6px; padding: 0 10px 10px 10px;
+    grid-template-columns: 230px 1fr;
+    min-height: 0;
+    background: #fff;
   }
 
+  /* Sidebar árbol */
+  .explorer-side {
+    background: #fafbfc;
+    border-right: 1px solid #e8e8e8;
+    padding: 10px 6px;
+    overflow: auto;
+  }
+  .explorer-side .side-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
+    color: #6b7280; padding: 4px 10px 8px 10px; font-weight: 700;
+  }
+  .tree-root {
+    list-style: none; padding-left: 0; margin: 0;
+  }
+  .tree-root li { list-style: none; }
+  .tree-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 5px;
+    cursor: pointer; font-size: 13.5px; color: #24292f;
+    user-select: none;
+  }
+  .tree-item:hover { background: #eef1f6; }
+  .tree-item.selected { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
+  .tree-item .ti-icon { font-size: 15px; }
+  .tree-item .ti-name {
+    flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* Panel contenido */
+  .explorer-main {
+    display: flex; flex-direction: column;
+    min-width: 0; min-height: 0;
+  }
+  .explorer-content {
+    flex: 1; overflow: auto;
+    background: #ffffff;
+  }
+
+  /* Vista de íconos (grid) */
+  .ex-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 6px; padding: 14px;
+  }
+  .ex-item {
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center;
+    padding: 12px 8px 10px 8px;
+    border: 1px solid transparent; border-radius: 6px;
+    cursor: pointer; transition: .1s;
+    user-select: none;
+  }
+  .ex-item:hover { background: #eef4fd; border-color: #cfe1f7; }
+  .ex-item.selected { background: #dbeafe; border-color: #93c5fd; }
+  .ex-item .ex-thumb {
+    width: 80px; height: 80px; object-fit: cover;
+    border-radius: 5px; margin-bottom: 8px;
+    background: #f0f2f5; display: block;
+    border: 1px solid #e5e7eb;
+  }
+  .ex-item .ex-icon-big {
+    width: 80px; height: 80px; display:flex; align-items:center; justify-content:center;
+    font-size: 52px; margin-bottom: 8px;
+    user-select: none;
+  }
+  .ex-item .ex-name {
+    font-size: 12.5px; color: #24292f; word-break: break-word;
+    line-height: 1.25;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; max-width: 130px;
+  }
+
+  /* Vista de detalles (lista) */
+  .ex-list {
+    width: 100%; border-collapse: collapse; font-size: 13.5px;
+  }
+  .ex-list thead th {
+    position: sticky; top: 0; z-index: 2;
+    background: #f6f8fa; color: #24292f;
+    text-align: left; padding: 9px 12px;
+    font-size: 12.5px; font-weight: 700;
+    border-bottom: 1px solid #d0d7de;
+    white-space: nowrap; cursor: pointer;
+    user-select: none;
+  }
+  .ex-list thead th:hover { background: #eef1f6; }
+  .ex-list thead th .sort-ind { color: #999; font-size: 11px; margin-left: 4px; }
+  .ex-list tbody tr {
+    cursor: pointer; transition: background .08s;
+  }
+  .ex-list tbody tr:hover { background: #eef4fd; }
+  .ex-list tbody tr.selected { background: #dbeafe; }
+  .ex-list td {
+    padding: 7px 12px;
+    border-bottom: 1px solid #f0f2f5;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 340px; color: #24292f;
+  }
+  .ex-list td .cell-name {
+    display: inline-flex; align-items: center; gap: 8px;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ex-list td .cell-name .ci { font-size: 17px; flex-shrink: 0; }
+  .ex-list td .cell-name .cn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ex-list td.col-size, .ex-list th.col-size { text-align: right; }
+  .ex-list td.col-actions { text-align: right; white-space: nowrap; }
+  .ex-list td.col-actions .mini-btn {
+    background: transparent; border: none; cursor: pointer;
+    font-size: 14px; padding: 3px 6px; border-radius: 4px;
+    color: #57606a;
+  }
+  .ex-list td.col-actions .mini-btn:hover { background: #e5e7eb; color: #111; }
+
+  /* Barra de estado inferior */
+  .explorer-status {
+    padding: 6px 14px; background: #f6f8fa;
+    border-top: 1px solid #e8e8e8;
+    font-size: 12px; color: #57606a;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  /* Zona de drop resaltada */
+  .explorer.drop-active { outline: 2px dashed #2f6fce; outline-offset: -4px; }
+  .explorer-content.dragover { background: #eef4fd; }
+
+  /* Empty state */
+  .ex-empty {
+    text-align: center; padding: 60px 20px; color: #8b949e;
+  }
+  .ex-empty .big-icon { font-size: 60px; margin-bottom: 12px; opacity: .55; }
+  .ex-empty .msg { font-size: 15px; }
+
+  /* Lightbox (reusado) */
   .lightbox {
     display:none; position:fixed; inset:0; background: rgba(0,0,0,.9);
     z-index: 300; align-items:center; justify-content:center;
@@ -466,9 +607,20 @@
   .lightbox .nav-lb.prev { left: 10px; }
   .lightbox .nav-lb.next { right: 10px; }
 
+  /* Vista previa en modal de subida */
+  .upload-preview {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 10px;
+  }
+  .upload-preview .up-thumb {
+    width: 70px; height: 70px; object-fit: cover;
+    border-radius: 6px; border: 1px solid #d0d7de;
+  }
+
   @media (max-width: 900px) {
-    .evidencias-layout { grid-template-columns: 1fr; }
-    .evidencias-sidebar { max-height: 280px; }
+    .explorer-body { grid-template-columns: 1fr; }
+    .explorer-side { max-height: 200px; border-right: none; border-bottom: 1px solid #e8e8e8; }
+    .explorer-search { width: 100%; }
   }
   @media (max-width: 720px) {
     .form-grid { grid-template-columns: 1fr; }
@@ -635,53 +787,60 @@
 
     <div id="ev-alert-container"></div>
 
-    <div class="evidencias-layout">
-      <!-- SIDEBAR: árbol de carpetas -->
-      <aside class="evidencias-sidebar">
-        <h3>📁 Carpetas</h3>
-        <ul class="folder-tree" id="folderTree">
-          <li class="selected" data-folder-id="__ROOT__">
-            <span class="folder-icon">🏠</span>
-            <span class="folder-name">Raíz</span>
-          </li>
-        </ul>
-        <button class="btn btn-success btn-sm" style="width:100%; margin-top:10px;"
-                onclick="evCrearCarpeta()">➕ Nueva carpeta</button>
-      </aside>
+    <div class="explorer" id="evExplorer">
+      <!-- Barra superior: navegación + dirección + búsqueda -->
+      <div class="explorer-topbar">
+        <button class="explorer-nav-btn" id="evBtnBack" title="Atrás" onclick="evAtras()">←</button>
+        <button class="explorer-nav-btn" id="evBtnUp" title="Subir un nivel" onclick="evSubir()">↑</button>
+        <button class="explorer-nav-btn" id="evBtnRefresh" title="Actualizar" onclick="evRecargar()">⟳</button>
 
-      <!-- MAIN: contenido de la carpeta -->
-      <section class="evidencias-main">
-        <div class="evidencias-header">
-          <div class="evidencias-breadcrumb" id="evBreadcrumb">
-            <span class="crumb" data-folder-id="__ROOT__" onclick="evNavegarA('__ROOT__')">🏠 Raíz</span>
+        <div class="explorer-address">
+          <span class="addr-label">📍</span>
+          <div class="addr-path" id="evAddressPath"></div>
+        </div>
+
+        <input type="text" class="explorer-search" id="evSearchInput"
+               placeholder="🔍 Buscar en esta carpeta..." oninput="evAplicarFiltro()">
+      </div>
+
+      <!-- Barra de acciones -->
+      <div class="explorer-toolbar">
+        <button class="explorer-action primary" onclick="evCrearCarpeta()">
+          <span class="icon">📁</span> Nueva carpeta
+        </button>
+        <button class="explorer-action" onclick="document.getElementById('evFileInput').click()">
+          <span class="icon">📤</span> Subir fotos
+        </button>
+        <div class="sep"></div>
+        <button class="explorer-action" onclick="evToggleVista()">
+          <span class="icon" id="evVistaIcon">☰</span>
+          <span id="evVistaLabel">Vista: Detalles</span>
+        </button>
+        <button class="explorer-action" onclick="evRenombrarSeleccionado()" id="evBtnRenombrar" disabled>
+          <span class="icon">✏️</span> Renombrar
+        </button>
+        <button class="explorer-action" onclick="evEliminarSeleccionado()" id="evBtnEliminar" disabled>
+          <span class="icon">🗑️</span> Eliminar
+        </button>
+        <input type="file" id="evFileInput" accept="image/*" multiple
+               style="display:none;" onchange="evSubirArchivos(this.files)">
+      </div>
+
+      <!-- Cuerpo: sidebar + contenido -->
+      <div class="explorer-body">
+        <aside class="explorer-side">
+          <div class="side-title">📁 Carpetas</div>
+          <ul class="tree-root" id="evTreeRoot"></ul>
+        </aside>
+
+        <section class="explorer-main">
+          <div class="explorer-content" id="evContent"></div>
+          <div class="explorer-status">
+            <span id="evStatusLeft">0 elementos</span>
+            <span id="evStatusRight"></span>
           </div>
-          <div>
-            <button class="btn btn-sm" onclick="evRecargar()">🔄 Recargar</button>
-            <button class="btn btn-success btn-sm" onclick="evCrearSubcarpeta()">➕ Subcarpeta</button>
-          </div>
-        </div>
-
-        <!-- Subcarpetas -->
-        <div id="evSubcarpetasWrapper" style="display:none;">
-          <h3 style="font-size:14px; color:#555; margin-bottom:8px; text-transform:uppercase;">Subcarpetas</h3>
-          <div id="evSubcarpetas" class="imagenes-grid"></div>
-        </div>
-
-        <!-- Zona de subida -->
-        <div class="drop-zone" id="evDropZone">
-          <div class="dz-icon">📤</div>
-          <div><b>Arrastrá las fotos acá</b> o hacé clic para seleccionar</div>
-          <div style="font-size:13px; color:#999; margin-top:4px;">JPG · PNG · WEBP · GIF</div>
-          <input type="file" id="evFileInput" accept="image/*" multiple onchange="evSubirArchivos(this.files)">
-        </div>
-
-        <!-- Imágenes -->
-        <div>
-          <h3 style="font-size:14px; color:#555; margin-bottom:8px; text-transform:uppercase;">Imágenes</h3>
-          <div id="evImagenes" class="imagenes-grid"></div>
-          <div id="evEmpty" class="no-data" style="display:none;">Esta carpeta está vacía</div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   </div>
 
@@ -1776,14 +1935,20 @@ function imprimirHistorial() {
 
 
 /* ============================================================
-   EVIDENCIAS DE DOCUMENTACIÓN (Google Drive)
+   EVIDENCIAS DE DOCUMENTACIÓN - EXPLORADOR
    ============================================================ */
-let evRootFolder = null;         // {id, name}
-let evCurrentFolderId = null;    // id actual
-let evFolderTree = [];           // [{id, name, children:[...]}]
-let evCurrentImagenes = [];      // imágenes visibles (para lightbox)
+let evRootFolder = null;          // {id, name}
+let evCurrentFolderId = null;
+let evPathStack = [];             // [{id, name}]
+let evCarpetas = [];              // carpetas de la ubicación actual
+let evImagenes = [];              // archivos de la ubicación actual
+let evItemsFiltrados = [];        // para render (después de búsqueda)
+let evSeleccionado = null;        // {id, name, mimeType, type: 'folder'|'file'}
+let evVista = 'detalles';         // 'detalles' | 'iconos'
+let evOrden = { campo: 'name', dir: 'asc' };
+let evCurrentImagenesLightbox = [];
 let evLightboxIndex = 0;
-let evPathStack = [];            // [{id, name}] para breadcrumb
+let evHistory = [];               // para botón Atrás (pila de folderIds)
 
 function evShowAlert(msg, type='success') {
   const c = document.getElementById('ev-alert-container');
@@ -1796,11 +1961,26 @@ function evShowAlert(msg, type='success') {
 
 function evFormatBytes(bytes) {
   const b = Number(bytes) || 0;
+  if (b === 0) return '';
   if (b < 1024) return b + ' B';
   if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
-  return (b/(1024*1024)).toFixed(1) + ' MB';
+  return (b/(1024*1024)).toFixed(2) + ' MB';
 }
 
+function evFormatFecha(iso) {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2,'0');
+    const mi = String(d.getMinutes()).padStart(2,'0');
+    return `${dd}/${mm}/${yy} ${hh}:${mi}`;
+  } catch(e) { return ''; }
+}
+
+/* ============ INIT ============ */
 async function evInit() {
   try {
     const res = await fetch('/api/evidencias/root');
@@ -1809,111 +1989,91 @@ async function evInit() {
     evRootFolder = data.root;
     evCurrentFolderId = evRootFolder.id;
     evPathStack = [{ id: evRootFolder.id, name: evRootFolder.name }];
-    await evRecargar();
+    evHistory = [];
+    evSeleccionado = null;
+    await evCargarContenido(evCurrentFolderId);
+    evRenderTree();
   } catch (e) {
     evShowAlert('Error de conexión: ' + e.message, 'error');
   }
 }
 
-async function evRecargar() {
-  await evListar(evCurrentFolderId);
-}
-
-async function evListar(folderId) {
+async function evCargarContenido(folderId) {
   try {
     const res = await fetch('/api/evidencias/listar?folder_id=' + encodeURIComponent(folderId));
     const data = await res.json();
     if (!data.success) { evShowAlert('Error: ' + data.error, 'error'); return; }
 
     evCurrentFolderId = data.folder_id;
-    evCurrentImagenes = data.imagenes || [];
+    evCarpetas = data.carpetas || [];
+    evImagenes = data.imagenes || [];
+    evSeleccionado = null;
 
-    evRenderBreadcrumb();
-    evRenderSubcarpetas(data.carpetas || []);
-    evRenderImagenes();
+    evRenderAddress();
+    evRenderContenido();
+    evActualizarBotones();
+    evActualizarStatus();
   } catch (e) {
     evShowAlert('Error de conexión: ' + e.message, 'error');
   }
 }
 
-function evRenderBreadcrumb() {
-  const cont = document.getElementById('evBreadcrumb');
+async function evRecargar() {
+  await evCargarContenido(evCurrentFolderId);
+  evRenderTree();
+}
+
+/* ============ ÁRBOL SIDEBAR ============ */
+function evRenderTree() {
+  const cont = document.getElementById('evTreeRoot');
+  let html = '';
+
+  evPathStack.forEach((p, i) => {
+    const isRoot = (i === 0);
+    const isSelected = (p.id === evCurrentFolderId);
+    html += `
+      <li>
+        <div class="tree-item ${isSelected ? 'selected' : ''}" onclick="evNavegarA('${p.id}')">
+          <span class="ti-icon">${isRoot ? '🏠' : '📁'}</span>
+          <span class="ti-name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
+        </div>
+      </li>
+    `;
+  });
+
+  // Carpetas hijas de la ubicación actual, indentadas
+  evCarpetas.forEach(c => {
+    html += `
+      <li>
+        <div class="tree-item" style="padding-left: 26px;" onclick="evEntrarCarpeta('${c.id}', '${escapeHtml(c.name).replace(/'/g, "&#39;")}')">
+          <span class="ti-icon">📁</span>
+          <span class="ti-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
+        </div>
+      </li>
+    `;
+  });
+
+  cont.innerHTML = html;
+}
+
+/* ============ ADDRESS BAR (breadcrumb) ============ */
+function evRenderAddress() {
+  const cont = document.getElementById('evAddressPath');
   let html = '';
   evPathStack.forEach((p, i) => {
-    if (i > 0) html += '<span class="sep">›</span>';
-    const label = (i === 0 ? '🏠 ' : '📁 ') + escapeHtml(p.name);
-    html += `<span class="crumb" onclick="evNavegarA('${p.id}')">${label}</span>`;
+    if (i > 0) html += '<span class="addr-sep">›</span>';
+    const isCurrent = (p.id === evCurrentFolderId);
+    const icon = (i === 0) ? '🏠' : '📁';
+    html += `<span class="addr-crumb ${isCurrent ? 'current' : ''}" onclick="evNavegarA('${p.id}')">${icon} ${escapeHtml(p.name)}</span>`;
   });
   cont.innerHTML = html;
 }
 
-function evRenderSubcarpetas(carpetas) {
-  const wrapper = document.getElementById('evSubcarpetasWrapper');
-  const cont = document.getElementById('evSubcarpetas');
-  if (!carpetas || carpetas.length === 0) {
-    wrapper.style.display = 'none';
-    cont.innerHTML = '';
-    return;
-  }
-  wrapper.style.display = '';
-  let html = '';
-  carpetas.forEach(c => {
-    html += `
-      <div class="imagen-card" style="cursor:pointer;" onclick="evEntrarCarpeta('${c.id}', '${escapeHtml(c.name).replace(/'/g, "&#39;")}')">
-        <div style="padding: 22px 10px; text-align:center; background:#eef1fb;">
-          <div style="font-size:42px;">📁</div>
-        </div>
-        <div class="imagen-meta">
-          <div class="imagen-nombre" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</div>
-          <div class="imagen-sub">Carpeta</div>
-        </div>
-        <div class="imagen-acciones">
-          <button class="btn btn-sm" onclick="event.stopPropagation(); evRenombrar('${c.id}', '${escapeHtml(c.name).replace(/'/g, "&#39;")}')">✏️ Renombrar</button>
-          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); evEliminar('${c.id}', 'carpeta')">🗑️</button>
-        </div>
-      </div>
-    `;
-  });
-  cont.innerHTML = html;
-}
-
-function evRenderImagenes() {
-  const cont = document.getElementById('evImagenes');
-  const empty = document.getElementById('evEmpty');
-
-  if (!evCurrentImagenes || evCurrentImagenes.length === 0) {
-    cont.innerHTML = '';
-    empty.style.display = '';
-    return;
-  }
-  empty.style.display = 'none';
-
-  let html = '';
-  evCurrentImagenes.forEach((img, idx) => {
-    const thumbUrl = '/api/evidencias/thumbnail/' + encodeURIComponent(img.id);
-    const isImg = (img.mimeType || '').startsWith('image/');
-    const thumb = isImg ? thumbUrl : (img.iconLink || '');
-    html += `
-      <div class="imagen-card">
-        <img class="imagen-thumb" src="${thumb}" alt="${escapeHtml(img.name)}"
-             onclick="evAbrirLightbox(${idx})" loading="lazy">
-        <div class="imagen-meta">
-          <div class="imagen-nombre" title="${escapeHtml(img.name)}">${escapeHtml(img.name)}</div>
-          <div class="imagen-sub">${evFormatBytes(img.size)}</div>
-        </div>
-        <div class="imagen-acciones">
-          <button class="btn btn-sm" onclick="evRenombrar('${img.id}', '${escapeHtml(img.name).replace(/'/g, "&#39;")}')">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="evEliminar('${img.id}', 'archivo')">🗑️</button>
-        </div>
-      </div>
-    `;
-  });
-  cont.innerHTML = html;
-}
-
+/* ============ NAVEGACIÓN ============ */
 function evEntrarCarpeta(folderId, folderName) {
+  evHistory.push(evCurrentFolderId);
   evPathStack.push({ id: folderId, name: folderName });
-  evListar(folderId);
+  evCargarContenido(folderId);
 }
 
 function evNavegarA(folderId) {
@@ -1923,31 +2083,254 @@ function evNavegarA(folderId) {
   } else if (folderId === evRootFolder.id) {
     evPathStack = [{ id: evRootFolder.id, name: evRootFolder.name }];
   }
-  evListar(folderId);
+  evCargarContenido(folderId);
 }
 
+function evAtras() {
+  if (evHistory.length === 0) return;
+  const prev = evHistory.pop();
+  const idx = evPathStack.findIndex(p => p.id === prev);
+  if (idx >= 0) evPathStack = evPathStack.slice(0, idx + 1);
+  evCargarContenido(prev);
+}
+
+function evSubir() {
+  if (evPathStack.length <= 1) return;
+  evPathStack = evPathStack.slice(0, evPathStack.length - 1);
+  const parent = evPathStack[evPathStack.length - 1];
+  evCargarContenido(parent.id);
+}
+
+/* ============ RENDER CONTENIDO ============ */
+function evAplicarFiltro() {
+  evRenderContenido();
+  evActualizarStatus();
+}
+
+function evGetItemsVisibles() {
+  const q = (document.getElementById('evSearchInput').value || '').toLowerCase().trim();
+  let items = [];
+
+  evCarpetas.forEach(c => {
+    items.push({
+      id: c.id, name: c.name, type: 'folder',
+      mimeType: 'application/vnd.google-apps.folder',
+      modifiedTime: c.modifiedTime || '',
+      size: ''
+    });
+  });
+  evImagenes.forEach(f => {
+    items.push({
+      id: f.id, name: f.name, type: 'file',
+      mimeType: f.mimeType || '',
+      modifiedTime: f.modifiedTime || '',
+      size: f.size || '',
+      thumbnailLink: f.thumbnailLink || '',
+      iconLink: f.iconLink || ''
+    });
+  });
+
+  if (q) {
+    items = items.filter(i => i.name.toLowerCase().includes(q));
+  }
+
+  const dir = evOrden.dir === 'asc' ? 1 : -1;
+  const campo = evOrden.campo;
+
+  items.sort((a, b) => {
+    // Carpetas siempre primero
+    if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+    let va = a[campo] || '', vb = b[campo] || '';
+    if (campo === 'size') { va = Number(va)||0; vb = Number(vb)||0; return (va - vb) * dir; }
+    if (campo === 'modifiedTime') { va = new Date(va||0); vb = new Date(vb||0); return (va - vb) * dir; }
+    return String(va).localeCompare(String(vb), 'es', { sensitivity:'base' }) * dir;
+  });
+
+  return items;
+}
+
+function evRenderContenido() {
+  const cont = document.getElementById('evContent');
+  const items = evGetItemsVisibles();
+  evItemsFiltrados = items;
+
+  // Imágenes para el lightbox
+  evCurrentImagenesLightbox = items.filter(i => i.type === 'file' && (i.mimeType || '').startsWith('image/'));
+
+  if (items.length === 0) {
+    cont.innerHTML = `
+      <div class="ex-empty">
+        <div class="big-icon">📂</div>
+        <div class="msg">Esta carpeta está vacía</div>
+        <div class="msg" style="font-size:13px; margin-top:6px;">Arrastrá archivos acá o usá "Subir fotos"</div>
+      </div>
+    `;
+    return;
+  }
+
+  if (evVista === 'iconos') {
+    evRenderIconos(items);
+  } else {
+    evRenderDetalles(items);
+  }
+}
+
+function evRenderIconos(items) {
+  const cont = document.getElementById('evContent');
+  let html = '<div class="ex-grid">';
+  items.forEach(it => {
+    const sel = (evSeleccionado && evSeleccionado.id === it.id) ? 'selected' : '';
+    if (it.type === 'folder') {
+      html += `
+        <div class="ex-item ${sel}" data-id="${it.id}"
+             onclick="evSeleccionar('${it.id}')" ondblclick="evEntrarCarpeta('${it.id}', '${escapeHtml(it.name).replace(/'/g, "&#39;")}')">
+          <div class="ex-icon-big">📁</div>
+          <div class="ex-name" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</div>
+        </div>
+      `;
+    } else {
+      const isImg = (it.mimeType || '').startsWith('image/');
+      const thumb = isImg
+        ? `/api/evidencias/thumbnail/${encodeURIComponent(it.id)}`
+        : '';
+      const iconBig = isImg ? '' : '📄';
+      html += `
+        <div class="ex-item ${sel}" data-id="${it.id}"
+             onclick="evSeleccionar('${it.id}')" ondblclick="evAbrirArchivo('${it.id}')">
+          ${isImg
+            ? `<img class="ex-thumb" src="${thumb}" alt="${escapeHtml(it.name)}" loading="lazy">`
+            : `<div class="ex-icon-big">${iconBig}</div>`}
+          <div class="ex-name" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</div>
+        </div>
+      `;
+    }
+  });
+  html += '</div>';
+  cont.innerHTML = html;
+}
+
+function evRenderDetalles(items) {
+  const cont = document.getElementById('evContent');
+  const ind = (campo) => {
+    if (evOrden.campo !== campo) return '';
+    return evOrden.dir === 'asc' ? ' ▲' : ' ▼';
+  };
+
+  let html = `
+    <table class="ex-list">
+      <thead>
+        <tr>
+          <th onclick="evOrdenarPor('name')">Nombre${ind('name')}</th>
+          <th onclick="evOrdenarPor('modifiedTime')">Modificado${ind('modifiedTime')}</th>
+          <th class="col-size" onclick="evOrdenarPor('size')">Tamaño${ind('size')}</th>
+          <th class="col-actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  items.forEach(it => {
+    const sel = (evSeleccionado && evSeleccionado.id === it.id) ? 'selected' : '';
+    const isFolder = it.type === 'folder';
+    const icon = isFolder ? '📁' : ((it.mimeType || '').startsWith('image/') ? '🖼️' : '📄');
+    const sizeStr = isFolder ? '' : evFormatBytes(it.size);
+    const fechaStr = evFormatFecha(it.modifiedTime);
+
+    html += `
+      <tr class="${sel}" data-id="${it.id}"
+          onclick="evSeleccionar('${it.id}')"
+          ondblclick="${isFolder ? `evEntrarCarpeta('${it.id}', '${escapeHtml(it.name).replace(/'/g, "&#39;")}')` : `evAbrirArchivo('${it.id}')`}">
+        <td>
+          <span class="cell-name">
+            <span class="ci">${icon}</span>
+            <span class="cn" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</span>
+          </span>
+        </td>
+        <td>${fechaStr}</td>
+        <td class="col-size">${sizeStr}</td>
+        <td class="col-actions">
+          <button class="mini-btn" title="Renombrar"
+                  onclick="event.stopPropagation(); evRenombrar('${it.id}', '${escapeHtml(it.name).replace(/'/g, "&#39;")}')">✏️</button>
+          <button class="mini-btn" title="Eliminar"
+                  onclick="event.stopPropagation(); evEliminar('${it.id}', '${isFolder ? 'carpeta' : 'archivo'}')">🗑️</button>
+        </td>
+      </tr>
+    `;
+  });
+  html += `</tbody></table>`;
+  cont.innerHTML = html;
+}
+
+function evOrdenarPor(campo) {
+  if (evOrden.campo === campo) {
+    evOrden.dir = evOrden.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    evOrden.campo = campo;
+    evOrden.dir = 'asc';
+  }
+  evRenderContenido();
+}
+
+function evToggleVista() {
+  evVista = (evVista === 'detalles') ? 'iconos' : 'detalles';
+  document.getElementById('evVistaIcon').textContent = (evVista === 'detalles') ? '☰' : '▦';
+  document.getElementById('evVistaLabel').textContent = (evVista === 'detalles') ? 'Vista: Detalles' : 'Vista: Íconos';
+  evRenderContenido();
+}
+
+/* ============ SELECCIÓN ============ */
+function evSeleccionar(itemId) {
+  const item = evItemsFiltrados.find(i => i.id === itemId);
+  if (!item) return;
+  evSeleccionado = item;
+  // Refrescar estilos
+  document.querySelectorAll('#evContent .ex-item, #evContent .ex-list tbody tr').forEach(el => {
+    el.classList.toggle('selected', el.dataset.id === itemId);
+  });
+  evActualizarBotones();
+  evActualizarStatus();
+}
+
+function evActualizarBotones() {
+  const btnRen = document.getElementById('evBtnRenombrar');
+  const btnEli = document.getElementById('evBtnEliminar');
+  const has = !!evSeleccionado;
+  btnRen.disabled = !has;
+  btnEli.disabled = !has;
+}
+
+function evActualizarStatus() {
+  const total = evItemsFiltrados.length;
+  const carpetas = evItemsFiltrados.filter(i => i.type === 'folder').length;
+  const archivos = total - carpetas;
+  document.getElementById('evStatusLeft').textContent =
+    `${total} elemento(s): ${carpetas} carpeta(s), ${archivos} archivo(s)`;
+  const sel = evSeleccionado ? `Seleccionado: ${evSeleccionado.name}` : '';
+  document.getElementById('evStatusRight').textContent = sel;
+}
+
+function evAbrirArchivo(itemId) {
+  const idx = evCurrentImagenesLightbox.findIndex(i => i.id === itemId);
+  if (idx >= 0) {
+    evAbrirLightbox(idx);
+  } else {
+    // No es imagen, abrir en Drive
+    window.open('https://drive.google.com/file/d/' + itemId + '/view', '_blank');
+  }
+}
+
+/* ============ ACCIONES ============ */
 async function evCrearCarpeta() {
   const nombre = prompt('Nombre de la nueva carpeta:');
   if (!nombre || !nombre.trim()) return;
-  await evCrearCarpetaConNombre(nombre.trim(), evCurrentFolderId);
-}
-
-async function evCrearSubcarpeta() {
-  const nombre = prompt('Nombre de la subcarpeta (se creará dentro de la carpeta actual):');
-  if (!nombre || !nombre.trim()) return;
-  await evCrearCarpetaConNombre(nombre.trim(), evCurrentFolderId);
-}
-
-async function evCrearCarpetaConNombre(nombre, parentId) {
   try {
     const res = await fetch('/api/evidencias/carpeta', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ nombre: nombre, parent_id: parentId })
+      body: JSON.stringify({ nombre: nombre.trim(), parent_id: evCurrentFolderId })
     });
     const data = await res.json();
     if (data.success) {
-      evShowAlert('✅ Carpeta creada: ' + nombre);
+      evShowAlert('✅ Carpeta creada: ' + nombre.trim());
       await evRecargar();
     } else {
       evShowAlert('❌ ' + data.error, 'error');
@@ -2027,11 +2410,20 @@ async function evRenombrar(fileId, nombreActual) {
   }
 }
 
-/* ============ Lightbox ============ */
+function evRenombrarSeleccionado() {
+  if (!evSeleccionado) return;
+  evRenombrar(evSeleccionado.id, evSeleccionado.name);
+}
+function evEliminarSeleccionado() {
+  if (!evSeleccionado) return;
+  evEliminar(evSeleccionado.id, evSeleccionado.type === 'folder' ? 'carpeta' : 'archivo');
+}
+
+/* ============ LIGHTBOX ============ */
 function evAbrirLightbox(index) {
-  if (!evCurrentImagenes || evCurrentImagenes.length === 0) return;
+  if (!evCurrentImagenesLightbox || evCurrentImagenesLightbox.length === 0) return;
   evLightboxIndex = index;
-  const img = evCurrentImagenes[index];
+  const img = evCurrentImagenesLightbox[index];
   const src = '/api/evidencias/thumbnail/' + encodeURIComponent(img.id);
   document.getElementById('evLightboxImg').src = src;
   document.getElementById('evLightbox').classList.add('open');
@@ -2041,15 +2433,15 @@ function evCerrarLightbox() {
   document.getElementById('evLightboxImg').src = '';
 }
 function evLightboxPrev() {
-  if (!evCurrentImagenes || evCurrentImagenes.length === 0) return;
-  evLightboxIndex = (evLightboxIndex - 1 + evCurrentImagenes.length) % evCurrentImagenes.length;
-  const img = evCurrentImagenes[evLightboxIndex];
+  if (!evCurrentImagenesLightbox || evCurrentImagenesLightbox.length === 0) return;
+  evLightboxIndex = (evLightboxIndex - 1 + evCurrentImagenesLightbox.length) % evCurrentImagenesLightbox.length;
+  const img = evCurrentImagenesLightbox[evLightboxIndex];
   document.getElementById('evLightboxImg').src = '/api/evidencias/thumbnail/' + encodeURIComponent(img.id);
 }
 function evLightboxNext() {
-  if (!evCurrentImagenes || evCurrentImagenes.length === 0) return;
-  evLightboxIndex = (evLightboxIndex + 1) % evCurrentImagenes.length;
-  const img = evCurrentImagenes[evLightboxIndex];
+  if (!evCurrentImagenesLightbox || evCurrentImagenesLightbox.length === 0) return;
+  evLightboxIndex = (evLightboxIndex + 1) % evCurrentImagenesLightbox.length;
+  const img = evCurrentImagenesLightbox[evLightboxIndex];
   document.getElementById('evLightboxImg').src = '/api/evidencias/thumbnail/' + encodeURIComponent(img.id);
 }
 document.addEventListener('keydown', e => {
@@ -2060,32 +2452,55 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') evLightboxNext();
 });
 
-/* ============ Drag & Drop ============ */
+/* ============ DRAG & DROP EN TODA EL ÁREA DE CONTENIDO ============ */
 (function() {
-  const dz = document.getElementById('evDropZone');
-  if (!dz) return;
-
-  dz.addEventListener('click', () => {
-    document.getElementById('evFileInput').click();
-  });
+  const explorer = document.getElementById('evExplorer');
+  const content = document.getElementById('evContent');
+  if (!explorer || !content) return;
 
   ['dragenter', 'dragover'].forEach(ev => {
-    dz.addEventListener(ev, e => {
+    content.addEventListener(ev, e => {
       e.preventDefault(); e.stopPropagation();
-      dz.classList.add('dragover');
+      explorer.classList.add('drop-active');
+      content.classList.add('dragover');
     });
   });
   ['dragleave', 'drop'].forEach(ev => {
-    dz.addEventListener(ev, e => {
+    content.addEventListener(ev, e => {
       e.preventDefault(); e.stopPropagation();
-      dz.classList.remove('dragover');
+      if (ev === 'dragleave' && content.contains(e.relatedTarget)) return;
+      explorer.classList.remove('drop-active');
+      content.classList.remove('dragover');
     });
   });
-  dz.addEventListener('drop', e => {
+  content.addEventListener('drop', e => {
     const files = e.dataTransfer.files;
     if (files && files.length > 0) evSubirArchivos(files);
   });
 })();
+
+/* ============ ATAJOS DE TECLADO EN EL EXPLORADOR ============ */
+document.addEventListener('keydown', e => {
+  const mod = document.getElementById('moduleViewEvidencias');
+  if (!mod || !mod.classList.contains('active')) return;
+  if (e.target.matches('input, textarea, select')) return;
+
+  if (e.key === 'Delete' && evSeleccionado) {
+    evEliminarSeleccionado();
+  } else if (e.key === 'F2' && evSeleccionado) {
+    e.preventDefault();
+    evRenombrarSeleccionado();
+  } else if (e.key === 'Backspace') {
+    e.preventDefault();
+    evSubir();
+  } else if (e.key === 'Enter' && evSeleccionado) {
+    if (evSeleccionado.type === 'folder') {
+      evEntrarCarpeta(evSeleccionado.id, evSeleccionado.name);
+    } else {
+      evAbrirArchivo(evSeleccionado.id);
+    }
+  }
+});
 
 </script>
 </body>
