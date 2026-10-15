@@ -1,11 +1,13 @@
 # app.py
 import os
 import json
+import io
 from datetime import datetime, date, timedelta
 from flask import Flask, render_template, request, jsonify
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaIoBaseUpload
 
 from config import Config
 
@@ -22,6 +24,7 @@ SCOPES = [
 ]
 
 _service_cache = None
+_drive_service_cache = None
 
 # Columnas de vencimiento por solapa (las que definen STATUS)
 FECHAS_VENCIMIENTO = {
@@ -39,6 +42,13 @@ DESCRIPCION_COL = {
 
 # Columna extra (solo en app.py) para marcar si ya se generó el PDF
 HISTORIAL_PDF_COL = 'PDF GENERADO'
+
+# ============================================================
+# EVIDENCIAS DE DOCUMENTACIÓN (Google Drive)
+# ============================================================
+# Carpeta raíz en Drive donde se crearán todas las evidencias.
+# Se puede sobrescribir con la variable de entorno DRIVE_ROOT_FOLDER_ID.
+DRIVE_ROOT_FOLDER_ID = os.getenv('DRIVE_ROOT_FOLDER_ID', '').strip()
 
 
 # ============================================================
@@ -97,23 +107,39 @@ def recalcular_campos_auto(sheet_key, row_dict):
 # GOOGLE SHEETS
 # ============================================================
 
+def _load_credentials():
+    creds_env = os.getenv('GOOGLE_CREDENTIALS_JSON')
+    if creds_env:
+        info = json.loads(creds_env)
+        return service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
+    return service_account.Credentials.from_service_account_file(
+        Config.CREDENTIALS_FILE, scopes=SCOPES
+    )
+
+
 def get_sheets_service():
     global _service_cache
     if _service_cache is not None:
         return _service_cache
     try:
-        creds_env = os.getenv('GOOGLE_CREDENTIALS_JSON')
-        if creds_env:
-            info = json.loads(creds_env)
-            creds = service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
-        else:
-            creds = service_account.Credentials.from_service_account_file(
-                Config.CREDENTIALS_FILE, scopes=SCOPES
-            )
+        creds = _load_credentials()
         _service_cache = build('sheets', 'v4', credentials=creds, cache_discovery=False)
         return _service_cache
     except Exception as e:
-        print(f"❌ Error credenciales: {e}")
+        print(f"❌ Error credenciales (Sheets): {e}")
+        raise
+
+
+def get_drive_service():
+    global _drive_service_cache
+    if _drive_service_cache is not None:
+        return _drive_service_cache
+    try:
+        creds = _load_credentials()
+        _drive_service_cache = build('drive', 'v3', credentials=creds, cache_discovery=False)
+        return _drive_service_cache
+    except Exception as e:
+        print(f"❌ Error credenciales (Drive): {e}")
         raise
 
 
@@ -453,6 +479,155 @@ def siguiente_numero_orden():
 
 
 # ============================================================
+# EVIDENCIAS DE DOCUMENTACIÓN (Google Drive)
+# ============================================================
+
+def drive_resolver_root():
+    """Devuelve el ID de la carpeta raíz a usar.
+    Si DRIVE_ROOT_FOLDER_ID está definido, se usa; si no, se usa 'root' (Mi unidad).
+    """
+    return DRIVE_ROOT_FOLDER_ID or 'root'
+
+
+def drive_listar(folder_id):
+    """Lista subcarpetas e imágenes de una carpeta de Drive."""
+    service = get_drive_service()
+    q = f"'{folder_id}' in parents and trashed = false"
+    fields = "files(id,name,mimeType,size,modifiedTime,webViewLink,iconLink,thumbnailLink)"
+    resp = service.files().list(
+        q=q,
+        fields=f"files({fields})",
+        orderBy="folder,name",
+        pageSize=1000,
+        supportsAllDrives=True,
+        includeItemsFromAllDrives=True
+    ).execute()
+    files = resp.get('files', [])
+
+    carpetas = []
+    imagenes = []
+    for f in files:
+        mime = f.get('mimeType', '')
+        if mime == 'application/vnd.google-apps.folder':
+            carpetas.append({
+                'id': f['id'],
+                'name': f['name'],
+                'modifiedTime': f.get('modifiedTime', '')
+            })
+        elif mime.startswith('image/'):
+            imagenes.append({
+                'id': f['id'],
+                'name': f['name'],
+                'mimeType': mime,
+                'size': f.get('size', ''),
+                'modifiedTime': f.get('modifiedTime', ''),
+                'webViewLink': f.get('webViewLink', ''),
+                'thumbnailLink': f.get('thumbnailLink', ''),
+                'iconLink': f.get('iconLink', '')
+            })
+        else:
+            # otros archivos: los mostramos igual como "archivo"
+            imagenes.append({
+                'id': f['id'],
+                'name': f['name'],
+                'mimeType': mime,
+                'size': f.get('size', ''),
+                'modifiedTime': f.get('modifiedTime', ''),
+                'webViewLink': f.get('webViewLink', ''),
+                'thumbnailLink': f.get('thumbnailLink', ''),
+                'iconLink': f.get('iconLink', '')
+            })
+
+    return carpetas, imagenes
+
+
+def drive_obtener_info(folder_id):
+    service = get_drive_service()
+    return service.files().get(
+        fileId=folder_id,
+        fields="id,name,mimeType,parents",
+        supportsAllDrives=True
+    ).execute()
+
+
+def drive_crear_carpeta(nombre, parent_id):
+    service = get_drive_service()
+    metadata = {
+        'name': nombre,
+        'mimeType': 'application/vnd.google-apps.folder',
+        'parents': [parent_id]
+    }
+    folder = service.files().create(
+        body=metadata,
+        fields='id,name',
+        supportsAllDrives=True
+    ).execute()
+    return folder
+
+
+def drive_subir_imagen(nombre, parent_id, file_stream, mimetype):
+    service = get_drive_service()
+    metadata = {
+        'name': nombre,
+        'parents': [parent_id]
+    }
+    media = MediaIoBaseUpload(file_stream, mimetype=mimetype, resumable=False)
+    file = service.files().create(
+        body=metadata,
+        media_body=media,
+        fields='id,name,mimeType,webViewLink,thumbnailLink,size',
+        supportsAllDrives=True
+    ).execute()
+    return file
+
+
+def drive_eliminar(file_id):
+    service = get_drive_service()
+    service.files().delete(fileId=file_id, supportsAllDrives=True).execute()
+
+
+def drive_renombrar(file_id, nuevo_nombre):
+    service = get_drive_service()
+    return service.files().update(
+        fileId=file_id,
+        body={'name': nuevo_nombre},
+        fields='id,name',
+        supportsAllDrives=True
+    ).execute()
+
+
+def drive_buscar_carpeta_por_nombre(nombre, parent_id):
+    service = get_drive_service()
+    q = (
+        f"'{parent_id}' in parents and trashed = false "
+        f"and mimeType = 'application/vnd.google-apps.folder' "
+        f"and name = '{nombre.replace(chr(39), chr(92)+chr(39))}'"
+    )
+    resp = service.files().list(
+        q=q,
+        fields='files(id,name)',
+        supportsAllDrives=True,
+        includeItemsFromAllDrives=True
+    ).execute()
+    files = resp.get('files', [])
+    return files[0] if files else None
+
+
+def drive_obtener_o_crear_path(path_str, root_id):
+    """path_str con '/' crea la jerarquía de carpetas y devuelve el ID final."""
+    partes = [p.strip() for p in str(path_str).split('/') if p.strip()]
+    current = root_id
+    for parte in partes:
+        existente = drive_buscar_carpeta_por_nombre(parte, current)
+        if existente:
+            current = existente['id']
+        else:
+            nueva = drive_crear_carpeta(parte, current)
+            current = nueva['id']
+    return current
+
+
+# ============================================================
 # RUTAS
 # ============================================================
 
@@ -787,6 +962,147 @@ def api_generar_notificacion():
         return jsonify({'success': True, 'numero_orden': numero_orden})
     except Exception as e:
         print(f"❌ generar_notificacion: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================
+# API EVIDENCIAS DE DOCUMENTACIÓN (Drive)
+# ============================================================
+
+@app.route('/api/evidencias/root', methods=['GET'])
+def api_evidencias_root():
+    """Devuelve el ID y nombre de la carpeta raíz configurada."""
+    try:
+        root_id = drive_resolver_root()
+        if root_id == 'root':
+            return jsonify({'success': True, 'root': {'id': 'root', 'name': 'Mi unidad'}})
+        info = drive_obtener_info(root_id)
+        return jsonify({'success': True, 'root': {'id': info['id'], 'name': info['name']}})
+    except Exception as e:
+        print(f"❌ evidencias_root: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/evidencias/listar', methods=['GET'])
+def api_evidencias_listar():
+    """Lista carpetas e imágenes dentro de una carpeta (folder_id opcional)."""
+    try:
+        folder_id = (request.args.get('folder_id') or '').strip() or drive_resolver_root()
+        carpetas, imagenes = drive_listar(folder_id)
+        return jsonify({
+            'success': True,
+            'folder_id': folder_id,
+            'carpetas': carpetas,
+            'imagenes': imagenes
+        })
+    except Exception as e:
+        print(f"❌ evidencias_listar: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/evidencias/carpeta', methods=['POST'])
+def api_evidencias_crear_carpeta():
+    """Crea una carpeta dentro de parent_id (o en la raíz)."""
+    try:
+        body = request.get_json() or {}
+        nombre = (body.get('nombre') or '').strip()
+        parent_id = (body.get('parent_id') or '').strip() or drive_resolver_root()
+        if not nombre:
+            return jsonify({'success': False, 'error': 'El nombre es obligatorio'}), 400
+        folder = drive_crear_carpeta(nombre, parent_id)
+        return jsonify({'success': True, 'carpeta': folder})
+    except Exception as e:
+        print(f"❌ evidencias_crear_carpeta: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/evidencias/subir', methods=['POST'])
+def api_evidencias_subir():
+    """Sube una o más imágenes a la carpeta indicada (form-data)."""
+    try:
+        parent_id = (request.form.get('parent_id') or '').strip() or drive_resolver_root()
+        if 'archivos' not in request.files:
+            return jsonify({'success': False, 'error': 'No se enviaron archivos'}), 400
+
+        files = request.files.getlist('archivos')
+        if not files:
+            return jsonify({'success': False, 'error': 'No se enviaron archivos'}), 400
+
+        subidos = []
+        for f in files:
+            if not f or not f.filename:
+                continue
+            mimetype = f.mimetype or 'application/octet-stream'
+            stream = io.BytesIO(f.read())
+            info = drive_subir_imagen(f.filename, parent_id, stream, mimetype)
+            subidos.append({
+                'id': info.get('id'),
+                'name': info.get('name'),
+                'webViewLink': info.get('webViewLink'),
+                'thumbnailLink': info.get('thumbnailLink'),
+                'size': info.get('size', '')
+            })
+
+        return jsonify({'success': True, 'subidos': subidos})
+    except Exception as e:
+        print(f"❌ evidencias_subir: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/evidencias/eliminar', methods=['POST'])
+def api_evidencias_eliminar():
+    """Elimina un archivo o carpeta de Drive."""
+    try:
+        body = request.get_json() or {}
+        file_id = (body.get('file_id') or '').strip()
+        if not file_id:
+            return jsonify({'success': False, 'error': 'file_id es obligatorio'}), 400
+        drive_eliminar(file_id)
+        return jsonify({'success': True})
+    except Exception as e:
+        print(f"❌ evidencias_eliminar: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/evidencias/renombrar', methods=['POST'])
+def api_evidencias_renombrar():
+    """Renombra un archivo o carpeta de Drive."""
+    try:
+        body = request.get_json() or {}
+        file_id = (body.get('file_id') or '').strip()
+        nuevo_nombre = (body.get('nuevo_nombre') or '').strip()
+        if not file_id or not nuevo_nombre:
+            return jsonify({'success': False, 'error': 'file_id y nuevo_nombre son obligatorios'}), 400
+        info = drive_renombrar(file_id, nuevo_nombre)
+        return jsonify({'success': True, 'file': info})
+    except Exception as e:
+        print(f"❌ evidencias_renombrar: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/evidencias/thumbnail/<file_id>', methods=['GET'])
+def api_evidencias_thumbnail(file_id):
+    """Devuelve la imagen desde Drive usando la cuenta de servicio (proxy)."""
+    try:
+        service = get_drive_service()
+        # Descargar el contenido del archivo
+        request_drive = service.files().get_media(fileId=file_id, supportsAllDrives=True)
+        from googleapiclient.http import MediaIoBaseDownload
+        fh = io.BytesIO()
+        downloader = MediaIoBaseDownload(fh, request_drive)
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
+        fh.seek(0)
+        from flask import Response
+        # Detectar content-type
+        meta = service.files().get(
+            fileId=file_id, fields='mimeType', supportsAllDrives=True
+        ).execute()
+        mimetype = meta.get('mimeType', 'image/jpeg')
+        return Response(fh.read(), mimetype=mimetype)
+    except Exception as e:
+        print(f"❌ evidencias_thumbnail: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
