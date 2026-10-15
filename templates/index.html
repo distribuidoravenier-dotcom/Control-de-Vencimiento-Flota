@@ -367,7 +367,6 @@
     font-size: 14px;
   }
 
-  /* Barra superior tipo Windows Explorer */
   .explorer-topbar {
     display: flex;
     align-items: center;
@@ -416,7 +415,6 @@
   }
   .explorer-search:focus { outline: none; border-color: #667eea; }
 
-  /* Toolbar de acciones (Nueva carpeta, subir, etc.) */
   .explorer-toolbar {
     display: flex; align-items: center; gap: 6px;
     padding: 8px 10px;
@@ -442,7 +440,6 @@
     width: 1px; height: 22px; background: #e0e0e0; margin: 0 4px;
   }
 
-  /* Cuerpo: sidebar + contenido */
   .explorer-body {
     flex: 1;
     display: grid;
@@ -451,7 +448,6 @@
     background: #fff;
   }
 
-  /* Sidebar árbol */
   .explorer-side {
     background: #fafbfc;
     border-right: 1px solid #e8e8e8;
@@ -487,10 +483,9 @@
     flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .tree-empty {
-    padding: 8px 14px; color: #8b949e; font-size: 12.5px; font-style: italic;
+    padding: 6px 14px; color: #8b949e; font-size: 12.5px; font-style: italic;
   }
 
-  /* Panel contenido */
   .explorer-main {
     display: flex; flex-direction: column;
     min-width: 0; min-height: 0;
@@ -500,7 +495,6 @@
     background: #ffffff;
   }
 
-  /* Vista de íconos (grid) */
   .ex-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -534,7 +528,6 @@
     overflow: hidden; max-width: 130px;
   }
 
-  /* Vista de detalles (lista) */
   .ex-list {
     width: 100%; border-collapse: collapse; font-size: 13.5px;
   }
@@ -575,7 +568,6 @@
   }
   .ex-list td.col-actions .mini-btn:hover { background: #e5e7eb; color: #111; }
 
-  /* Barra de estado inferior */
   .explorer-status {
     padding: 6px 14px; background: #f6f8fa;
     border-top: 1px solid #e8e8e8;
@@ -583,16 +575,20 @@
     display: flex; justify-content: space-between; align-items: center;
   }
 
-  /* Zona de drop resaltada */
   .explorer.drop-active { outline: 2px dashed #2f6fce; outline-offset: -4px; }
   .explorer-content.dragover { background: #eef4fd; }
 
-  /* Empty state */
   .ex-empty {
     text-align: center; padding: 60px 20px; color: #8b949e;
   }
   .ex-empty .big-icon { font-size: 60px; margin-bottom: 12px; opacity: .55; }
   .ex-empty .msg { font-size: 15px; }
+  .ex-empty .retry-btn {
+    margin-top: 14px; padding: 8px 16px;
+    background:#2f6fce; color:#fff; border:none; border-radius:5px;
+    cursor:pointer; font-size:14px; font-family:inherit;
+  }
+  .ex-empty .retry-btn:hover { background:#255bb0; }
 
   /* Lightbox (reusado) */
   .lightbox {
@@ -737,7 +733,6 @@
     <h1>🗓️ Historial de Vencimientos</h1>
     <p class="subtitle">Vencimientos detectados automáticamente (30 días de anticipación)</p>
 
-    <!-- Tarjetas de resumen -->
     <div class="summary-cards" id="summaryCards">
       <div class="summary-card vencidos">
         <div class="label">🔴 Vencidos</div>
@@ -790,7 +785,6 @@
     <div id="ev-alert-container"></div>
 
     <div class="explorer" id="evExplorer">
-      <!-- Barra superior: navegación + dirección + búsqueda -->
       <div class="explorer-topbar">
         <button class="explorer-nav-btn" id="evBtnBack" title="Atrás" onclick="evAtras()">←</button>
         <button class="explorer-nav-btn" id="evBtnUp" title="Subir un nivel" onclick="evSubir()">↑</button>
@@ -805,7 +799,6 @@
                placeholder="🔍 Buscar en esta carpeta..." oninput="evAplicarFiltro()">
       </div>
 
-      <!-- Barra de acciones -->
       <div class="explorer-toolbar">
         <button class="explorer-action primary" onclick="evCrearCarpeta()">
           <span class="icon">📁</span> Nueva carpeta
@@ -828,7 +821,6 @@
                style="display:none;" onchange="evSubirArchivos(this.files)">
       </div>
 
-      <!-- Cuerpo: sidebar + contenido -->
       <div class="explorer-body">
         <aside class="explorer-side">
           <div class="side-title">📁 Carpetas</div>
@@ -908,7 +900,6 @@ function escapeHtml(s) {
   })[c]);
 }
 function escapeAttr(s) {
-  // para usar dentro de onclick="..." con comillas simples
   return escapeHtml(String(s ?? '').replace(/'/g, "&#39;"));
 }
 
@@ -1900,23 +1891,25 @@ function imprimirHistorial() {
 /* ============================================================
    EVIDENCIAS DE DOCUMENTACIÓN - EXPLORADOR
    ============================================================ */
-let evRootFolder = null;              // {id, name}
+let evRootFolder = null;
 let evCurrentFolderId = null;
-let evPathStack = [];                 // [{id, name}] ruta hasta la carpeta actual
-let evCarpetas = [];                  // carpetas de la ubicación actual
-let evImagenes = [];                  // archivos de la ubicación actual
-let evItemsFiltrados = [];            // para render
-let evSeleccionado = null;            // {id, name, mimeType, type}
-let evVista = 'detalles';             // 'detalles' | 'iconos'
+let evPathStack = [];
+let evCarpetas = [];
+let evImagenes = [];
+let evItemsFiltrados = [];
+let evSeleccionado = null;
+let evVista = 'detalles';
 let evOrden = { campo: 'name', dir: 'asc' };
 let evCurrentImagenesLightbox = [];
 let evLightboxIndex = 0;
-let evHistory = [];                   // pila para el botón Atrás
-// Caché del árbol: { folderId: {expanded:bool, loaded:bool, children:[{id,name}] } }
-let evTreeCache = {};
+let evHistory = [];
+let evTreeCache = {};           // { folderId: {expanded, loaded, children:[{id,name}]} }
+let evCargando = false;         // evita doble carga
+let evInicializado = false;
 
 function evShowAlert(msg, type='success') {
   const c = document.getElementById('ev-alert-container');
+  if (!c) return;
   const div = document.createElement('div');
   div.className = 'alert alert-' + type;
   div.textContent = msg;
@@ -1945,12 +1938,50 @@ function evFormatFecha(iso) {
   } catch(e) { return ''; }
 }
 
+/* fetch con timeout para no colgar la UI */
+async function evFetch(url, opts={}, timeoutMs=20000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...opts, signal: ctrl.signal });
+    return await res.json();
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 /* ============ INIT ============ */
 async function evInit() {
+  if (evInicializado) {
+    // Si ya está todo, sólo refrescamos por las dudas
+    evRecargar();
+    return;
+  }
+  evInicializado = true;
+
+  // Mostrar un loader inmediato para que no quede en blanco
+  document.getElementById('evContent').innerHTML = `
+    <div class="ex-empty">
+      <div class="big-icon">⏳</div>
+      <div class="msg">Cargando carpeta raíz…</div>
+    </div>`;
+  document.getElementById('evTreeRoot').innerHTML = `<li class="tree-empty">Cargando…</li>`;
+
   try {
-    const res = await fetch('/api/evidencias/root');
-    const data = await res.json();
-    if (!data.success) { evShowAlert('Error: ' + data.error, 'error'); return; }
+    const data = await evFetch('/api/evidencias/root');
+    if (!data.success) {
+      evShowAlert('Error: ' + (data.error || 'no se pudo leer la raíz'), 'error');
+      document.getElementById('evContent').innerHTML = `
+        <div class="ex-empty">
+          <div class="big-icon">⚠️</div>
+          <div class="msg">No se pudo leer la carpeta raíz</div>
+          <div class="msg" style="font-size:13px; margin-top:6px;">${escapeHtml(data.error || '')}</div>
+          <button class="retry-btn" onclick="evRecargar()">Reintentar</button>
+        </div>`;
+      document.getElementById('evTreeRoot').innerHTML = '';
+      return;
+    }
+
     evRootFolder = data.root;
     evCurrentFolderId = evRootFolder.id;
     evPathStack = [{ id: evRootFolder.id, name: evRootFolder.name }];
@@ -1959,52 +1990,64 @@ async function evInit() {
     evTreeCache = {};
     evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
 
-    await evCargarContenido(evCurrentFolderId);
-    await evCargarHijosEnCache(evCurrentFolderId);
+    // Una sola carga: contenido + hijos quedan cacheados con esto
+    await evCargarContenido(evRootFolder.id);
     evRenderTree();
   } catch (e) {
+    console.error('evInit error:', e);
     evShowAlert('Error de conexión: ' + e.message, 'error');
+    document.getElementById('evContent').innerHTML = `
+      <div class="ex-empty">
+        <div class="big-icon">⚠️</div>
+        <div class="msg">Error de conexión</div>
+        <div class="msg" style="font-size:13px; margin-top:6px;">${escapeHtml(e.message)}</div>
+        <button class="retry-btn" onclick="evRecargar()">Reintentar</button>
+      </div>`;
+    document.getElementById('evTreeRoot').innerHTML = '';
   }
 }
 
-/* Carga y guarda en caché las subcarpetas de un folderId */
-async function evCargarHijosEnCache(folderId) {
-  try {
-    const res = await fetch('/api/evidencias/listar?folder_id=' + encodeURIComponent(folderId));
-    const data = await res.json();
-    if (!data.success) return;
-    const node = evTreeCache[folderId] || { expanded: true, loaded: false, children: [] };
-    node.children = (data.carpetas || []).map(c => ({ id: c.id, name: c.name }));
-    node.loaded = true;
-    evTreeCache[folderId] = node;
-    // Asegurar que cada hijo tenga entrada en caché
-    node.children.forEach(ch => {
-      if (!evTreeCache[ch.id]) {
-        evTreeCache[ch.id] = { expanded: false, loaded: false, children: [] };
-      }
-    });
-  } catch(e) {
-    console.warn('No se pudieron cargar hijos en caché:', e);
-  }
-}
-
+/* Carga contenido de una carpeta y deja el caché del árbol consistente */
 async function evCargarContenido(folderId) {
+  if (evCargando) return;
+  evCargando = true;
+
+  // Loader en el contenido si no es una recarga silenciosa
+  const contEl = document.getElementById('evContent');
+  if (contEl && evItemsFiltrados.length === 0) {
+    contEl.innerHTML = `
+      <div class="ex-empty">
+        <div class="big-icon">⏳</div>
+        <div class="msg">Cargando…</div>
+      </div>`;
+  }
+
   try {
-    const res = await fetch('/api/evidencias/listar?folder_id=' + encodeURIComponent(folderId));
-    const data = await res.json();
-    if (!data.success) { evShowAlert('Error: ' + data.error, 'error'); return; }
+    const data = await evFetch('/api/evidencias/listar?folder_id=' + encodeURIComponent(folderId));
+    if (!data.success) {
+      evShowAlert('Error: ' + (data.error || 'no se pudo leer la carpeta'), 'error');
+      if (contEl) {
+        contEl.innerHTML = `
+          <div class="ex-empty">
+            <div class="big-icon">⚠️</div>
+            <div class="msg">No se pudo leer la carpeta</div>
+            <div class="msg" style="font-size:13px; margin-top:6px;">${escapeHtml(data.error || '')}</div>
+            <button class="retry-btn" onclick="evRecargar()">Reintentar</button>
+          </div>`;
+      }
+      return;
+    }
 
     evCurrentFolderId = data.folder_id;
     evCarpetas = data.carpetas || [];
     evImagenes = data.imagenes || [];
     evSeleccionado = null;
 
-    // Actualizar caché del árbol con las carpetas actuales
+    // Actualizar caché del árbol
     const node = evTreeCache[folderId] || { expanded: true, loaded: false, children: [] };
     node.children = evCarpetas.map(c => ({ id: c.id, name: c.name }));
     node.loaded = true;
     evTreeCache[folderId] = node;
-    // Asegurar entradas de hijos
     node.children.forEach(ch => {
       if (!evTreeCache[ch.id]) {
         evTreeCache[ch.id] = { expanded: false, loaded: false, children: [] };
@@ -2017,32 +2060,72 @@ async function evCargarContenido(folderId) {
     evActualizarStatus();
     evActualizarNavBtns();
   } catch (e) {
-    evShowAlert('Error de conexión: ' + e.message, 'error');
+    console.error('evCargarContenido error:', e);
+    evShowAlert('Error al leer la carpeta: ' + e.message, 'error');
+    if (contEl) {
+      contEl.innerHTML = `
+        <div class="ex-empty">
+          <div class="big-icon">⚠️</div>
+          <div class="msg">Error al leer la carpeta</div>
+          <div class="msg" style="font-size:13px; margin-top:6px;">${escapeHtml(e.message)}</div>
+          <button class="retry-btn" onclick="evRecargar()">Reintentar</button>
+        </div>`;
+    }
+  } finally {
+    evCargando = false;
+  }
+}
+
+/* Carga hijos de un nodo en caché (solo si no están ya cargados) */
+async function evCargarHijosEnCache(folderId) {
+  const node = evTreeCache[folderId];
+  if (node && node.loaded) return;
+  try {
+    const data = await evFetch('/api/evidencias/listar?folder_id=' + encodeURIComponent(folderId));
+    if (!data.success) return;
+    const n = evTreeCache[folderId] || { expanded: false, loaded: false, children: [] };
+    n.children = (data.carpetas || []).map(c => ({ id: c.id, name: c.name }));
+    n.loaded = true;
+    evTreeCache[folderId] = n;
+    n.children.forEach(ch => {
+      if (!evTreeCache[ch.id]) {
+        evTreeCache[ch.id] = { expanded: false, loaded: false, children: [] };
+      }
+    });
+  } catch(e) {
+    console.warn('No se pudieron cargar hijos en caché:', e);
   }
 }
 
 async function evRecargar() {
-  // Invalida caché del árbol y recarga
-  const keep = {};
-  keep[evCurrentFolderId] = { expanded: true, loaded: false, children: [] };
-  evTreeCache = keep;
+  // Reset del caché pero manteniendo la ruta actual
+  evTreeCache = {};
+  if (evRootFolder) {
+    evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
+  }
+  if (!evCurrentFolderId && evRootFolder) {
+    evCurrentFolderId = evRootFolder.id;
+  }
+  if (!evPathStack.length && evRootFolder) {
+    evPathStack = [{ id: evRootFolder.id, name: evRootFolder.name }];
+  }
   await evCargarContenido(evCurrentFolderId);
-  await evCargarHijosEnCache(evCurrentFolderId);
+  // Reconstruir árbol expandiendo la ruta actual
+  for (const p of evPathStack) {
+    const c = evTreeCache[p.id] || { expanded: false, loaded: false, children: [] };
+    c.expanded = true;
+    evTreeCache[p.id] = c;
+    if (!c.loaded) await evCargarHijosEnCache(p.id);
+  }
   evRenderTree();
 }
 
-/* ============ ÁRBOL SIDEBAR (recursivo) ============ */
+/* ============ ÁRBOL SIDEBAR ============ */
 function evRenderTree() {
   const cont = document.getElementById('evTreeRoot');
   if (!evRootFolder) { cont.innerHTML = ''; return; }
-
-  // Renderiza el árbol desde la raíz, expandiendo solo las ramas abiertas
   let html = '';
-  html += evRenderTreeNode({
-    id: evRootFolder.id,
-    name: evRootFolder.name,
-    isRoot: true
-  }, 0);
+  html += evRenderTreeNode({ id: evRootFolder.id, name: evRootFolder.name, isRoot: true }, 0);
   cont.innerHTML = html;
 }
 
@@ -2051,11 +2134,8 @@ function evRenderTreeNode(node, level) {
   const isSelected = (node.id === evCurrentFolderId);
   const hasChildren = cache.children.length > 0;
   const isExpanded = !!cache.expanded;
-
-  // Si nunca se cargó, asumimos que puede tener hijos (mostramos toggle)
   const showToggle = (cache.loaded ? hasChildren : true);
   const toggleIcon = isExpanded ? '▾' : '▸';
-
   const icon = node.isRoot ? '🏠' : '📁';
   const indent = 8 + level * 14;
 
@@ -2079,7 +2159,6 @@ function evRenderTreeNode(node, level) {
       html += `</ul>`;
     }
   }
-
   html += `</li>`;
   return html;
 }
@@ -2090,13 +2169,13 @@ async function evToggleNodo(folderId) {
   evTreeCache[folderId] = cache;
 
   if (cache.expanded && !cache.loaded) {
-    evRenderTree(); // mostrar "Cargando…"
+    evRenderTree();
     await evCargarHijosEnCache(folderId);
   }
   evRenderTree();
 }
 
-/* ============ ADDRESS BAR (breadcrumb) ============ */
+/* ============ ADDRESS BAR ============ */
 function evRenderAddress() {
   const cont = document.getElementById('evAddressPath');
   let html = '';
@@ -2114,12 +2193,11 @@ async function evEntrarCarpeta(folderId, folderName) {
   evHistory.push(evCurrentFolderId);
   evPathStack.push({ id: folderId, name: folderName });
   await evCargarContenido(folderId);
-  // Expandir y cargar hijos del nodo destino
+  // Expandir el destino y su padre
   const c = evTreeCache[folderId] || { expanded: false, loaded: false, children: [] };
   c.expanded = true;
   evTreeCache[folderId] = c;
   if (!c.loaded) await evCargarHijosEnCache(folderId);
-  // Expandir también el padre
   if (evPathStack.length >= 2) {
     const parentId = evPathStack[evPathStack.length - 2].id;
     const cp = evTreeCache[parentId] || { expanded: false, loaded: false, children: [] };
@@ -2130,31 +2208,21 @@ async function evEntrarCarpeta(folderId, folderName) {
 }
 
 async function evNavegarA(folderId) {
-  // Ajustar pathStack
   const idx = evPathStack.findIndex(p => p.id === folderId);
   if (idx >= 0) {
     evPathStack = evPathStack.slice(0, idx + 1);
-  } else if (folderId === evRootFolder.id) {
+  } else if (evRootFolder && folderId === evRootFolder.id) {
     evPathStack = [{ id: evRootFolder.id, name: evRootFolder.name }];
   } else {
-    // Viene del árbol: buscar nombre en caché
-    let nombre = folderId;
-    for (const k in evTreeCache) {
-      const found = (evTreeCache[k].children || []).find(ch => ch.id === folderId);
-      if (found) { nombre = found.name; break; }
-    }
-    // Construir path reconstruyendo ancestros desde el árbol (simple: raíz → folder)
-    // Intentamos reconstruir buscando el padre en el caché.
     const path = evConstruirPathHacia(folderId);
     if (path) {
       evPathStack = path;
     } else {
-      evPathStack.push({ id: folderId, name: nombre });
+      evPathStack.push({ id: folderId, name: folderId });
     }
   }
 
   await evCargarContenido(folderId);
-  // Expandir y cargar hijos
   const c = evTreeCache[folderId] || { expanded: false, loaded: false, children: [] };
   c.expanded = true;
   evTreeCache[folderId] = c;
@@ -2162,7 +2230,6 @@ async function evNavegarA(folderId) {
   evRenderTree();
 }
 
-/* Intenta reconstruir la ruta raíz→folderId usando el caché del árbol */
 function evConstruirPathHacia(targetId) {
   if (!evRootFolder) return null;
   if (targetId === evRootFolder.id) {
@@ -2210,8 +2277,10 @@ async function evSubir() {
 }
 
 function evActualizarNavBtns() {
-  document.getElementById('evBtnBack').disabled = (evHistory.length === 0);
-  document.getElementById('evBtnUp').disabled = (evPathStack.length <= 1);
+  const btnBack = document.getElementById('evBtnBack');
+  const btnUp = document.getElementById('evBtnUp');
+  if (btnBack) btnBack.disabled = (evHistory.length === 0);
+  if (btnUp) btnUp.disabled = (evPathStack.length <= 1);
 }
 
 /* ============ RENDER CONTENIDO ============ */
@@ -2243,9 +2312,7 @@ function evGetItemsVisibles() {
     });
   });
 
-  if (q) {
-    items = items.filter(i => i.name.toLowerCase().includes(q));
-  }
+  if (q) items = items.filter(i => i.name.toLowerCase().includes(q));
 
   const dir = evOrden.dir === 'asc' ? 1 : -1;
   const campo = evOrden.campo;
@@ -2279,11 +2346,8 @@ function evRenderContenido() {
     return;
   }
 
-  if (evVista === 'iconos') {
-    evRenderIconos(items);
-  } else {
-    evRenderDetalles(items);
-  }
+  if (evVista === 'iconos') evRenderIconos(items);
+  else evRenderDetalles(items);
 }
 
 function evRenderIconos(items) {
@@ -2402,8 +2466,8 @@ function evActualizarBotones() {
   const btnRen = document.getElementById('evBtnRenombrar');
   const btnEli = document.getElementById('evBtnEliminar');
   const has = !!evSeleccionado;
-  btnRen.disabled = !has;
-  btnEli.disabled = !has;
+  if (btnRen) btnRen.disabled = !has;
+  if (btnEli) btnEli.disabled = !has;
 }
 
 function evActualizarStatus() {
@@ -2418,11 +2482,8 @@ function evActualizarStatus() {
 
 function evAbrirArchivo(itemId) {
   const idx = evCurrentImagenesLightbox.findIndex(i => i.id === itemId);
-  if (idx >= 0) {
-    evAbrirLightbox(idx);
-  } else {
-    window.open('https://drive.google.com/file/d/' + itemId + '/view', '_blank');
-  }
+  if (idx >= 0) evAbrirLightbox(idx);
+  else window.open('https://drive.google.com/file/d/' + itemId + '/view', '_blank');
 }
 
 /* ============ ACCIONES ============ */
@@ -2430,15 +2491,13 @@ async function evCrearCarpeta() {
   const nombre = prompt('Nombre de la nueva carpeta:');
   if (!nombre || !nombre.trim()) return;
   try {
-    const res = await fetch('/api/evidencias/carpeta', {
+    const data = await evFetch('/api/evidencias/carpeta', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ nombre: nombre.trim(), parent_id: evCurrentFolderId })
     });
-    const data = await res.json();
     if (data.success) {
       evShowAlert('✅ Carpeta creada: ' + nombre.trim());
-      // Forzar recarga del padre en caché
       delete evTreeCache[evCurrentFolderId];
       await evRecargar();
     } else {
@@ -2453,15 +2512,10 @@ async function evSubirArchivos(files) {
   if (!files || files.length === 0) return;
   const fd = new FormData();
   fd.append('parent_id', evCurrentFolderId);
-  for (let i = 0; i < files.length; i++) {
-    fd.append('archivos', files[i]);
-  }
+  for (let i = 0; i < files.length; i++) fd.append('archivos', files[i]);
   try {
     evShowAlert('⏳ Subiendo ' + files.length + ' archivo(s)...', 'info');
-    const res = await fetch('/api/evidencias/subir', {
-      method: 'POST',
-      body: fd
-    });
+    const res = await fetch('/api/evidencias/subir', { method: 'POST', body: fd });
     const data = await res.json();
     if (data.success) {
       evShowAlert('✅ Se subieron ' + (data.subidos?.length || 0) + ' archivo(s)');
@@ -2481,19 +2535,22 @@ async function evEliminar(fileId, tipo) {
   const label = tipo === 'carpeta' ? 'la carpeta' : 'el archivo';
   if (!confirm(`¿Eliminar ${label}? Esta acción no se puede deshacer.`)) return;
   try {
-    const res = await fetch('/api/evidencias/eliminar', {
+    const data = await evFetch('/api/evidencias/eliminar', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ file_id: fileId })
     });
-    const data = await res.json();
     if (data.success) {
       evShowAlert('✅ Eliminado');
-      // Limpiar caché de árbol para que se reconstruya
       evTreeCache = {};
       if (evRootFolder) evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
       await evCargarContenido(evCurrentFolderId);
-      await evCargarHijosEnCache(evCurrentFolderId);
+      for (const p of evPathStack) {
+        const c = evTreeCache[p.id] || { expanded: false, loaded: false, children: [] };
+        c.expanded = true;
+        evTreeCache[p.id] = c;
+        if (!c.loaded) await evCargarHijosEnCache(p.id);
+      }
       evRenderTree();
     } else {
       evShowAlert('❌ ' + data.error, 'error');
@@ -2507,18 +2564,22 @@ async function evRenombrar(fileId, nombreActual) {
   const nuevo = prompt('Nuevo nombre:', nombreActual);
   if (!nuevo || !nuevo.trim() || nuevo.trim() === nombreActual) return;
   try {
-    const res = await fetch('/api/evidencias/renombrar', {
+    const data = await evFetch('/api/evidencias/renombrar', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ file_id: fileId, nuevo_nombre: nuevo.trim() })
     });
-    const data = await res.json();
     if (data.success) {
       evShowAlert('✅ Renombrado');
       evTreeCache = {};
       if (evRootFolder) evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
       await evCargarContenido(evCurrentFolderId);
-      await evCargarHijosEnCache(evCurrentFolderId);
+      for (const p of evPathStack) {
+        const c = evTreeCache[p.id] || { expanded: false, loaded: false, children: [] };
+        c.expanded = true;
+        evTreeCache[p.id] = c;
+        if (!c.loaded) await evCargarHijosEnCache(p.id);
+      }
       evRenderTree();
     } else {
       evShowAlert('❌ ' + data.error, 'error');
@@ -2597,7 +2658,7 @@ document.addEventListener('keydown', e => {
   });
 })();
 
-/* ============ ATAJOS DE TECLADO EN EL EXPLORADOR ============ */
+/* ============ ATAJOS DE TECLADO ============ */
 document.addEventListener('keydown', e => {
   const mod = document.getElementById('moduleViewEvidencias');
   if (!mod || !mod.classList.contains('active')) return;
