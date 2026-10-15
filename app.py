@@ -493,10 +493,11 @@ def drive_listar(folder_id):
     """Lista subcarpetas e imágenes de una carpeta de Drive."""
     service = get_drive_service()
     q = f"'{folder_id}' in parents and trashed = false"
+    # OJO: 'fields' debe ser 'files(id,name,...)', NO 'files(files(...))'
     fields = "files(id,name,mimeType,size,modifiedTime,webViewLink,iconLink,thumbnailLink)"
     resp = service.files().list(
         q=q,
-        fields=f"files({fields})",
+        fields=fields,
         orderBy="folder,name",
         pageSize=1000,
         supportsAllDrives=True,
