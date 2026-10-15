@@ -12,3 +12,5 @@ services:
         sync: false
       - key: GOOGLE_CREDENTIALS_JSON
         sync: false
+      - key: DRIVE_ROOT_FOLDER_ID
+        sync: false
