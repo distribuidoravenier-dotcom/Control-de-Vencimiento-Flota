@@ -30,7 +30,7 @@
   .home-view .subtitle { font-size: 19px; margin-bottom: 40px; }
   .modules {
     display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px; width:100%; max-width: 1000px;
+    gap: 20px; width:100%; max-width: 1100px;
   }
   .module-card {
     background:#f8f9fa; border:2px solid #e0e0e0; border-radius:12px;
@@ -352,6 +352,124 @@
     background:#38a169; color:#fff; font-size:12px; font-weight:900;
   }
 
+  /* ================================================
+     EVIDENCIAS DE DOCUMENTACIÓN
+     ================================================ */
+  .evidencias-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 18px;
+  }
+  .evidencias-sidebar {
+    background:#f8f9fa; border:1px solid #e0e0e0; border-radius:10px;
+    padding: 14px;
+    max-height: 720px; overflow:auto;
+  }
+  .evidencias-sidebar h3 {
+    font-size: 15px; color:#333; margin-bottom: 10px;
+    text-transform: uppercase; letter-spacing:.5px;
+  }
+  .folder-tree {
+    list-style: none; padding-left: 0;
+  }
+  .folder-tree ul { list-style: none; padding-left: 16px; }
+  .folder-tree li {
+    padding: 4px 6px; border-radius: 5px; cursor: pointer;
+    font-size: 15px; display:flex; align-items:center; gap:6px;
+    user-select:none;
+  }
+  .folder-tree li:hover { background:#e9edf5; }
+  .folder-tree li.selected { background:#667eea; color:#fff; }
+  .folder-tree li.selected .folder-count { color:#e0e7ff; }
+  .folder-tree .folder-icon { font-size:16px; }
+  .folder-tree .folder-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .folder-tree .folder-count { font-size:12px; color:#888; }
+
+  .evidencias-main {
+    display:flex; flex-direction:column; gap: 14px;
+  }
+  .evidencias-header {
+    display:flex; justify-content:space-between; align-items:center;
+    gap: 10px; flex-wrap: wrap;
+  }
+  .evidencias-breadcrumb {
+    font-size:15px; color:#555;
+    display:flex; flex-wrap:wrap; align-items:center; gap:4px;
+  }
+  .evidencias-breadcrumb .crumb {
+    cursor:pointer; color:#667eea; font-weight:600;
+  }
+  .evidencias-breadcrumb .crumb:hover { text-decoration: underline; }
+  .evidencias-breadcrumb .sep { color:#aaa; }
+
+  .drop-zone {
+    border:2px dashed #c3cfe2; border-radius:10px;
+    padding: 22px; text-align:center; color:#666;
+    background:#fbfcff; transition:.15s;
+  }
+  .drop-zone.dragover {
+    border-color:#667eea; background:#eef1fb;
+  }
+  .drop-zone input[type="file"] { display:none; }
+  .drop-zone .dz-icon { font-size: 34px; margin-bottom: 6px; }
+
+  .imagenes-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+  }
+  .imagen-card {
+    background:#fff; border:1px solid #e0e0e0; border-radius:10px;
+    overflow:hidden; box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    display:flex; flex-direction:column;
+    transition:.15s;
+  }
+  .imagen-card:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(0,0,0,.12); }
+  .imagen-thumb {
+    width:100%; height: 140px; object-fit: cover;
+    background:#f0f0f0; cursor:pointer;
+    display:block;
+  }
+  .imagen-meta {
+    padding: 8px 10px; display:flex; flex-direction:column; gap:4px;
+  }
+  .imagen-nombre {
+    font-size: 13px; font-weight:600; color:#333;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .imagen-sub { font-size:11px; color:#888; }
+  .imagen-acciones {
+    display:flex; gap:6px; padding: 0 10px 10px 10px;
+  }
+
+  .lightbox {
+    display:none; position:fixed; inset:0; background: rgba(0,0,0,.9);
+    z-index: 300; align-items:center; justify-content:center;
+    padding: 30px;
+  }
+  .lightbox.open { display:flex; }
+  .lightbox img {
+    max-width: 92vw; max-height: 88vh; border-radius: 6px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  }
+  .lightbox .close-lb {
+    position:absolute; top: 20px; right: 30px;
+    color:#fff; font-size: 38px; cursor:pointer; line-height:1;
+    font-weight: 300;
+  }
+  .lightbox .nav-lb {
+    position: absolute; top:50%; transform: translateY(-50%);
+    color:#fff; font-size: 46px; cursor:pointer; user-select:none;
+    padding: 0 18px; opacity:.8;
+  }
+  .lightbox .nav-lb:hover { opacity:1; }
+  .lightbox .nav-lb.prev { left: 10px; }
+  .lightbox .nav-lb.next { right: 10px; }
+
+  @media (max-width: 900px) {
+    .evidencias-layout { grid-template-columns: 1fr; }
+    .evidencias-sidebar { max-height: 280px; }
+  }
   @media (max-width: 720px) {
     .form-grid { grid-template-columns: 1fr; }
     td, th { font-size: 13px; }
@@ -383,6 +501,11 @@
         <div class="module-icon">🗓️</div>
         <div class="module-title">Historial de Vencimientos</div>
         <div class="module-desc">Seguimiento de vencimientos</div>
+      </div>
+      <div class="module-card" onclick="openModule('evidencias')">
+        <div class="module-icon">📸</div>
+        <div class="module-title">Evidencias de Documentación</div>
+        <div class="module-desc">Carpetas y fotos en Google Drive</div>
       </div>
     </div>
   </div>
@@ -502,6 +625,66 @@
     </div>
   </div>
 
+  <!-- ===================== VISTA MÓDULO EVIDENCIAS DE DOCUMENTACIÓN ===================== -->
+  <div class="module-view" id="moduleViewEvidencias">
+    <div class="breadcrumb">
+      <a onclick="goHome()">🏠 Inicio</a> / <span>Evidencias de Documentación</span>
+    </div>
+    <h1>📸 Evidencias de Documentación</h1>
+    <p class="subtitle">Creá carpetas y subí fotos a Google Drive</p>
+
+    <div id="ev-alert-container"></div>
+
+    <div class="evidencias-layout">
+      <!-- SIDEBAR: árbol de carpetas -->
+      <aside class="evidencias-sidebar">
+        <h3>📁 Carpetas</h3>
+        <ul class="folder-tree" id="folderTree">
+          <li class="selected" data-folder-id="__ROOT__">
+            <span class="folder-icon">🏠</span>
+            <span class="folder-name">Raíz</span>
+          </li>
+        </ul>
+        <button class="btn btn-success btn-sm" style="width:100%; margin-top:10px;"
+                onclick="evCrearCarpeta()">➕ Nueva carpeta</button>
+      </aside>
+
+      <!-- MAIN: contenido de la carpeta -->
+      <section class="evidencias-main">
+        <div class="evidencias-header">
+          <div class="evidencias-breadcrumb" id="evBreadcrumb">
+            <span class="crumb" data-folder-id="__ROOT__" onclick="evNavegarA('__ROOT__')">🏠 Raíz</span>
+          </div>
+          <div>
+            <button class="btn btn-sm" onclick="evRecargar()">🔄 Recargar</button>
+            <button class="btn btn-success btn-sm" onclick="evCrearSubcarpeta()">➕ Subcarpeta</button>
+          </div>
+        </div>
+
+        <!-- Subcarpetas -->
+        <div id="evSubcarpetasWrapper" style="display:none;">
+          <h3 style="font-size:14px; color:#555; margin-bottom:8px; text-transform:uppercase;">Subcarpetas</h3>
+          <div id="evSubcarpetas" class="imagenes-grid"></div>
+        </div>
+
+        <!-- Zona de subida -->
+        <div class="drop-zone" id="evDropZone">
+          <div class="dz-icon">📤</div>
+          <div><b>Arrastrá las fotos acá</b> o hacé clic para seleccionar</div>
+          <div style="font-size:13px; color:#999; margin-top:4px;">JPG · PNG · WEBP · GIF</div>
+          <input type="file" id="evFileInput" accept="image/*" multiple onchange="evSubirArchivos(this.files)">
+        </div>
+
+        <!-- Imágenes -->
+        <div>
+          <h3 style="font-size:14px; color:#555; margin-bottom:8px; text-transform:uppercase;">Imágenes</h3>
+          <div id="evImagenes" class="imagenes-grid"></div>
+          <div id="evEmpty" class="no-data" style="display:none;">Esta carpeta está vacía</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
 </div>
 
 <!-- Modal Agregar / Editar (solo Maestro de Flota) -->
@@ -527,6 +710,14 @@
       <button class="btn btn-success" onclick="submitCdRow()">💾 Guardar</button>
     </div>
   </div>
+</div>
+
+<!-- Lightbox para ver imágenes -->
+<div class="lightbox" id="evLightbox">
+  <span class="close-lb" onclick="evCerrarLightbox()">×</span>
+  <span class="nav-lb prev" onclick="evLightboxPrev()">‹</span>
+  <img id="evLightboxImg" src="" alt="">
+  <span class="nav-lb next" onclick="evLightboxNext()">›</span>
 </div>
 
 <script>
@@ -562,6 +753,7 @@ function openModule(moduleKey) {
   document.getElementById('moduleViewMaestro').classList.remove('active');
   document.getElementById('moduleViewControl').classList.remove('active');
   document.getElementById('moduleViewHistorial').classList.remove('active');
+  document.getElementById('moduleViewEvidencias').classList.remove('active');
 
   if (moduleKey === 'maestro_flota') {
     document.getElementById('moduleViewMaestro').classList.add('active');
@@ -574,6 +766,9 @@ function openModule(moduleKey) {
   } else if (moduleKey === 'historial_vencimientos') {
     document.getElementById('moduleViewHistorial').classList.add('active');
     loadHistorial();
+  } else if (moduleKey === 'evidencias') {
+    document.getElementById('moduleViewEvidencias').classList.add('active');
+    evInit();
   }
 }
 
@@ -581,10 +776,12 @@ function goHome() {
   document.getElementById('moduleViewMaestro').classList.remove('active');
   document.getElementById('moduleViewControl').classList.remove('active');
   document.getElementById('moduleViewHistorial').classList.remove('active');
+  document.getElementById('moduleViewEvidencias').classList.remove('active');
   document.getElementById('homeView').classList.remove('hidden');
   document.getElementById('alert-container').innerHTML = '';
   document.getElementById('cd-alert-container').innerHTML = '';
   document.getElementById('hist-alert-container').innerHTML = '';
+  document.getElementById('ev-alert-container').innerHTML = '';
 }
 
 /* ============ CÁLCULO DE VENCIMIENTOS ============ */
@@ -1116,19 +1313,17 @@ function actualizarResumen() {
   let n3 = 0;
 
   histAllRows.forEach(row => {
-    // "Vencidos" ahora cuenta solo si ESTADO === 'VENCIDO'
     const estado = String(row['ESTADO'] || '').toUpperCase().trim();
     if (estado === 'VENCIDO') {
       vencidos++;
     }
 
-    // Las demás tarjetas siguen contando por fecha de vencimiento
     const fechaStr = row['FECHA VENCIMIENTO'] || '';
     const fecha = parseDate(fechaStr);
     if (!fecha) return;
     fecha.setHours(0,0,0,0);
 
-    if (fecha < hoy) return; // ya vencidos por fecha no cuentan en semanas futuras
+    if (fecha < hoy) return;
 
     const sem = getSemanaISO(fecha);
     const diffSemanas = (sem.anio - anioActual) * 52 + (sem.semana - semanaActualNum);
@@ -1164,7 +1359,6 @@ function esTipoNotificable(tipo) {
   return histTiposNotificables.map(x => x.toUpperCase()).includes(t);
 }
 
-/* Ordena las filas del historial por FECHA VENCIMIENTO descendente */
 function ordenarPorFechaVencDesc(rows) {
   return rows.slice().sort((a, b) => {
     const fa = parseDate(a['FECHA VENCIMIENTO']);
@@ -1172,7 +1366,7 @@ function ordenarPorFechaVencDesc(rows) {
     if (!fa && !fb) return 0;
     if (!fa) return 1;
     if (!fb) return -1;
-    return fb - fa; // descendente: más reciente primero
+    return fb - fa;
   });
 }
 
@@ -1191,7 +1385,6 @@ function renderHist() {
   headHtml += '</tr>';
   thead.innerHTML = headHtml;
 
-  // Ordenar antes de renderizar
   const rowsOrdenadas = ordenarPorFechaVencDesc(histFilteredRows);
 
   if (rowsOrdenadas.length === 0) {
@@ -1469,7 +1662,6 @@ function imprimirHistorial() {
 
   const visibleHeaders = histHeaders.filter(h => h !== PDF_COL);
 
-  // Ordenar también al imprimir
   const rowsOrdenadas = ordenarPorFechaVencDesc(histFilteredRows);
 
   let filasHtml = '';
@@ -1581,6 +1773,319 @@ function imprimirHistorial() {
     try { ventana.focus(); ventana.print(); } catch(e) {}
   }, 500);
 }
+
+
+/* ============================================================
+   EVIDENCIAS DE DOCUMENTACIÓN (Google Drive)
+   ============================================================ */
+let evRootFolder = null;         // {id, name}
+let evCurrentFolderId = null;    // id actual
+let evFolderTree = [];           // [{id, name, children:[...]}]
+let evCurrentImagenes = [];      // imágenes visibles (para lightbox)
+let evLightboxIndex = 0;
+let evPathStack = [];            // [{id, name}] para breadcrumb
+
+function evShowAlert(msg, type='success') {
+  const c = document.getElementById('ev-alert-container');
+  const div = document.createElement('div');
+  div.className = 'alert alert-' + type;
+  div.textContent = msg;
+  c.appendChild(div);
+  setTimeout(() => div.remove(), 4500);
+}
+
+function evFormatBytes(bytes) {
+  const b = Number(bytes) || 0;
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  return (b/(1024*1024)).toFixed(1) + ' MB';
+}
+
+async function evInit() {
+  try {
+    const res = await fetch('/api/evidencias/root');
+    const data = await res.json();
+    if (!data.success) { evShowAlert('Error: ' + data.error, 'error'); return; }
+    evRootFolder = data.root;
+    evCurrentFolderId = evRootFolder.id;
+    evPathStack = [{ id: evRootFolder.id, name: evRootFolder.name }];
+    await evRecargar();
+  } catch (e) {
+    evShowAlert('Error de conexión: ' + e.message, 'error');
+  }
+}
+
+async function evRecargar() {
+  await evListar(evCurrentFolderId);
+}
+
+async function evListar(folderId) {
+  try {
+    const res = await fetch('/api/evidencias/listar?folder_id=' + encodeURIComponent(folderId));
+    const data = await res.json();
+    if (!data.success) { evShowAlert('Error: ' + data.error, 'error'); return; }
+
+    evCurrentFolderId = data.folder_id;
+    evCurrentImagenes = data.imagenes || [];
+
+    evRenderBreadcrumb();
+    evRenderSubcarpetas(data.carpetas || []);
+    evRenderImagenes();
+  } catch (e) {
+    evShowAlert('Error de conexión: ' + e.message, 'error');
+  }
+}
+
+function evRenderBreadcrumb() {
+  const cont = document.getElementById('evBreadcrumb');
+  let html = '';
+  evPathStack.forEach((p, i) => {
+    if (i > 0) html += '<span class="sep">›</span>';
+    const label = (i === 0 ? '🏠 ' : '📁 ') + escapeHtml(p.name);
+    html += `<span class="crumb" onclick="evNavegarA('${p.id}')">${label}</span>`;
+  });
+  cont.innerHTML = html;
+}
+
+function evRenderSubcarpetas(carpetas) {
+  const wrapper = document.getElementById('evSubcarpetasWrapper');
+  const cont = document.getElementById('evSubcarpetas');
+  if (!carpetas || carpetas.length === 0) {
+    wrapper.style.display = 'none';
+    cont.innerHTML = '';
+    return;
+  }
+  wrapper.style.display = '';
+  let html = '';
+  carpetas.forEach(c => {
+    html += `
+      <div class="imagen-card" style="cursor:pointer;" onclick="evEntrarCarpeta('${c.id}', '${escapeHtml(c.name).replace(/'/g, "&#39;")}')">
+        <div style="padding: 22px 10px; text-align:center; background:#eef1fb;">
+          <div style="font-size:42px;">📁</div>
+        </div>
+        <div class="imagen-meta">
+          <div class="imagen-nombre" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</div>
+          <div class="imagen-sub">Carpeta</div>
+        </div>
+        <div class="imagen-acciones">
+          <button class="btn btn-sm" onclick="event.stopPropagation(); evRenombrar('${c.id}', '${escapeHtml(c.name).replace(/'/g, "&#39;")}')">✏️ Renombrar</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); evEliminar('${c.id}', 'carpeta')">🗑️</button>
+        </div>
+      </div>
+    `;
+  });
+  cont.innerHTML = html;
+}
+
+function evRenderImagenes() {
+  const cont = document.getElementById('evImagenes');
+  const empty = document.getElementById('evEmpty');
+
+  if (!evCurrentImagenes || evCurrentImagenes.length === 0) {
+    cont.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  let html = '';
+  evCurrentImagenes.forEach((img, idx) => {
+    const thumbUrl = '/api/evidencias/thumbnail/' + encodeURIComponent(img.id);
+    const isImg = (img.mimeType || '').startsWith('image/');
+    const thumb = isImg ? thumbUrl : (img.iconLink || '');
+    html += `
+      <div class="imagen-card">
+        <img class="imagen-thumb" src="${thumb}" alt="${escapeHtml(img.name)}"
+             onclick="evAbrirLightbox(${idx})" loading="lazy">
+        <div class="imagen-meta">
+          <div class="imagen-nombre" title="${escapeHtml(img.name)}">${escapeHtml(img.name)}</div>
+          <div class="imagen-sub">${evFormatBytes(img.size)}</div>
+        </div>
+        <div class="imagen-acciones">
+          <button class="btn btn-sm" onclick="evRenombrar('${img.id}', '${escapeHtml(img.name).replace(/'/g, "&#39;")}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="evEliminar('${img.id}', 'archivo')">🗑️</button>
+        </div>
+      </div>
+    `;
+  });
+  cont.innerHTML = html;
+}
+
+function evEntrarCarpeta(folderId, folderName) {
+  evPathStack.push({ id: folderId, name: folderName });
+  evListar(folderId);
+}
+
+function evNavegarA(folderId) {
+  const idx = evPathStack.findIndex(p => p.id === folderId);
+  if (idx >= 0) {
+    evPathStack = evPathStack.slice(0, idx + 1);
+  } else if (folderId === evRootFolder.id) {
+    evPathStack = [{ id: evRootFolder.id, name: evRootFolder.name }];
+  }
+  evListar(folderId);
+}
+
+async function evCrearCarpeta() {
+  const nombre = prompt('Nombre de la nueva carpeta:');
+  if (!nombre || !nombre.trim()) return;
+  await evCrearCarpetaConNombre(nombre.trim(), evCurrentFolderId);
+}
+
+async function evCrearSubcarpeta() {
+  const nombre = prompt('Nombre de la subcarpeta (se creará dentro de la carpeta actual):');
+  if (!nombre || !nombre.trim()) return;
+  await evCrearCarpetaConNombre(nombre.trim(), evCurrentFolderId);
+}
+
+async function evCrearCarpetaConNombre(nombre, parentId) {
+  try {
+    const res = await fetch('/api/evidencias/carpeta', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ nombre: nombre, parent_id: parentId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      evShowAlert('✅ Carpeta creada: ' + nombre);
+      await evRecargar();
+    } else {
+      evShowAlert('❌ ' + data.error, 'error');
+    }
+  } catch (e) {
+    evShowAlert('Error: ' + e.message, 'error');
+  }
+}
+
+async function evSubirArchivos(files) {
+  if (!files || files.length === 0) return;
+  const fd = new FormData();
+  fd.append('parent_id', evCurrentFolderId);
+  for (let i = 0; i < files.length; i++) {
+    fd.append('archivos', files[i]);
+  }
+  try {
+    evShowAlert('⏳ Subiendo ' + files.length + ' archivo(s)...', 'info');
+    const res = await fetch('/api/evidencias/subir', {
+      method: 'POST',
+      body: fd
+    });
+    const data = await res.json();
+    if (data.success) {
+      evShowAlert('✅ Se subieron ' + (data.subidos?.length || 0) + ' archivo(s)');
+      await evRecargar();
+    } else {
+      evShowAlert('❌ ' + data.error, 'error');
+    }
+  } catch (e) {
+    evShowAlert('Error: ' + e.message, 'error');
+  } finally {
+    const inp = document.getElementById('evFileInput');
+    if (inp) inp.value = '';
+  }
+}
+
+async function evEliminar(fileId, tipo) {
+  const label = tipo === 'carpeta' ? 'la carpeta' : 'el archivo';
+  if (!confirm(`¿Eliminar ${label}? Esta acción no se puede deshacer.`)) return;
+  try {
+    const res = await fetch('/api/evidencias/eliminar', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ file_id: fileId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      evShowAlert('✅ Eliminado');
+      await evRecargar();
+    } else {
+      evShowAlert('❌ ' + data.error, 'error');
+    }
+  } catch (e) {
+    evShowAlert('Error: ' + e.message, 'error');
+  }
+}
+
+async function evRenombrar(fileId, nombreActual) {
+  const nuevo = prompt('Nuevo nombre:', nombreActual);
+  if (!nuevo || !nuevo.trim() || nuevo.trim() === nombreActual) return;
+  try {
+    const res = await fetch('/api/evidencias/renombrar', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ file_id: fileId, nuevo_nombre: nuevo.trim() })
+    });
+    const data = await res.json();
+    if (data.success) {
+      evShowAlert('✅ Renombrado');
+      await evRecargar();
+    } else {
+      evShowAlert('❌ ' + data.error, 'error');
+    }
+  } catch (e) {
+    evShowAlert('Error: ' + e.message, 'error');
+  }
+}
+
+/* ============ Lightbox ============ */
+function evAbrirLightbox(index) {
+  if (!evCurrentImagenes || evCurrentImagenes.length === 0) return;
+  evLightboxIndex = index;
+  const img = evCurrentImagenes[index];
+  const src = '/api/evidencias/thumbnail/' + encodeURIComponent(img.id);
+  document.getElementById('evLightboxImg').src = src;
+  document.getElementById('evLightbox').classList.add('open');
+}
+function evCerrarLightbox() {
+  document.getElementById('evLightbox').classList.remove('open');
+  document.getElementById('evLightboxImg').src = '';
+}
+function evLightboxPrev() {
+  if (!evCurrentImagenes || evCurrentImagenes.length === 0) return;
+  evLightboxIndex = (evLightboxIndex - 1 + evCurrentImagenes.length) % evCurrentImagenes.length;
+  const img = evCurrentImagenes[evLightboxIndex];
+  document.getElementById('evLightboxImg').src = '/api/evidencias/thumbnail/' + encodeURIComponent(img.id);
+}
+function evLightboxNext() {
+  if (!evCurrentImagenes || evCurrentImagenes.length === 0) return;
+  evLightboxIndex = (evLightboxIndex + 1) % evCurrentImagenes.length;
+  const img = evCurrentImagenes[evLightboxIndex];
+  document.getElementById('evLightboxImg').src = '/api/evidencias/thumbnail/' + encodeURIComponent(img.id);
+}
+document.addEventListener('keydown', e => {
+  const lb = document.getElementById('evLightbox');
+  if (!lb.classList.contains('open')) return;
+  if (e.key === 'Escape') evCerrarLightbox();
+  if (e.key === 'ArrowLeft') evLightboxPrev();
+  if (e.key === 'ArrowRight') evLightboxNext();
+});
+
+/* ============ Drag & Drop ============ */
+(function() {
+  const dz = document.getElementById('evDropZone');
+  if (!dz) return;
+
+  dz.addEventListener('click', () => {
+    document.getElementById('evFileInput').click();
+  });
+
+  ['dragenter', 'dragover'].forEach(ev => {
+    dz.addEventListener(ev, e => {
+      e.preventDefault(); e.stopPropagation();
+      dz.classList.add('dragover');
+    });
+  });
+  ['dragleave', 'drop'].forEach(ev => {
+    dz.addEventListener(ev, e => {
+      e.preventDefault(); e.stopPropagation();
+      dz.classList.remove('dragover');
+    });
+  });
+  dz.addEventListener('drop', e => {
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) evSubirArchivos(files);
+  });
+})();
 
 </script>
 </body>
