@@ -431,12 +431,13 @@
     cursor: pointer; font-size: 13.5px; color: #24292f;
     font-family: inherit; transition: .12s; white-space: nowrap;
   }
-  .explorer-action:hover { background: #eef1f6; border-color: #d0d7de; }
+  .explorer-action:hover:not(:disabled) { background: #eef1f6; border-color: #d0d7de; }
+  .explorer-action:disabled { opacity: .4; cursor: not-allowed; }
   .explorer-action .icon { font-size: 15px; }
   .explorer-action.primary {
     background: #2f6fce; color: #fff; border-color: #2f6fce;
   }
-  .explorer-action.primary:hover { background: #255bb0; border-color: #255bb0; }
+  .explorer-action.primary:hover:not(:disabled) { background: #255bb0; border-color: #255bb0; }
   .explorer-toolbar .sep {
     width: 1px; height: 22px; background: #e0e0e0; margin: 0 4px;
   }
@@ -445,7 +446,7 @@
   .explorer-body {
     flex: 1;
     display: grid;
-    grid-template-columns: 230px 1fr;
+    grid-template-columns: 260px 1fr;
     min-height: 0;
     background: #fff;
   }
@@ -464,18 +465,29 @@
   .tree-root {
     list-style: none; padding-left: 0; margin: 0;
   }
+  .tree-root ul { list-style: none; padding-left: 14px; margin: 0; }
   .tree-root li { list-style: none; }
   .tree-item {
     display: flex; align-items: center; gap: 6px;
-    padding: 6px 10px; border-radius: 5px;
+    padding: 5px 10px; border-radius: 5px;
     cursor: pointer; font-size: 13.5px; color: #24292f;
-    user-select: none;
+    user-select: none; white-space: nowrap;
   }
   .tree-item:hover { background: #eef1f6; }
   .tree-item.selected { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
+  .tree-item .ti-toggle {
+    display:inline-flex; align-items:center; justify-content:center;
+    width: 14px; height: 14px; font-size: 10px; color: #57606a;
+    cursor: pointer; border-radius: 3px;
+  }
+  .tree-item .ti-toggle:hover { background: #d0d7de; }
+  .tree-item .ti-toggle.empty { visibility: hidden; }
   .tree-item .ti-icon { font-size: 15px; }
   .tree-item .ti-name {
     flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tree-empty {
+    padding: 8px 14px; color: #8b949e; font-size: 12.5px; font-style: italic;
   }
 
   /* Panel contenido */
@@ -606,16 +618,6 @@
   .lightbox .nav-lb:hover { opacity:1; }
   .lightbox .nav-lb.prev { left: 10px; }
   .lightbox .nav-lb.next { right: 10px; }
-
-  /* Vista previa en modal de subida */
-  .upload-preview {
-    display: flex; flex-wrap: wrap; gap: 8px;
-    margin-top: 10px;
-  }
-  .upload-preview .up-thumb {
-    width: 70px; height: 70px; object-fit: cover;
-    border-radius: 6px; border: 1px solid #d0d7de;
-  }
 
   @media (max-width: 900px) {
     .explorer-body { grid-template-columns: 1fr; }
@@ -905,6 +907,10 @@ function escapeHtml(s) {
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   })[c]);
 }
+function escapeAttr(s) {
+  // para usar dentro de onclick="..." con comillas simples
+  return escapeHtml(String(s ?? '').replace(/'/g, "&#39;"));
+}
 
 /* ============ NAVEGACIÓN ============ */
 function openModule(moduleKey) {
@@ -1025,7 +1031,6 @@ function render() {
   const thead = document.getElementById('maestroHead');
   const tbody = document.getElementById('maestroBody');
 
-  const tieneFlota = COLUMNS.some(c => c.name === 'FLOTA');
   const pkEsPrimera = (COLUMNS[0] && COLUMNS[0].name === PRIMARY_KEY);
   const pkClass = pkEsPrimera ? 'col-patente-solo' : 'col-patente';
 
@@ -1034,7 +1039,6 @@ function render() {
     const pk = col.name === PRIMARY_KEY ? '<span class="pk-badge">PK</span>' : '';
     const ro = col.readonly ? '<span class="ro-badge">🔒</span>' : '';
     let cls = '';
-    const idx = COLUMNS.indexOf(col);
     if (col.name === 'FLOTA') cls = ' class="col-flota"';
     else if (col.name === PRIMARY_KEY) cls = ` class="${pkClass}"`;
     
@@ -1731,28 +1735,21 @@ async function generarNotificacion(rowNumber) {
           margin-bottom: 22px;
           font-size: 14px;
         }
-        .campo b {
-          font-weight: bold;
-        }
+        .campo b { font-weight: bold; }
         .parrafo {
           text-align: justify;
           line-height: 1.6;
           margin: 40px 0 60px 0;
           font-size: 14px;
         }
-        .firmas {
-          margin-top: 80px;
-        }
+        .firmas { margin-top: 80px; }
         .firma-linea {
           border-top: 1px solid #000;
           width: 320px;
           margin-top: 60px;
           margin-bottom: 6px;
         }
-        .firma-label {
-          font-size: 13px;
-          margin-bottom: 18px;
-        }
+        .firma-label { font-size: 13px; margin-bottom: 18px; }
         @media print {
           body { margin: 20mm; }
           @page { size: A4; margin: 20mm; }
@@ -1761,22 +1758,16 @@ async function generarNotificacion(rowNumber) {
     </head>
     <body>
       <div class="nro-orden">Nº Orden: ${numeroOrden}</div>
-
       <h1>${titulo}</h1>
-
       <div class="campo"><b>Apellido y Nombre:</b> ${escapeHtml(descripcion)}</div>
       <div class="campo"><b>${etiquetaFecha}:</b> ${escapeHtml(fechaVenc)}</div>
       <div class="campo"><b>Fecha de Notificación:</b> ${fechaNotificacion}</div>
-
       <div class="parrafo">${parrafo}</div>
-
       <div class="firmas">
         <div class="firma-linea"></div>
         <div class="firma-label"><b>FIRMA</b></div>
-
         <div class="firma-linea"></div>
         <div class="firma-label"><b>NOMBRE Y APELLIDO:</b></div>
-
         <div class="firma-linea"></div>
         <div class="firma-label"><b>DNI:</b></div>
       </div>
@@ -1820,7 +1811,6 @@ function imprimirHistorial() {
                          hoy.getFullYear();
 
   const visibleHeaders = histHeaders.filter(h => h !== PDF_COL);
-
   const rowsOrdenadas = ordenarPorFechaVencDesc(histFilteredRows);
 
   let filasHtml = '';
@@ -1852,48 +1842,21 @@ function imprimirHistorial() {
           color: #222;
         }
         .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          border-bottom: 2px solid #333;
-          padding-bottom: 8px;
-          margin-bottom: 16px;
+          display: flex; justify-content: space-between; align-items: center;
+          border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 16px;
         }
-        .header h1 {
-          font-size: 20px;
-          margin: 0;
-        }
-        .header .fecha {
-          font-size: 13px;
-          color: #555;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 12px;
-        }
+        .header h1 { font-size: 20px; margin: 0; }
+        .header .fecha { font-size: 13px; color: #555; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
         th {
-          background: #667eea;
-          color: #fff;
-          padding: 8px 6px;
-          text-align: left;
+          background: #667eea; color: #fff;
+          padding: 8px 6px; text-align: left;
           border: 1px solid #4c51bf;
-          font-size: 11px;
-          text-transform: uppercase;
+          font-size: 11px; text-transform: uppercase;
         }
-        td {
-          padding: 6px;
-          border: 1px solid #ccc;
-        }
-        tr:nth-child(even) td {
-          background: #f7f7fa;
-        }
-        .footer {
-          margin-top: 16px;
-          font-size: 11px;
-          color: #666;
-          text-align: right;
-        }
+        td { padding: 6px; border: 1px solid #ccc; }
+        tr:nth-child(even) td { background: #f7f7fa; }
+        .footer { margin-top: 16px; font-size: 11px; color: #666; text-align: right; }
         @media print {
           body { margin: 10mm; }
           .header h1 { font-size: 18px; }
@@ -1937,18 +1900,20 @@ function imprimirHistorial() {
 /* ============================================================
    EVIDENCIAS DE DOCUMENTACIÓN - EXPLORADOR
    ============================================================ */
-let evRootFolder = null;          // {id, name}
+let evRootFolder = null;              // {id, name}
 let evCurrentFolderId = null;
-let evPathStack = [];             // [{id, name}]
-let evCarpetas = [];              // carpetas de la ubicación actual
-let evImagenes = [];              // archivos de la ubicación actual
-let evItemsFiltrados = [];        // para render (después de búsqueda)
-let evSeleccionado = null;        // {id, name, mimeType, type: 'folder'|'file'}
-let evVista = 'detalles';         // 'detalles' | 'iconos'
+let evPathStack = [];                 // [{id, name}] ruta hasta la carpeta actual
+let evCarpetas = [];                  // carpetas de la ubicación actual
+let evImagenes = [];                  // archivos de la ubicación actual
+let evItemsFiltrados = [];            // para render
+let evSeleccionado = null;            // {id, name, mimeType, type}
+let evVista = 'detalles';             // 'detalles' | 'iconos'
 let evOrden = { campo: 'name', dir: 'asc' };
 let evCurrentImagenesLightbox = [];
 let evLightboxIndex = 0;
-let evHistory = [];               // para botón Atrás (pila de folderIds)
+let evHistory = [];                   // pila para el botón Atrás
+// Caché del árbol: { folderId: {expanded:bool, loaded:bool, children:[{id,name}] } }
+let evTreeCache = {};
 
 function evShowAlert(msg, type='success') {
   const c = document.getElementById('ev-alert-container');
@@ -1991,10 +1956,35 @@ async function evInit() {
     evPathStack = [{ id: evRootFolder.id, name: evRootFolder.name }];
     evHistory = [];
     evSeleccionado = null;
+    evTreeCache = {};
+    evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
+
     await evCargarContenido(evCurrentFolderId);
+    await evCargarHijosEnCache(evCurrentFolderId);
     evRenderTree();
   } catch (e) {
     evShowAlert('Error de conexión: ' + e.message, 'error');
+  }
+}
+
+/* Carga y guarda en caché las subcarpetas de un folderId */
+async function evCargarHijosEnCache(folderId) {
+  try {
+    const res = await fetch('/api/evidencias/listar?folder_id=' + encodeURIComponent(folderId));
+    const data = await res.json();
+    if (!data.success) return;
+    const node = evTreeCache[folderId] || { expanded: true, loaded: false, children: [] };
+    node.children = (data.carpetas || []).map(c => ({ id: c.id, name: c.name }));
+    node.loaded = true;
+    evTreeCache[folderId] = node;
+    // Asegurar que cada hijo tenga entrada en caché
+    node.children.forEach(ch => {
+      if (!evTreeCache[ch.id]) {
+        evTreeCache[ch.id] = { expanded: false, loaded: false, children: [] };
+      }
+    });
+  } catch(e) {
+    console.warn('No se pudieron cargar hijos en caché:', e);
   }
 }
 
@@ -2009,51 +1999,101 @@ async function evCargarContenido(folderId) {
     evImagenes = data.imagenes || [];
     evSeleccionado = null;
 
+    // Actualizar caché del árbol con las carpetas actuales
+    const node = evTreeCache[folderId] || { expanded: true, loaded: false, children: [] };
+    node.children = evCarpetas.map(c => ({ id: c.id, name: c.name }));
+    node.loaded = true;
+    evTreeCache[folderId] = node;
+    // Asegurar entradas de hijos
+    node.children.forEach(ch => {
+      if (!evTreeCache[ch.id]) {
+        evTreeCache[ch.id] = { expanded: false, loaded: false, children: [] };
+      }
+    });
+
     evRenderAddress();
     evRenderContenido();
     evActualizarBotones();
     evActualizarStatus();
+    evActualizarNavBtns();
   } catch (e) {
     evShowAlert('Error de conexión: ' + e.message, 'error');
   }
 }
 
 async function evRecargar() {
+  // Invalida caché del árbol y recarga
+  const keep = {};
+  keep[evCurrentFolderId] = { expanded: true, loaded: false, children: [] };
+  evTreeCache = keep;
   await evCargarContenido(evCurrentFolderId);
+  await evCargarHijosEnCache(evCurrentFolderId);
   evRenderTree();
 }
 
-/* ============ ÁRBOL SIDEBAR ============ */
+/* ============ ÁRBOL SIDEBAR (recursivo) ============ */
 function evRenderTree() {
   const cont = document.getElementById('evTreeRoot');
+  if (!evRootFolder) { cont.innerHTML = ''; return; }
+
+  // Renderiza el árbol desde la raíz, expandiendo solo las ramas abiertas
   let html = '';
-
-  evPathStack.forEach((p, i) => {
-    const isRoot = (i === 0);
-    const isSelected = (p.id === evCurrentFolderId);
-    html += `
-      <li>
-        <div class="tree-item ${isSelected ? 'selected' : ''}" onclick="evNavegarA('${p.id}')">
-          <span class="ti-icon">${isRoot ? '🏠' : '📁'}</span>
-          <span class="ti-name" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
-        </div>
-      </li>
-    `;
-  });
-
-  // Carpetas hijas de la ubicación actual, indentadas
-  evCarpetas.forEach(c => {
-    html += `
-      <li>
-        <div class="tree-item" style="padding-left: 26px;" onclick="evEntrarCarpeta('${c.id}', '${escapeHtml(c.name).replace(/'/g, "&#39;")}')">
-          <span class="ti-icon">📁</span>
-          <span class="ti-name" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</span>
-        </div>
-      </li>
-    `;
-  });
-
+  html += evRenderTreeNode({
+    id: evRootFolder.id,
+    name: evRootFolder.name,
+    isRoot: true
+  }, 0);
   cont.innerHTML = html;
+}
+
+function evRenderTreeNode(node, level) {
+  const cache = evTreeCache[node.id] || { expanded: false, loaded: false, children: [] };
+  const isSelected = (node.id === evCurrentFolderId);
+  const hasChildren = cache.children.length > 0;
+  const isExpanded = !!cache.expanded;
+
+  // Si nunca se cargó, asumimos que puede tener hijos (mostramos toggle)
+  const showToggle = (cache.loaded ? hasChildren : true);
+  const toggleIcon = isExpanded ? '▾' : '▸';
+
+  const icon = node.isRoot ? '🏠' : '📁';
+  const indent = 8 + level * 14;
+
+  let html = `<li>`;
+  html += `<div class="tree-item ${isSelected ? 'selected' : ''}" data-folder-id="${node.id}" style="padding-left:${indent}px;">`;
+  html += `<span class="ti-toggle ${showToggle ? '' : 'empty'}" onclick="event.stopPropagation(); evToggleNodo('${node.id}')">${toggleIcon}</span>`;
+  html += `<span class="ti-icon">${icon}</span>`;
+  html += `<span class="ti-name" title="${escapeHtml(node.name)}" onclick="evNavegarA('${node.id}')">${escapeHtml(node.name)}</span>`;
+  html += `</div>`;
+
+  if (isExpanded) {
+    if (!cache.loaded) {
+      html += `<li class="tree-empty" style="padding-left:${indent + 28}px;">Cargando…</li>`;
+    } else if (cache.children.length === 0) {
+      html += `<li class="tree-empty" style="padding-left:${indent + 28}px;">(sin subcarpetas)</li>`;
+    } else {
+      html += `<ul>`;
+      cache.children.forEach(ch => {
+        html += evRenderTreeNode({ id: ch.id, name: ch.name, isRoot: false }, level + 1);
+      });
+      html += `</ul>`;
+    }
+  }
+
+  html += `</li>`;
+  return html;
+}
+
+async function evToggleNodo(folderId) {
+  const cache = evTreeCache[folderId] || { expanded: false, loaded: false, children: [] };
+  cache.expanded = !cache.expanded;
+  evTreeCache[folderId] = cache;
+
+  if (cache.expanded && !cache.loaded) {
+    evRenderTree(); // mostrar "Cargando…"
+    await evCargarHijosEnCache(folderId);
+  }
+  evRenderTree();
 }
 
 /* ============ ADDRESS BAR (breadcrumb) ============ */
@@ -2070,35 +2110,108 @@ function evRenderAddress() {
 }
 
 /* ============ NAVEGACIÓN ============ */
-function evEntrarCarpeta(folderId, folderName) {
+async function evEntrarCarpeta(folderId, folderName) {
   evHistory.push(evCurrentFolderId);
   evPathStack.push({ id: folderId, name: folderName });
-  evCargarContenido(folderId);
+  await evCargarContenido(folderId);
+  // Expandir y cargar hijos del nodo destino
+  const c = evTreeCache[folderId] || { expanded: false, loaded: false, children: [] };
+  c.expanded = true;
+  evTreeCache[folderId] = c;
+  if (!c.loaded) await evCargarHijosEnCache(folderId);
+  // Expandir también el padre
+  if (evPathStack.length >= 2) {
+    const parentId = evPathStack[evPathStack.length - 2].id;
+    const cp = evTreeCache[parentId] || { expanded: false, loaded: false, children: [] };
+    cp.expanded = true;
+    evTreeCache[parentId] = cp;
+  }
+  evRenderTree();
 }
 
-function evNavegarA(folderId) {
+async function evNavegarA(folderId) {
+  // Ajustar pathStack
   const idx = evPathStack.findIndex(p => p.id === folderId);
   if (idx >= 0) {
     evPathStack = evPathStack.slice(0, idx + 1);
   } else if (folderId === evRootFolder.id) {
     evPathStack = [{ id: evRootFolder.id, name: evRootFolder.name }];
+  } else {
+    // Viene del árbol: buscar nombre en caché
+    let nombre = folderId;
+    for (const k in evTreeCache) {
+      const found = (evTreeCache[k].children || []).find(ch => ch.id === folderId);
+      if (found) { nombre = found.name; break; }
+    }
+    // Construir path reconstruyendo ancestros desde el árbol (simple: raíz → folder)
+    // Intentamos reconstruir buscando el padre en el caché.
+    const path = evConstruirPathHacia(folderId);
+    if (path) {
+      evPathStack = path;
+    } else {
+      evPathStack.push({ id: folderId, name: nombre });
+    }
   }
-  evCargarContenido(folderId);
+
+  await evCargarContenido(folderId);
+  // Expandir y cargar hijos
+  const c = evTreeCache[folderId] || { expanded: false, loaded: false, children: [] };
+  c.expanded = true;
+  evTreeCache[folderId] = c;
+  if (!c.loaded) await evCargarHijosEnCache(folderId);
+  evRenderTree();
 }
 
-function evAtras() {
+/* Intenta reconstruir la ruta raíz→folderId usando el caché del árbol */
+function evConstruirPathHacia(targetId) {
+  if (!evRootFolder) return null;
+  if (targetId === evRootFolder.id) {
+    return [{ id: evRootFolder.id, name: evRootFolder.name }];
+  }
+  const path = [];
+  const visited = new Set();
+
+  function dfs(folderId, acc) {
+    if (visited.has(folderId)) return false;
+    visited.add(folderId);
+    const node = evTreeCache[folderId];
+    if (!node) return false;
+    for (const ch of (node.children || [])) {
+      const newAcc = acc.concat([{ id: ch.id, name: ch.name }]);
+      if (ch.id === targetId) {
+        path.push(...newAcc);
+        return true;
+      }
+      if (dfs(ch.id, newAcc)) return true;
+    }
+    return false;
+  }
+
+  const start = [{ id: evRootFolder.id, name: evRootFolder.name }];
+  if (dfs(evRootFolder.id, start)) return path;
+  return null;
+}
+
+async function evAtras() {
   if (evHistory.length === 0) return;
   const prev = evHistory.pop();
   const idx = evPathStack.findIndex(p => p.id === prev);
   if (idx >= 0) evPathStack = evPathStack.slice(0, idx + 1);
-  evCargarContenido(prev);
+  await evCargarContenido(prev);
+  evActualizarNavBtns();
 }
 
-function evSubir() {
+async function evSubir() {
   if (evPathStack.length <= 1) return;
   evPathStack = evPathStack.slice(0, evPathStack.length - 1);
   const parent = evPathStack[evPathStack.length - 1];
-  evCargarContenido(parent.id);
+  await evCargarContenido(parent.id);
+  evActualizarNavBtns();
+}
+
+function evActualizarNavBtns() {
+  document.getElementById('evBtnBack').disabled = (evHistory.length === 0);
+  document.getElementById('evBtnUp').disabled = (evPathStack.length <= 1);
 }
 
 /* ============ RENDER CONTENIDO ============ */
@@ -2138,7 +2251,6 @@ function evGetItemsVisibles() {
   const campo = evOrden.campo;
 
   items.sort((a, b) => {
-    // Carpetas siempre primero
     if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
     let va = a[campo] || '', vb = b[campo] || '';
     if (campo === 'size') { va = Number(va)||0; vb = Number(vb)||0; return (va - vb) * dir; }
@@ -2154,7 +2266,6 @@ function evRenderContenido() {
   const items = evGetItemsVisibles();
   evItemsFiltrados = items;
 
-  // Imágenes para el lightbox
   evCurrentImagenesLightbox = items.filter(i => i.type === 'file' && (i.mimeType || '').startsWith('image/'));
 
   if (items.length === 0) {
@@ -2183,16 +2294,14 @@ function evRenderIconos(items) {
     if (it.type === 'folder') {
       html += `
         <div class="ex-item ${sel}" data-id="${it.id}"
-             onclick="evSeleccionar('${it.id}')" ondblclick="evEntrarCarpeta('${it.id}', '${escapeHtml(it.name).replace(/'/g, "&#39;")}')">
+             onclick="evSeleccionar('${it.id}')" ondblclick="evEntrarCarpeta('${it.id}', '${escapeAttr(it.name)}')">
           <div class="ex-icon-big">📁</div>
           <div class="ex-name" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</div>
         </div>
       `;
     } else {
       const isImg = (it.mimeType || '').startsWith('image/');
-      const thumb = isImg
-        ? `/api/evidencias/thumbnail/${encodeURIComponent(it.id)}`
-        : '';
+      const thumb = isImg ? `/api/evidencias/thumbnail/${encodeURIComponent(it.id)}` : '';
       const iconBig = isImg ? '' : '📄';
       html += `
         <div class="ex-item ${sel}" data-id="${it.id}"
@@ -2238,7 +2347,7 @@ function evRenderDetalles(items) {
     html += `
       <tr class="${sel}" data-id="${it.id}"
           onclick="evSeleccionar('${it.id}')"
-          ondblclick="${isFolder ? `evEntrarCarpeta('${it.id}', '${escapeHtml(it.name).replace(/'/g, "&#39;")}')` : `evAbrirArchivo('${it.id}')`}">
+          ondblclick="${isFolder ? `evEntrarCarpeta('${it.id}', '${escapeAttr(it.name)}')` : `evAbrirArchivo('${it.id}')`}">
         <td>
           <span class="cell-name">
             <span class="ci">${icon}</span>
@@ -2249,7 +2358,7 @@ function evRenderDetalles(items) {
         <td class="col-size">${sizeStr}</td>
         <td class="col-actions">
           <button class="mini-btn" title="Renombrar"
-                  onclick="event.stopPropagation(); evRenombrar('${it.id}', '${escapeHtml(it.name).replace(/'/g, "&#39;")}')">✏️</button>
+                  onclick="event.stopPropagation(); evRenombrar('${it.id}', '${escapeAttr(it.name)}')">✏️</button>
           <button class="mini-btn" title="Eliminar"
                   onclick="event.stopPropagation(); evEliminar('${it.id}', '${isFolder ? 'carpeta' : 'archivo'}')">🗑️</button>
         </td>
@@ -2282,7 +2391,6 @@ function evSeleccionar(itemId) {
   const item = evItemsFiltrados.find(i => i.id === itemId);
   if (!item) return;
   evSeleccionado = item;
-  // Refrescar estilos
   document.querySelectorAll('#evContent .ex-item, #evContent .ex-list tbody tr').forEach(el => {
     el.classList.toggle('selected', el.dataset.id === itemId);
   });
@@ -2313,7 +2421,6 @@ function evAbrirArchivo(itemId) {
   if (idx >= 0) {
     evAbrirLightbox(idx);
   } else {
-    // No es imagen, abrir en Drive
     window.open('https://drive.google.com/file/d/' + itemId + '/view', '_blank');
   }
 }
@@ -2331,6 +2438,8 @@ async function evCrearCarpeta() {
     const data = await res.json();
     if (data.success) {
       evShowAlert('✅ Carpeta creada: ' + nombre.trim());
+      // Forzar recarga del padre en caché
+      delete evTreeCache[evCurrentFolderId];
       await evRecargar();
     } else {
       evShowAlert('❌ ' + data.error, 'error');
@@ -2380,7 +2489,12 @@ async function evEliminar(fileId, tipo) {
     const data = await res.json();
     if (data.success) {
       evShowAlert('✅ Eliminado');
-      await evRecargar();
+      // Limpiar caché de árbol para que se reconstruya
+      evTreeCache = {};
+      if (evRootFolder) evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
+      await evCargarContenido(evCurrentFolderId);
+      await evCargarHijosEnCache(evCurrentFolderId);
+      evRenderTree();
     } else {
       evShowAlert('❌ ' + data.error, 'error');
     }
@@ -2401,7 +2515,11 @@ async function evRenombrar(fileId, nombreActual) {
     const data = await res.json();
     if (data.success) {
       evShowAlert('✅ Renombrado');
-      await evRecargar();
+      evTreeCache = {};
+      if (evRootFolder) evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
+      await evCargarContenido(evCurrentFolderId);
+      await evCargarHijosEnCache(evCurrentFolderId);
+      evRenderTree();
     } else {
       evShowAlert('❌ ' + data.error, 'error');
     }
@@ -2452,7 +2570,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') evLightboxNext();
 });
 
-/* ============ DRAG & DROP EN TODA EL ÁREA DE CONTENIDO ============ */
+/* ============ DRAG & DROP ============ */
 (function() {
   const explorer = document.getElementById('evExplorer');
   const content = document.getElementById('evContent');
