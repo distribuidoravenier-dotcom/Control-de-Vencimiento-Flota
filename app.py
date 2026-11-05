@@ -7,7 +7,11 @@ from flask import Flask, render_template, request, jsonify
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaIoBaseUpload
+
+# --- IMPORTAMOS CLOUDINARY ---
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 from config import Config
 
@@ -25,6 +29,14 @@ SCOPES = [
 
 _service_cache = None
 _drive_service_cache = None
+
+# --- CONFIGURACIÓN DE CLOUDINARY ---
+cloudinary.config(
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+    secure=True
+)
 
 # Columnas de vencimiento por solapa (las que definen STATUS)
 FECHAS_VENCIMIENTO = {
@@ -44,19 +56,10 @@ DESCRIPCION_COL = {
 HISTORIAL_PDF_COL = 'PDF GENERADO'
 
 # ============================================================
-# EVIDENCIAS DE DOCUMENTACIÓN (Google Drive)
-# ============================================================
-# Carpeta raíz en Drive donde se crearán todas las evidencias.
-# Se puede sobrescribir con la variable de entorno DRIVE_ROOT_FOLDER_ID.
-DRIVE_ROOT_FOLDER_ID = os.getenv('DRIVE_ROOT_FOLDER_ID', '').strip()
-
-
-# ============================================================
 # CÁLCULOS AUTOMÁTICOS
 # ============================================================
 
 def parse_date_any(str_val):
-    """Intenta parsear dd/mm/yyyy, dd/mm/yy, yyyy-mm-dd. Devuelve date o None."""
     if not str_val:
         return None
     s = str(str_val).strip()
@@ -70,21 +73,14 @@ def parse_date_any(str_val):
             continue
     return None
 
-
 def calc_cumple_politica(valor_antiguedad):
-    """ANTIGÜEDAD > 10 => 'NO', si no => 'SI'."""
     try:
         ant = float(str(valor_antiguedad).replace(',', '.').strip())
     except (ValueError, TypeError):
         return ''
     return 'NO' if ant > 10 else 'SI'
 
-
 def calc_status(sheet_key, row_dict):
-    """
-    Si CUALQUIERA de las fechas de vencimiento es menor a hoy => 'NO SALE'.
-    Si no hay fechas cargadas o todas son futuras => 'SALE'.
-    """
     fechas = FECHAS_VENCIMIENTO.get(sheet_key, [])
     hoy = datetime.now().date()
     for col in fechas:
@@ -93,9 +89,7 @@ def calc_status(sheet_key, row_dict):
             return 'NO SALE'
     return 'SALE'
 
-
 def recalcular_campos_auto(sheet_key, row_dict):
-    """Aplica los cálculos automáticos sobre un dict de fila (in-place)."""
     if 'Cumple Polìtica?' in row_dict:
         row_dict['Cumple Polìtica?'] = calc_cumple_politica(row_dict.get('ANTIGÜEDAD', ''))
     if 'STATUS' in row_dict:
@@ -116,7 +110,6 @@ def _load_credentials():
         Config.CREDENTIALS_FILE, scopes=SCOPES
     )
 
-
 def get_sheets_service():
     global _service_cache
     if _service_cache is not None:
@@ -129,31 +122,14 @@ def get_sheets_service():
         print(f"❌ Error credenciales (Sheets): {e}")
         raise
 
-
-def get_drive_service():
-    global _drive_service_cache
-    if _drive_service_cache is not None:
-        return _drive_service_cache
-    try:
-        creds = _load_credentials()
-        _drive_service_cache = build('drive', 'v3', credentials=creds, cache_discovery=False)
-        return _drive_service_cache
-    except Exception as e:
-        print(f"❌ Error credenciales (Drive): {e}")
-        raise
-
-
 def col_letter(n):
-    """1 -> A, 26 -> Z, 27 -> AA ..."""
     result = ''
     while n > 0:
         n, rem = divmod(n - 1, 26)
         result = chr(65 + rem) + result
     return result
 
-
 def get_sheet_config(sheet_key):
-    """Devuelve la configuración de la solapa solicitada."""
     if sheet_key not in SHEETS:
         return None
     cfg = SHEETS[sheet_key]
@@ -168,9 +144,7 @@ def get_sheet_config(sheet_key):
         'last_col': col_letter(len(headers))
     }
 
-
 def ensure_sheet_exists(sheet_cfg):
-    """Crea la solapa si no existe en el spreadsheet."""
     try:
         service = get_sheets_service()
         spreadsheet = service.spreadsheets().get(
@@ -184,18 +158,12 @@ def ensure_sheet_exists(sheet_cfg):
             spreadsheetId=SPREADSHEET_ID,
             body={'requests': [{'addSheet': {'properties': {'title': sheet_cfg['name']}}}]}
         ).execute()
-        print(f"✅ Solapa '{sheet_cfg['name']}' creada.")
         return True
     except HttpError as err:
         print(f"❌ Error creando solapa '{sheet_cfg['name']}': {err}")
         return False
 
-
 def ensure_sheet_headers(sheet_cfg):
-    """
-    Verifica que la fila 1 del Sheet tenga exactamente nuestros headers.
-    Si faltan columnas al final, las agrega SIN borrar las existentes.
-    """
     if not ensure_sheet_exists(sheet_cfg):
         return False
     try:
@@ -205,43 +173,34 @@ def ensure_sheet_headers(sheet_cfg):
             range=f"'{sheet_cfg['name']}'!1:1"
         ).execute().get('values', [[]])
         current_headers = current[0] if current else []
-
         expected = sheet_cfg['headers']
-
         if current_headers[:len(expected)] == expected and len(current_headers) >= len(expected):
             return True
-
         extras = []
         if len(current_headers) > len(expected):
             extras = current_headers[len(expected):]
         new_headers = expected + extras
-
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
             range=f"'{sheet_cfg['name']}'!A1",
             valueInputOption='RAW',
             body={'values': [new_headers]}
         ).execute()
-        print(f"✅ Headers sincronizados en '{sheet_cfg['name']}'.")
         return True
     except HttpError as err:
         print(f"❌ Error asegurando headers: {err}")
         return False
 
-
 def get_all_data(sheet_cfg):
-    """Devuelve {'headers': [...], 'rows': [{..., '_row_number': N}]}"""
     try:
         service = get_sheets_service()
         result = service.spreadsheets().values().get(
             spreadsheetId=SPREADSHEET_ID,
             range=f"'{sheet_cfg['name']}'!A:{sheet_cfg['last_col']}"
         ).execute()
-
         values = result.get('values', [])
         if not values:
             return {'headers': sheet_cfg['headers'], 'rows': []}
-
         headers = values[0]
         rows = []
         for i, raw in enumerate(values[1:], start=2):
@@ -258,7 +217,6 @@ def get_all_data(sheet_cfg):
         print(f"❌ Error leyendo datos: {err}")
         return {'headers': sheet_cfg['headers'], 'rows': []}
 
-
 def get_sheet_id(sheet_cfg):
     service = get_sheets_service()
     spreadsheet = service.spreadsheets().get(
@@ -269,7 +227,6 @@ def get_sheet_id(sheet_cfg):
         if s['properties']['title'] == sheet_cfg['name']:
             return s['properties']['sheetId']
     return None
-
 
 # ============================================================
 # HISTORIAL DE VENCIMIENTOS
@@ -296,28 +253,19 @@ def get_historial_config():
         'last_col': col_letter(len(headers))
     }
 
-
 def semana_del_anio(fecha):
     if not fecha:
         return ''
     return fecha.isocalendar()[1]
-
 
 def get_historial_data():
     sheet_cfg = get_historial_config()
     ensure_sheet_headers(sheet_cfg)
     return get_all_data(sheet_cfg)
 
-
-def ensure_historial_headers():
-    sheet_cfg = get_historial_config()
-    return ensure_sheet_headers(sheet_cfg)
-
-
 def cargar_historial_automatico():
     historial_cfg = get_historial_config()
     ensure_sheet_headers(historial_cfg)
-
     hist_data = get_all_data(historial_cfg)
     existentes = set()
     for r in hist_data['rows']:
@@ -327,12 +275,9 @@ def cargar_historial_automatico():
             (r.get('FECHA VENCIMIENTO') or '').strip(),
         )
         existentes.add(key)
-
     hoy = date.today()
     limite = hoy + timedelta(days=Config.HISTORIAL_DIAS_ALERTA)
-
     nuevas_filas = []
-
     for sheet_key, sheet_cfg_orig in SHEETS.items():
         sheet_cfg = get_sheet_config(sheet_key)
         if not sheet_cfg:
@@ -352,17 +297,12 @@ def cargar_historial_automatico():
                     continue
                 if fecha_v > limite:
                     continue
-
                 tipo = Config.HISTORIAL_TIPO_MAP.get(col_name, col_name)
                 descripcion = descripcion_val
                 fecha_venc_str = fecha_v.strftime('%d/%m/%Y')
-
-                key = (tipo.strip().upper(),
-                       descripcion.strip().upper(),
-                       fecha_venc_str.strip())
+                key = (tipo.strip().upper(), descripcion.strip().upper(), fecha_venc_str.strip())
                 if key in existentes:
                     continue
-
                 fila = {
                     'FECHA':                 hoy.strftime('%d/%m/%Y'),
                     'TIPO':                  tipo,
@@ -374,7 +314,6 @@ def cargar_historial_automatico():
                 }
                 nuevas_filas.append(fila)
                 existentes.add(key)
-
     if nuevas_filas:
         headers = historial_cfg['headers']
         values = [[fila.get(h, '') for h in headers] for fila in nuevas_filas]
@@ -386,9 +325,7 @@ def cargar_historial_automatico():
             insertDataOption='INSERT_ROWS',
             body={'values': values}
         ).execute()
-
     return len(nuevas_filas)
-
 
 def marcar_pdf_generado(row_number):
     sheet_cfg = get_historial_config()
@@ -407,9 +344,8 @@ def marcar_pdf_generado(row_number):
     ).execute()
     return True
 
-
 # ============================================================
-# CONTADOR DE NOTIFICACIONES (N° de Orden correlativo)
+# CONTADOR DE NOTIFICACIONES
 # ============================================================
 
 def get_contador_config():
@@ -430,22 +366,17 @@ def get_contador_config():
         'last_col': col_letter(len(headers))
     }
 
-
 def siguiente_numero_orden():
     contador_cfg = get_contador_config()
     if not ensure_sheet_headers(contador_cfg):
         raise RuntimeError(f"No se pudo preparar la solapa '{contador_cfg['name']}'")
-
     anio_actual = str(date.today().year)
     service = get_sheets_service()
-
     data = get_all_data(contador_cfg)
     rows = data['rows']
-
     fila_existente = None
     fila_numero = None
     ultimo = 0
-
     for idx, r in enumerate(rows):
         if (r.get('AÑO') or '').strip() == anio_actual:
             fila_existente = r
@@ -455,9 +386,7 @@ def siguiente_numero_orden():
             except (ValueError, TypeError):
                 ultimo = 0
             break
-
     nuevo = ultimo + 1
-
     if fila_existente:
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
@@ -473,160 +402,84 @@ def siguiente_numero_orden():
             insertDataOption='INSERT_ROWS',
             body={'values': [[anio_actual, str(nuevo)]]}
         ).execute()
-
     numero_formateado = str(nuevo).zfill(4)
     return f"{numero_formateado}-{anio_actual}"
 
-
 # ============================================================
-# EVIDENCIAS DE DOCUMENTACIÓN (Google Drive)
+# EVIDENCIAS DE DOCUMENTACIÓN (Cloudinary)
 # ============================================================
 
-def drive_resolver_root():
-    """Devuelve el ID de la carpeta raíz a usar.
-    Si DRIVE_ROOT_FOLDER_ID está definido, se usa; si no, se usa 'root' (Mi unidad).
-    """
-    return DRIVE_ROOT_FOLDER_ID or 'root'
-
-
-def drive_listar(folder_id):
-    """Lista subcarpetas e imágenes de una carpeta de Drive."""
-    service = get_drive_service()
-    q = f"'{folder_id}' in parents and trashed = false"
-    # OJO: 'fields' debe ser 'files(id,name,...)', NO 'files(files(...))'
-    fields = "files(id,name,mimeType,size,modifiedTime,webViewLink,iconLink,thumbnailLink)"
-    resp = service.files().list(
-        q=q,
-        fields=fields,
-        orderBy="folder,name",
-        pageSize=1000,
-        supportsAllDrives=True,
-        includeItemsFromAllDrives=True
-    ).execute()
-    files = resp.get('files', [])
-
-    carpetas = []
-    imagenes = []
-    for f in files:
-        mime = f.get('mimeType', '')
-        if mime == 'application/vnd.google-apps.folder':
-            carpetas.append({
-                'id': f['id'],
-                'name': f['name'],
-                'modifiedTime': f.get('modifiedTime', '')
-            })
-        elif mime.startswith('image/'):
+def cloudinary_listar():
+    """Lista todas las imágenes subidas a Cloudinary."""
+    try:
+        result = cloudinary.api.resources(
+            type='upload',
+            resource_type='image',
+            max_results=500,
+            direction='desc'
+        )
+        recursos = result.get('resources', [])
+        imagenes = []
+        for r in recursos:
             imagenes.append({
-                'id': f['id'],
-                'name': f['name'],
-                'mimeType': mime,
-                'size': f.get('size', ''),
-                'modifiedTime': f.get('modifiedTime', ''),
-                'webViewLink': f.get('webViewLink', ''),
-                'thumbnailLink': f.get('thumbnailLink', ''),
-                'iconLink': f.get('iconLink', '')
+                'id': r['public_id'],
+                'name': r['public_id'],
+                'mimeType': 'image/' + r.get('format', 'jpeg'),
+                'size': str(r.get('bytes', '')),
+                'modifiedTime': r.get('created_at', ''),
+                'webViewLink': r.get('secure_url', ''),
+                'thumbnailLink': r.get('secure_url', ''),
+                'iconLink': r.get('secure_url', ''),
+                'secure_url': r.get('secure_url', '')
             })
-        else:
-            # otros archivos: los mostramos igual como "archivo"
-            imagenes.append({
-                'id': f['id'],
-                'name': f['name'],
-                'mimeType': mime,
-                'size': f.get('size', ''),
-                'modifiedTime': f.get('modifiedTime', ''),
-                'webViewLink': f.get('webViewLink', ''),
-                'thumbnailLink': f.get('thumbnailLink', ''),
-                'iconLink': f.get('iconLink', '')
-            })
+        return [], imagenes
+    except Exception as e:
+        print(f"❌ Error listando Cloudinary: {e}")
+        return [], []
 
-    return carpetas, imagenes
+def cloudinary_subir_imagen(file_stream, nombre_original):
+    """Sube una imagen a Cloudinary."""
+    try:
+        resultado = cloudinary.uploader.upload(
+            file_stream,
+            folder="evidencias_flota",
+            use_filename=True,
+            unique_filename=True,
+            overwrite=False
+        )
+        return {
+            'id': resultado['public_id'],
+            'name': resultado.get('original_filename', nombre_original),
+            'mimeType': 'image/' + resultado.get('format', 'jpeg'),
+            'size': str(resultado.get('bytes', '')),
+            'webViewLink': resultado.get('secure_url', ''),
+            'thumbnailLink': resultado.get('secure_url', ''),
+            'secure_url': resultado.get('secure_url', '')
+        }
+    except Exception as e:
+        print(f"❌ Error subiendo a Cloudinary: {e}")
+        raise
 
+def cloudinary_eliminar(public_id):
+    """Elimina una imagen de Cloudinary."""
+    try:
+        result = cloudinary.uploader.destroy(public_id)
+        return result.get('result') == 'ok'
+    except Exception as e:
+        print(f"❌ Error eliminando de Cloudinary: {e}")
+        return False
 
-def drive_obtener_info(folder_id):
-    service = get_drive_service()
-    return service.files().get(
-        fileId=folder_id,
-        fields="id,name,mimeType,parents",
-        supportsAllDrives=True
-    ).execute()
-
-
-def drive_crear_carpeta(nombre, parent_id):
-    service = get_drive_service()
-    metadata = {
-        'name': nombre,
-        'mimeType': 'application/vnd.google-apps.folder',
-        'parents': [parent_id]
-    }
-    folder = service.files().create(
-        body=metadata,
-        fields='id,name',
-        supportsAllDrives=True
-    ).execute()
-    return folder
-
-
-def drive_subir_imagen(nombre, parent_id, file_stream, mimetype):
-    service = get_drive_service()
-    metadata = {
-        'name': nombre,
-        'parents': [parent_id]
-    }
-    media = MediaIoBaseUpload(file_stream, mimetype=mimetype, resumable=False)
-    file = service.files().create(
-        body=metadata,
-        media_body=media,
-        fields='id,name,mimeType,webViewLink,thumbnailLink,size',
-        supportsAllDrives=True
-    ).execute()
-    return file
-
-
-def drive_eliminar(file_id):
-    service = get_drive_service()
-    service.files().delete(fileId=file_id, supportsAllDrives=True).execute()
-
-
-def drive_renombrar(file_id, nuevo_nombre):
-    service = get_drive_service()
-    return service.files().update(
-        fileId=file_id,
-        body={'name': nuevo_nombre},
-        fields='id,name',
-        supportsAllDrives=True
-    ).execute()
-
-
-def drive_buscar_carpeta_por_nombre(nombre, parent_id):
-    service = get_drive_service()
-    q = (
-        f"'{parent_id}' in parents and trashed = false "
-        f"and mimeType = 'application/vnd.google-apps.folder' "
-        f"and name = '{nombre.replace(chr(39), chr(92)+chr(39))}'"
-    )
-    resp = service.files().list(
-        q=q,
-        fields='files(id,name)',
-        supportsAllDrives=True,
-        includeItemsFromAllDrives=True
-    ).execute()
-    files = resp.get('files', [])
-    return files[0] if files else None
-
-
-def drive_obtener_o_crear_path(path_str, root_id):
-    """path_str con '/' crea la jerarquía de carpetas y devuelve el ID final."""
-    partes = [p.strip() for p in str(path_str).split('/') if p.strip()]
-    current = root_id
-    for parte in partes:
-        existente = drive_buscar_carpeta_por_nombre(parte, current)
-        if existente:
-            current = existente['id']
-        else:
-            nueva = drive_crear_carpeta(parte, current)
-            current = nueva['id']
-    return current
-
+def cloudinary_renombrar(public_id, nuevo_nombre):
+    """Renombra una imagen en Cloudinary."""
+    try:
+        resultado = cloudinary.uploader.rename(public_id, nuevo_nombre)
+        return {
+            'id': resultado['public_id'],
+            'name': resultado['public_id']
+        }
+    except Exception as e:
+        print(f"❌ Error renombrando en Cloudinary: {e}")
+        return None
 
 # ============================================================
 # RUTAS
@@ -635,7 +488,6 @@ def drive_obtener_o_crear_path(path_str, root_id):
 @app.route('/')
 def index():
     return render_template('index.html', sheets=SHEETS, control=CONTROL_DOCUMENTARIO)
-
 
 # ============================================================
 # API
@@ -654,7 +506,6 @@ def api_config(sheet_key):
         'sheetLabel': sheet_cfg['label']
     })
 
-
 @app.route('/api/rows/<sheet_key>', methods=['GET'])
 def api_get_rows(sheet_key):
     sheet_cfg = get_sheet_config(sheet_key)
@@ -667,7 +518,6 @@ def api_get_rows(sheet_key):
         'headers': data['headers'],
         'rows': data['rows']
     })
-
 
 @app.route('/api/control-documentario', methods=['GET'])
 def api_control_documentario():
@@ -692,7 +542,6 @@ def api_control_documentario():
         }
     return jsonify({'success': True, 'data': result})
 
-
 @app.route('/api/rows/<sheet_key>', methods=['POST'])
 def api_add_row(sheet_key):
     sheet_cfg = get_sheet_config(sheet_key)
@@ -704,23 +553,18 @@ def api_add_row(sheet_key):
         pk = sheet_cfg['primary_key']
         headers = sheet_cfg['headers']
         last_col = sheet_cfg['last_col']
-
         pk_value = (values.get(pk) or '').strip()
         if not pk_value:
             return jsonify({'success': False, 'error': f'El campo {pk} es obligatorio'}), 400
-
         data = get_all_data(sheet_cfg)
         for r in data['rows']:
             if (r.get(pk) or '').strip().upper() == pk_value.upper():
                 return jsonify({'success': False, 'error': f'Ya existe un registro con {pk} = {pk_value}'}), 400
-
         row_dict = {}
         for h in headers:
             row_dict[h] = str(values.get(h, '') or '')
-
         recalcular_campos_auto(sheet_key, row_dict)
         row_values = [row_dict.get(h, '') for h in headers]
-
         service = get_sheets_service()
         service.spreadsheets().values().append(
             spreadsheetId=SPREADSHEET_ID,
@@ -729,12 +573,10 @@ def api_add_row(sheet_key):
             insertDataOption='INSERT_ROWS',
             body={'values': [row_values]}
         ).execute()
-
         return jsonify({'success': True})
     except Exception as e:
         print(f"❌ add_row: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
-
 
 @app.route('/api/rows/<sheet_key>/<int:row_number>', methods=['PUT'])
 def api_update_row(sheet_key, row_number):
@@ -747,11 +589,9 @@ def api_update_row(sheet_key, row_number):
         pk = sheet_cfg['primary_key']
         headers = sheet_cfg['headers']
         last_col = sheet_cfg['last_col']
-
         pk_value = (values.get(pk) or '').strip()
         if not pk_value:
             return jsonify({'success': False, 'error': f'El campo {pk} es obligatorio'}), 400
-
         data = get_all_data(sheet_cfg)
         current_row = None
         for r in data['rows']:
@@ -760,10 +600,8 @@ def api_update_row(sheet_key, row_number):
                 continue
             if (r.get(pk) or '').strip().upper() == pk_value.upper():
                 return jsonify({'success': False, 'error': f'Otra fila ya tiene {pk} = {pk_value}'}), 400
-
         readonly_names = {c['name'] for c in sheet_cfg['columns'] if c.get('readonly')}
         fechas = set(FECHAS_VENCIMIENTO.get(sheet_key, []))
-
         new_row = {}
         for h in headers:
             if h in fechas:
@@ -772,10 +610,8 @@ def api_update_row(sheet_key, row_number):
                 new_row[h] = str(values.get(h, '') or '')
             else:
                 new_row[h] = str(values.get(h, '') or '')
-
         recalcular_campos_auto(sheet_key, new_row)
         row_values = [new_row.get(h, '') for h in headers]
-
         service = get_sheets_service()
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
@@ -783,12 +619,10 @@ def api_update_row(sheet_key, row_number):
             valueInputOption='RAW',
             body={'values': [row_values]}
         ).execute()
-
         return jsonify({'success': True})
     except Exception as e:
         print(f"❌ update_row: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
-
 
 @app.route('/api/control-documentario/<sheet_key>/<int:row_number>', methods=['PUT'])
 def api_update_control_documentario(sheet_key, row_number):
@@ -800,16 +634,12 @@ def api_update_control_documentario(sheet_key, row_number):
     try:
         body = request.get_json() or {}
         values = body.get('values', {})
-
-        cd_cols = CONTROL_DOCUMENTARIO[sheet_key]['columns']
-        # Columnas que NO se pueden editar desde Control Documentario
         non_editable = {sheet_cfg['primary_key']}
         if 'APELLIDO Y NOMBRE' in sheet_cfg['headers']:
             non_editable.add('APELLIDO Y NOMBRE')
         if 'PATENTE' in sheet_cfg['headers']:
             non_editable.add('PATENTE')
-        non_editable.add('STATUS')  # STATUS siempre se recalcula
-
+        non_editable.add('STATUS')
         data = get_all_data(sheet_cfg)
         current_row = None
         for r in data['rows']:
@@ -818,27 +648,18 @@ def api_update_control_documentario(sheet_key, row_number):
                 break
         if current_row is None:
             return jsonify({'success': False, 'error': 'Fila no encontrada'}), 404
-
         headers = sheet_cfg['headers']
         last_col = sheet_cfg['last_col']
-
-        # Construir la nueva fila: solo se actualizan las columnas que vienen en values
-        # y que NO están en non_editable. El resto se preserva del current_row.
         new_row = {}
         for h in headers:
             if h in non_editable:
-                # Preservar el valor existente
                 new_row[h] = str(current_row.get(h, '') or '')
             elif h in values:
-                # Actualizar con el valor enviado
                 new_row[h] = str(values.get(h, '') or '')
             else:
-                # Columna no enviada: preservar el valor existente
                 new_row[h] = str(current_row.get(h, '') or '')
-
         recalcular_campos_auto(sheet_key, new_row)
         new_row_values = [new_row.get(h, '') for h in headers]
-
         service = get_sheets_service()
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
@@ -846,12 +667,10 @@ def api_update_control_documentario(sheet_key, row_number):
             valueInputOption='RAW',
             body={'values': [new_row_values]}
         ).execute()
-
         return jsonify({'success': True})
     except Exception as e:
         print(f"❌ update_control_documentario: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
-
 
 @app.route('/api/rows/<sheet_key>/<int:row_number>', methods=['DELETE'])
 def api_delete_row(sheet_key, row_number):
@@ -862,7 +681,6 @@ def api_delete_row(sheet_key, row_number):
         sheet_id = get_sheet_id(sheet_cfg)
         if sheet_id is None:
             return jsonify({'success': False, 'error': 'Pestaña no encontrada'}), 500
-
         service = get_sheets_service()
         service.spreadsheets().batchUpdate(
             spreadsheetId=SPREADSHEET_ID,
@@ -877,12 +695,10 @@ def api_delete_row(sheet_key, row_number):
                 }
             }]}
         ).execute()
-
         return jsonify({'success': True})
     except Exception as e:
         print(f"❌ delete_row: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
-
 
 # ============================================================
 # API HISTORIAL DE VENCIMIENTOS
@@ -895,7 +711,6 @@ def api_historial_vencimientos():
     except Exception as e:
         print(f"⚠️ Error en carga automática: {e}")
         agregadas = 0
-
     sheet_cfg = get_historial_config()
     ensure_sheet_headers(sheet_cfg)
     data = get_all_data(sheet_cfg)
@@ -908,7 +723,6 @@ def api_historial_vencimientos():
         'tipos_notificables': Config.NOTIFICACION_TIPOS
     })
 
-
 @app.route('/api/historial-vencimientos/<int:row_number>', methods=['PUT'])
 def api_update_historial(row_number):
     if row_number < 2:
@@ -918,15 +732,12 @@ def api_update_historial(row_number):
         nuevo_estado = (body.get('estado') or '').strip().upper()
         if nuevo_estado not in [e.upper() for e in Config.HISTORIAL_ESTADOS]:
             return jsonify({'success': False, 'error': 'Estado inválido'}), 400
-
         sheet_cfg = get_historial_config()
         headers = sheet_cfg['headers']
         if 'ESTADO' not in headers:
             return jsonify({'success': False, 'error': 'Columna ESTADO no encontrada'}), 500
-
         col_idx = headers.index('ESTADO')
         col_letra = col_letter(col_idx + 1)
-
         service = get_sheets_service()
         service.spreadsheets().values().update(
             spreadsheetId=SPREADSHEET_ID,
@@ -934,12 +745,10 @@ def api_update_historial(row_number):
             valueInputOption='RAW',
             body={'values': [[nuevo_estado]]}
         ).execute()
-
         return jsonify({'success': True})
     except Exception as e:
         print(f"❌ update_historial: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
-
 
 @app.route('/api/notificacion/generar', methods=['POST'])
 def api_generar_notificacion():
@@ -948,51 +757,40 @@ def api_generar_notificacion():
         tipo = (body.get('tipo') or '').strip().upper()
         if tipo not in [t.upper() for t in Config.NOTIFICACION_TIPOS]:
             return jsonify({'success': False, 'error': 'Tipo no permitido'}), 400
-
         row_number = body.get('row_number')
         if not row_number or int(row_number) < 2:
             return jsonify({'success': False, 'error': 'row_number inválido'}), 400
-
         numero_orden = siguiente_numero_orden()
-
         try:
             marcar_pdf_generado(int(row_number))
         except Exception as e:
             print(f"⚠️ No se pudo marcar PDF generado en fila {row_number}: {e}")
-
         return jsonify({'success': True, 'numero_orden': numero_orden})
     except Exception as e:
         print(f"❌ generar_notificacion: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-
 # ============================================================
-# API EVIDENCIAS DE DOCUMENTACIÓN (Drive)
+# API EVIDENCIAS DE DOCUMENTACIÓN (Cloudinary)
 # ============================================================
 
 @app.route('/api/evidencias/root', methods=['GET'])
 def api_evidencias_root():
-    """Devuelve el ID y nombre de la carpeta raíz configurada."""
+    """Devuelve un root ficticio para que el frontend no se rompa."""
     try:
-        root_id = drive_resolver_root()
-        if root_id == 'root':
-            return jsonify({'success': True, 'root': {'id': 'root', 'name': 'Mi unidad'}})
-        info = drive_obtener_info(root_id)
-        return jsonify({'success': True, 'root': {'id': info['id'], 'name': info['name']}})
+        return jsonify({'success': True, 'root': {'id': 'cloudinary', 'name': 'Nube Cloudinary'}})
     except Exception as e:
         print(f"❌ evidencias_root: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-
 @app.route('/api/evidencias/listar', methods=['GET'])
 def api_evidencias_listar():
-    """Lista carpetas e imágenes dentro de una carpeta (folder_id opcional)."""
+    """Lista todas las imágenes de Cloudinary."""
     try:
-        folder_id = (request.args.get('folder_id') or '').strip() or drive_resolver_root()
-        carpetas, imagenes = drive_listar(folder_id)
+        carpetas, imagenes = cloudinary_listar()
         return jsonify({
             'success': True,
-            'folder_id': folder_id,
+            'folder_id': 'cloudinary',
             'carpetas': carpetas,
             'imagenes': imagenes
         })
@@ -1000,42 +798,27 @@ def api_evidencias_listar():
         print(f"❌ evidencias_listar: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-
 @app.route('/api/evidencias/carpeta', methods=['POST'])
 def api_evidencias_crear_carpeta():
-    """Crea una carpeta dentro de parent_id (o en la raíz)."""
-    try:
-        body = request.get_json() or {}
-        nombre = (body.get('nombre') or '').strip()
-        parent_id = (body.get('parent_id') or '').strip() or drive_resolver_root()
-        if not nombre:
-            return jsonify({'success': False, 'error': 'El nombre es obligatorio'}), 400
-        folder = drive_crear_carpeta(nombre, parent_id)
-        return jsonify({'success': True, 'carpeta': folder})
-    except Exception as e:
-        print(f"❌ evidencias_crear_carpeta: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
+    """Cloudinary no tiene carpetas físicas en el nivel que usamos, así que devolvemos error controlado."""
+    return jsonify({'success': False, 'error': 'En Cloudinary las fotos se suben directamente sin crear carpetas.'}), 400
 
 @app.route('/api/evidencias/subir', methods=['POST'])
 def api_evidencias_subir():
-    """Sube una o más imágenes a la carpeta indicada (form-data)."""
+    """Sube una o más imágenes a Cloudinary."""
     try:
-        parent_id = (request.form.get('parent_id') or '').strip() or drive_resolver_root()
         if 'archivos' not in request.files:
             return jsonify({'success': False, 'error': 'No se enviaron archivos'}), 400
-
         files = request.files.getlist('archivos')
         if not files:
             return jsonify({'success': False, 'error': 'No se enviaron archivos'}), 400
-
         subidos = []
         for f in files:
             if not f or not f.filename:
                 continue
-            mimetype = f.mimetype or 'application/octet-stream'
-            stream = io.BytesIO(f.read())
-            info = drive_subir_imagen(f.filename, parent_id, stream, mimetype)
+            # Leemos el archivo en memoria
+            file_bytes = f.read()
+            info = cloudinary_subir_imagen(file_bytes, f.filename)
             subidos.append({
                 'id': info.get('id'),
                 'name': info.get('name'),
@@ -1043,69 +826,62 @@ def api_evidencias_subir():
                 'thumbnailLink': info.get('thumbnailLink'),
                 'size': info.get('size', '')
             })
-
         return jsonify({'success': True, 'subidos': subidos})
     except Exception as e:
         print(f"❌ evidencias_subir: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-
 @app.route('/api/evidencias/eliminar', methods=['POST'])
 def api_evidencias_eliminar():
-    """Elimina un archivo o carpeta de Drive."""
+    """Elimina un archivo de Cloudinary."""
     try:
         body = request.get_json() or {}
         file_id = (body.get('file_id') or '').strip()
         if not file_id:
             return jsonify({'success': False, 'error': 'file_id es obligatorio'}), 400
-        drive_eliminar(file_id)
-        return jsonify({'success': True})
+        exito = cloudinary_eliminar(file_id)
+        if exito:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'No se pudo eliminar de Cloudinary'}), 500
     except Exception as e:
         print(f"❌ evidencias_eliminar: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-
 @app.route('/api/evidencias/renombrar', methods=['POST'])
 def api_evidencias_renombrar():
-    """Renombra un archivo o carpeta de Drive."""
+    """Renombra un archivo de Cloudinary."""
     try:
         body = request.get_json() or {}
         file_id = (body.get('file_id') or '').strip()
         nuevo_nombre = (body.get('nuevo_nombre') or '').strip()
         if not file_id or not nuevo_nombre:
             return jsonify({'success': False, 'error': 'file_id y nuevo_nombre son obligatorios'}), 400
-        info = drive_renombrar(file_id, nuevo_nombre)
-        return jsonify({'success': True, 'file': info})
+        info = cloudinary_renombrar(file_id, nuevo_nombre)
+        if info:
+            return jsonify({'success': True, 'file': info})
+        else:
+            return jsonify({'success': False, 'error': 'No se pudo renombrar'}), 500
     except Exception as e:
         print(f"❌ evidencias_renombrar: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
-
-@app.route('/api/evidencias/thumbnail/<file_id>', methods=['GET'])
+@app.route('/api/evidencias/thumbnail/<path:file_id>', methods=['GET'])
 def api_evidencias_thumbnail(file_id):
-    """Devuelve la imagen desde Drive usando la cuenta de servicio (proxy)."""
+    """Redirige directamente a la URL segura de Cloudinary."""
     try:
-        service = get_drive_service()
-        # Descargar el contenido del archivo
-        request_drive = service.files().get_media(fileId=file_id, supportsAllDrives=True)
-        from googleapiclient.http import MediaIoBaseDownload
-        fh = io.BytesIO()
-        downloader = MediaIoBaseDownload(fh, request_drive)
-        done = False
-        while not done:
-            _, done = downloader.next_chunk()
-        fh.seek(0)
-        from flask import Response
-        # Detectar content-type
-        meta = service.files().get(
-            fileId=file_id, fields='mimeType', supportsAllDrives=True
-        ).execute()
-        mimetype = meta.get('mimeType', 'image/jpeg')
-        return Response(fh.read(), mimetype=mimetype)
+        # Como Cloudinary ya nos da una URL pública, podemos redirigir a ella.
+        # Buscamos la URL en la lista de imágenes (o podríamos asumir la estructura)
+        # Para simplificar, generamos la URL usando cloudinary.
+        # En este caso, como el file_id es el public_id, podemos usar cloudinary.CloudinaryImage
+        # y obtener la url.
+        import cloudinary
+        url = cloudinary.CloudinaryImage(file_id).build_url(secure=True)
+        from flask import redirect
+        return redirect(url)
     except Exception as e:
         print(f"❌ evidencias_thumbnail: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
-
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
