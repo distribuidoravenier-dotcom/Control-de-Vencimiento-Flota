@@ -1,4 +1,4 @@
-# app.py 
+# app.py
 import os
 import json
 import io
@@ -406,24 +406,57 @@ def siguiente_numero_orden():
     return f"{numero_formateado}-{anio_actual}"
 
 # ============================================================
-# EVIDENCIAS DE DOCUMENTACIÓN (Cloudinary)
+# EVIDENCIAS DE DOCUMENTACIÓN (Cloudinary con Carpetas)
 # ============================================================
 
-def cloudinary_listar():
-    """Lista todas las imágenes subidas a Cloudinary."""
+def cloudinary_listar(folder_path=None):
+    """Lista subcarpetas e imágenes de una ruta específica en Cloudinary."""
     try:
-        result = cloudinary.api.resources(
+        # Si no hay ruta, estamos en la raíz
+        if not folder_path:
+            carpetas_res = cloudinary.api.root_folders()
+            subcarpetas = carpetas_res.get('folders', [])
+        else:
+            carpetas_res = cloudinary.api.sub_folders(folder_path)
+            subcarpetas = carpetas_res.get('folders', [])
+
+        carpetas = []
+        for c in subcarpetas:
+            carpetas.append({
+                'id': c['path'],
+                'name': c['name'],
+                'modifiedTime': ''
+            })
+
+        # Buscar imágenes dentro de esta carpeta
+        # Usamos el prefijo de la ruta para filtrar
+        prefix = f"{folder_path}/" if folder_path else ""
+        imagenes_res = cloudinary.api.resources(
             type='upload',
             resource_type='image',
+            prefix=prefix,
             max_results=500,
             direction='desc'
         )
-        recursos = result.get('resources', [])
+        
         imagenes = []
-        for r in recursos:
+        for r in imagenes_res.get('resources', []):
+            # Nos aseguramos de que la imagen esté directamente en esta carpeta
+            # y no en una subcarpeta más profunda
+            public_id = r['public_id']
+            if folder_path:
+                if not public_id.startswith(prefix):
+                    continue
+                resto = public_id[len(prefix):]
+                if '/' in resto:
+                    continue # Está en una subcarpeta, no la mostramos acá
+            else:
+                if '/' in public_id:
+                    continue # En la raíz, ignoramos las que están en carpetas
+
             imagenes.append({
                 'id': r['public_id'],
-                'name': r['public_id'],
+                'name': r['public_id'].split('/')[-1], # Solo el nombre del archivo
                 'mimeType': 'image/' + r.get('format', 'jpeg'),
                 'size': str(r.get('bytes', '')),
                 'modifiedTime': r.get('created_at', ''),
@@ -432,17 +465,31 @@ def cloudinary_listar():
                 'iconLink': r.get('secure_url', ''),
                 'secure_url': r.get('secure_url', '')
             })
-        return [], imagenes
+
+        return carpetas, imagenes
     except Exception as e:
         print(f"❌ Error listando Cloudinary: {e}")
         return [], []
 
-def cloudinary_subir_imagen(file_stream, nombre_original):
-    """Sube una imagen a Cloudinary."""
+def cloudinary_crear_carpeta(nombre, parent_path):
+    """Crea una carpeta en Cloudinary."""
+    try:
+        if parent_path:
+            ruta_completa = f"{parent_path}/{nombre}"
+        else:
+            ruta_completa = nombre
+        resultado = cloudinary.api.create_folder(ruta_completa)
+        return {'id': resultado['path'], 'name': nombre}
+    except Exception as e:
+        print(f"❌ Error creando carpeta: {e}")
+        raise
+
+def cloudinary_subir_imagen(file_stream, nombre_original, folder_path):
+    """Sube una imagen a una carpeta específica de Cloudinary."""
     try:
         resultado = cloudinary.uploader.upload(
             file_stream,
-            folder="evidencias_flota",
+            folder=folder_path if folder_path else "",
             use_filename=True,
             unique_filename=True,
             overwrite=False
@@ -470,16 +517,25 @@ def cloudinary_eliminar(public_id):
         return False
 
 def cloudinary_renombrar(public_id, nuevo_nombre):
-    """Renombra una imagen en Cloudinary."""
+    """Renombra una imagen en Cloudinary manteniendo su carpeta."""
     try:
-        resultado = cloudinary.uploader.rename(public_id, nuevo_nombre)
+        # Extraemos la carpeta si es que tiene
+        partes = public_id.split('/')
+        if len(partes) > 1:
+            carpeta = '/'.join(partes[:-1])
+            nuevo_public_id = f"{carpeta}/{nuevo_nombre}"
+        else:
+            nuevo_public_id = nuevo_nombre
+
+        resultado = cloudinary.uploader.rename(public_id, nuevo_public_id)
         return {
             'id': resultado['public_id'],
-            'name': resultado['public_id']
+            'name': nuevo_nombre
         }
     except Exception as e:
         print(f"❌ Error renombrando en Cloudinary: {e}")
         return None
+
 
 # ============================================================
 # RUTAS
@@ -771,26 +827,23 @@ def api_generar_notificacion():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ============================================================
-# API EVIDENCIAS DE DOCUMENTACIÓN (Cloudinary)
+# API EVIDENCIAS DE DOCUMENTACIÓN (Cloudinary con Carpetas)
 # ============================================================
 
 @app.route('/api/evidencias/root', methods=['GET'])
 def api_evidencias_root():
     """Devuelve un root ficticio para que el frontend no se rompa."""
-    try:
-        return jsonify({'success': True, 'root': {'id': 'cloudinary', 'name': 'Nube Cloudinary'}})
-    except Exception as e:
-        print(f"❌ evidencias_root: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+    return jsonify({'success': True, 'root': {'id': '', 'name': 'Nube Cloudinary'}})
 
 @app.route('/api/evidencias/listar', methods=['GET'])
 def api_evidencias_listar():
-    """Lista todas las imágenes de Cloudinary."""
+    """Lista las carpetas e imágenes en la ruta actual."""
     try:
-        carpetas, imagenes = cloudinary_listar()
+        folder_path = request.args.get('folder_id', '').strip()
+        carpetas, imagenes = cloudinary_listar(folder_path)
         return jsonify({
             'success': True,
-            'folder_id': 'cloudinary',
+            'folder_id': folder_path,
             'carpetas': carpetas,
             'imagenes': imagenes
         })
@@ -800,25 +853,37 @@ def api_evidencias_listar():
 
 @app.route('/api/evidencias/carpeta', methods=['POST'])
 def api_evidencias_crear_carpeta():
-    """Cloudinary no tiene carpetas físicas en el nivel que usamos, así que devolvemos error controlado."""
-    return jsonify({'success': False, 'error': 'En Cloudinary las fotos se suben directamente sin crear carpetas.'}), 400
+    """Crea una carpeta real en Cloudinary."""
+    try:
+        body = request.get_json() or {}
+        nombre = (body.get('nombre') or '').strip()
+        parent_id = (body.get('parent_id') or '').strip()
+        if not nombre:
+            return jsonify({'success': False, 'error': 'El nombre es obligatorio'}), 400
+        
+        folder = cloudinary_crear_carpeta(nombre, parent_id)
+        return jsonify({'success': True, 'carpeta': folder})
+    except Exception as e:
+        print(f"❌ evidencias_crear_carpeta: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/evidencias/subir', methods=['POST'])
 def api_evidencias_subir():
-    """Sube una o más imágenes a Cloudinary."""
+    """Sube una o más imágenes a la carpeta actual de Cloudinary."""
     try:
+        parent_id = (request.form.get('parent_id') or '').strip()
         if 'archivos' not in request.files:
             return jsonify({'success': False, 'error': 'No se enviaron archivos'}), 400
         files = request.files.getlist('archivos')
         if not files:
             return jsonify({'success': False, 'error': 'No se enviaron archivos'}), 400
+        
         subidos = []
         for f in files:
             if not f or not f.filename:
                 continue
-            # Leemos el archivo en memoria
             file_bytes = f.read()
-            info = cloudinary_subir_imagen(file_bytes, f.filename)
+            info = cloudinary_subir_imagen(file_bytes, f.filename, parent_id)
             subidos.append({
                 'id': info.get('id'),
                 'name': info.get('name'),
@@ -833,7 +898,7 @@ def api_evidencias_subir():
 
 @app.route('/api/evidencias/eliminar', methods=['POST'])
 def api_evidencias_eliminar():
-    """Elimina un archivo de Cloudinary."""
+    """Elimina una imagen de Cloudinary."""
     try:
         body = request.get_json() or {}
         file_id = (body.get('file_id') or '').strip()
@@ -850,7 +915,7 @@ def api_evidencias_eliminar():
 
 @app.route('/api/evidencias/renombrar', methods=['POST'])
 def api_evidencias_renombrar():
-    """Renombra un archivo de Cloudinary."""
+    """Renombra una imagen de Cloudinary."""
     try:
         body = request.get_json() or {}
         file_id = (body.get('file_id') or '').strip()
@@ -868,14 +933,8 @@ def api_evidencias_renombrar():
 
 @app.route('/api/evidencias/thumbnail/<path:file_id>', methods=['GET'])
 def api_evidencias_thumbnail(file_id):
-    """Redirige directamente a la URL segura de Cloudinary."""
+    """Redirige a la URL segura de Cloudinary."""
     try:
-        # Como Cloudinary ya nos da una URL pública, podemos redirigir a ella.
-        # Buscamos la URL en la lista de imágenes (o podríamos asumir la estructura)
-        # Para simplificar, generamos la URL usando cloudinary.
-        # En este caso, como el file_id es el public_id, podemos usar cloudinary.CloudinaryImage
-        # y obtener la url.
-        import cloudinary
         url = cloudinary.CloudinaryImage(file_id).build_url(secure=True)
         from flask import redirect
         return redirect(url)
