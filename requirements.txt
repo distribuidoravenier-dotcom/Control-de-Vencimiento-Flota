@@ -1,6 +1,6 @@
-# requirements.txt
 flask==3.0.3
 google-auth==2.35.0
 google-api-python-client==2.147.0
 gunicorn==22.0.0
 python-dotenv==1.0.1
+cloudinary==1.41.0
