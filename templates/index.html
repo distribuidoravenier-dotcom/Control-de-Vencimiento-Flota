@@ -448,7 +448,7 @@
 
 <script>
 /* ============================================================
-   HELPERS GLOBALES (fuera de cualquier función)
+   HELPERS GLOBALES
    ============================================================ */
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
@@ -497,7 +497,7 @@ function dateStatusClass(dateStr) {
 }
 
 /* ============================================================
-   INICIALIZACIÓN SEGURA
+   VARIABLES GLOBALES
    ============================================================ */
 let COLUMNS = [];
 let PRIMARY_KEY = 'PATENTE';
@@ -1195,7 +1195,7 @@ function imprimirHistorial() {
 }
 
 /* ============================================================
-   EVIDENCIAS (Lógica intacta, botones por delegación)
+   EVIDENCIAS
    ============================================================ */
 async function evFetch(url, opts={}, timeoutMs=25000) {
   const ctrl = new AbortController();
