@@ -470,12 +470,12 @@ def cloudinary_listar(folder_path=None):
     carpetas = []
     try:
         try:
-            res = cloudinary.api.sub_folders(ruta_abs)
+            res = cloudinary.api.subfolders(ruta_abs)
         except Exception as e:
             # Si la carpeta madre todavía no existe, la creamos y reintentamos
             if not ruta_rel and ("not found" in str(e).lower() or "does not exist" in str(e).lower()):
                 _asegurar_carpeta_raiz()
-                res = cloudinary.api.sub_folders(ruta_abs)
+                res = cloudinary.api.subfolders(ruta_abs)
             else:
                 raise
         for c in res.get('folders', []):
