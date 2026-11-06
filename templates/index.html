@@ -780,7 +780,7 @@
       <a onclick="goHome()">🏠 Inicio</a> / <span>Evidencias de Documentación</span>
     </div>
     <h1>📸 Evidencias de Documentación</h1>
-    <p class="subtitle">Creá carpetas y subí fotos a Google Drive</p>
+    <p class="subtitle">Creá carpetas y subí fotos (se guardan en Cloudinary)</p>
 
     <div id="ev-alert-container"></div>
 
@@ -901,6 +901,10 @@ function escapeHtml(s) {
 }
 function escapeAttr(s) {
   return escapeHtml(String(s ?? '').replace(/'/g, "&#39;"));
+}
+/* Convierte un texto en un argumento JS seguro para usar dentro de onclick="..." */
+function jsArg(s) {
+  return escapeHtml("'" + String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'");
 }
 
 /* ============ NAVEGACIÓN ============ */
@@ -2140,10 +2144,10 @@ function evRenderTreeNode(node, level) {
   const indent = 8 + level * 14;
 
   let html = `<li>`;
-  html += `<div class="tree-item ${isSelected ? 'selected' : ''}" data-folder-id="${node.id}" style="padding-left:${indent}px;">`;
-  html += `<span class="ti-toggle ${showToggle ? '' : 'empty'}" onclick="event.stopPropagation(); evToggleNodo('${node.id}')">${toggleIcon}</span>`;
+  html += `<div class="tree-item ${isSelected ? 'selected' : ''}" data-folder-id="${escapeHtml(node.id)}" style="padding-left:${indent}px;">`;
+  html += `<span class="ti-toggle ${showToggle ? '' : 'empty'}" onclick="event.stopPropagation(); evToggleNodo(${jsArg(node.id)})">${toggleIcon}</span>`;
   html += `<span class="ti-icon">${icon}</span>`;
-  html += `<span class="ti-name" title="${escapeHtml(node.name)}" onclick="evNavegarA('${node.id}')">${escapeHtml(node.name)}</span>`;
+  html += `<span class="ti-name" title="${escapeHtml(node.name)}" onclick="evNavegarA(${jsArg(node.id)})">${escapeHtml(node.name)}</span>`;
   html += `</div>`;
 
   if (isExpanded) {
@@ -2183,7 +2187,7 @@ function evRenderAddress() {
     if (i > 0) html += '<span class="addr-sep">›</span>';
     const isCurrent = (p.id === evCurrentFolderId);
     const icon = (i === 0) ? '🏠' : '📁';
-    html += `<span class="addr-crumb ${isCurrent ? 'current' : ''}" onclick="evNavegarA('${p.id}')">${icon} ${escapeHtml(p.name)}</span>`;
+    html += `<span class="addr-crumb ${isCurrent ? 'current' : ''}" onclick="evNavegarA(${jsArg(p.id)})">${icon} ${escapeHtml(p.name)}</span>`;
   });
   cont.innerHTML = html;
 }
@@ -2308,7 +2312,8 @@ function evGetItemsVisibles() {
       modifiedTime: f.modifiedTime || '',
       size: f.size || '',
       thumbnailLink: f.thumbnailLink || '',
-      iconLink: f.iconLink || ''
+      iconLink: f.iconLink || '',
+      url: f.url || f.secure_url || f.webViewLink || ''
     });
   });
 
@@ -2357,19 +2362,19 @@ function evRenderIconos(items) {
     const sel = (evSeleccionado && evSeleccionado.id === it.id) ? 'selected' : '';
     if (it.type === 'folder') {
       html += `
-        <div class="ex-item ${sel}" data-id="${it.id}"
-             onclick="evSeleccionar('${it.id}')" ondblclick="evEntrarCarpeta('${it.id}', '${escapeAttr(it.name)}')">
+        <div class="ex-item ${sel}" data-id="${escapeHtml(it.id)}"
+             onclick="evSeleccionar(${jsArg(it.id)})" ondblclick="evEntrarCarpeta(${jsArg(it.id)}, ${jsArg(it.name)})">
           <div class="ex-icon-big">📁</div>
           <div class="ex-name" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</div>
         </div>
       `;
     } else {
       const isImg = (it.mimeType || '').startsWith('image/');
-      const thumb = isImg ? `/api/evidencias/thumbnail/${encodeURIComponent(it.id)}` : '';
+      const thumb = isImg ? (it.thumbnailLink || it.url || `/api/evidencias/thumbnail/${encodeURIComponent(it.id)}`) : '';
       const iconBig = isImg ? '' : '📄';
       html += `
-        <div class="ex-item ${sel}" data-id="${it.id}"
-             onclick="evSeleccionar('${it.id}')" ondblclick="evAbrirArchivo('${it.id}')">
+        <div class="ex-item ${sel}" data-id="${escapeHtml(it.id)}"
+             onclick="evSeleccionar(${jsArg(it.id)})" ondblclick="evAbrirArchivo(${jsArg(it.id)})">
           ${isImg
             ? `<img class="ex-thumb" src="${thumb}" alt="${escapeHtml(it.name)}" loading="lazy">`
             : `<div class="ex-icon-big">${iconBig}</div>`}
@@ -2409,9 +2414,9 @@ function evRenderDetalles(items) {
     const fechaStr = evFormatFecha(it.modifiedTime);
 
     html += `
-      <tr class="${sel}" data-id="${it.id}"
-          onclick="evSeleccionar('${it.id}')"
-          ondblclick="${isFolder ? `evEntrarCarpeta('${it.id}', '${escapeAttr(it.name)}')` : `evAbrirArchivo('${it.id}')`}">
+      <tr class="${sel}" data-id="${escapeHtml(it.id)}"
+          onclick="evSeleccionar(${jsArg(it.id)})"
+          ondblclick="${isFolder ? `evEntrarCarpeta(${jsArg(it.id)}, ${jsArg(it.name)})` : `evAbrirArchivo(${jsArg(it.id)})`}">
         <td>
           <span class="cell-name">
             <span class="ci">${icon}</span>
@@ -2422,9 +2427,9 @@ function evRenderDetalles(items) {
         <td class="col-size">${sizeStr}</td>
         <td class="col-actions">
           <button class="mini-btn" title="Renombrar"
-                  onclick="event.stopPropagation(); evRenombrar('${it.id}', '${escapeAttr(it.name)}')">✏️</button>
+                  onclick="event.stopPropagation(); evRenombrar(${jsArg(it.id)}, ${jsArg(it.name)}, '${isFolder ? 'carpeta' : 'archivo'}')">✏️</button>
           <button class="mini-btn" title="Eliminar"
-                  onclick="event.stopPropagation(); evEliminar('${it.id}', '${isFolder ? 'carpeta' : 'archivo'}')">🗑️</button>
+                  onclick="event.stopPropagation(); evEliminar(${jsArg(it.id)}, '${isFolder ? 'carpeta' : 'archivo'}')">🗑️</button>
         </td>
       </tr>
     `;
@@ -2538,7 +2543,7 @@ async function evEliminar(fileId, tipo) {
     const data = await evFetch('/api/evidencias/eliminar', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ file_id: fileId })
+      body: JSON.stringify({ file_id: fileId, tipo: tipo })
     });
     if (data.success) {
       evShowAlert('✅ Eliminado');
@@ -2560,14 +2565,14 @@ async function evEliminar(fileId, tipo) {
   }
 }
 
-async function evRenombrar(fileId, nombreActual) {
+async function evRenombrar(fileId, nombreActual, tipo = 'archivo') {
   const nuevo = prompt('Nuevo nombre:', nombreActual);
   if (!nuevo || !nuevo.trim() || nuevo.trim() === nombreActual) return;
   try {
     const data = await evFetch('/api/evidencias/renombrar', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ file_id: fileId, nuevo_nombre: nuevo.trim() })
+      body: JSON.stringify({ file_id: fileId, nuevo_nombre: nuevo.trim(), tipo: tipo })
     });
     if (data.success) {
       evShowAlert('✅ Renombrado');
@@ -2591,7 +2596,7 @@ async function evRenombrar(fileId, nombreActual) {
 
 function evRenombrarSeleccionado() {
   if (!evSeleccionado) return;
-  evRenombrar(evSeleccionado.id, evSeleccionado.name);
+  evRenombrar(evSeleccionado.id, evSeleccionado.name, evSeleccionado.type === 'folder' ? 'carpeta' : 'archivo');
 }
 function evEliminarSeleccionado() {
   if (!evSeleccionado) return;
@@ -2603,7 +2608,7 @@ function evAbrirLightbox(index) {
   if (!evCurrentImagenesLightbox || evCurrentImagenesLightbox.length === 0) return;
   evLightboxIndex = index;
   const img = evCurrentImagenesLightbox[index];
-  const src = '/api/evidencias/thumbnail/' + encodeURIComponent(img.id);
+  const src = img.url || ('/api/evidencias/thumbnail/' + encodeURIComponent(img.id));
   document.getElementById('evLightboxImg').src = src;
   document.getElementById('evLightbox').classList.add('open');
 }
@@ -2615,13 +2620,13 @@ function evLightboxPrev() {
   if (!evCurrentImagenesLightbox || evCurrentImagenesLightbox.length === 0) return;
   evLightboxIndex = (evLightboxIndex - 1 + evCurrentImagenesLightbox.length) % evCurrentImagenesLightbox.length;
   const img = evCurrentImagenesLightbox[evLightboxIndex];
-  document.getElementById('evLightboxImg').src = '/api/evidencias/thumbnail/' + encodeURIComponent(img.id);
+  document.getElementById('evLightboxImg').src = img.url || ('/api/evidencias/thumbnail/' + encodeURIComponent(img.id));
 }
 function evLightboxNext() {
   if (!evCurrentImagenesLightbox || evCurrentImagenesLightbox.length === 0) return;
   evLightboxIndex = (evLightboxIndex + 1) % evCurrentImagenesLightbox.length;
   const img = evCurrentImagenesLightbox[evLightboxIndex];
-  document.getElementById('evLightboxImg').src = '/api/evidencias/thumbnail/' + encodeURIComponent(img.id);
+  document.getElementById('evLightboxImg').src = img.url || ('/api/evidencias/thumbnail/' + encodeURIComponent(img.id));
 }
 document.addEventListener('keydown', e => {
   const lb = document.getElementById('evLightbox');
