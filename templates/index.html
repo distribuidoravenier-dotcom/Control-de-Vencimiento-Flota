@@ -353,137 +353,170 @@
   }
 
   /* ================================================
-     EVIDENCIAS DE DOCUMENTACIÓN - ESTILO EXPLORADOR
+     EVIDENCIAS DE DOCUMENTACIÓN - EXPLORADOR
+     (Rediseñado para ser más grande y fácil de usar)
      ================================================ */
   .explorer {
-    border: 1px solid #d0d7de;
-    border-radius: 8px;
+    border: 2px solid #cbd5e0;
+    border-radius: 10px;
     background: #ffffff;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    height: 78vh;
-    min-height: 560px;
-    font-size: 14px;
+    height: 80vh;
+    min-height: 620px;
+    font-size: 16px;
   }
 
+  /* ---- Barra superior de navegación ---- */
   .explorer-topbar {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 10px;
-    background: #f3f3f3;
-    border-bottom: 1px solid #e0e0e0;
+    gap: 10px;
+    padding: 12px 14px;
+    background: #eef2f7;
+    border-bottom: 2px solid #cbd5e0;
     flex-wrap: wrap;
   }
   .explorer-nav-btn {
-    width: 34px; height: 34px;
+    height: 48px;
     display: inline-flex; align-items: center; justify-content: center;
-    background: #ffffff; border: 1px solid #d0d7de; border-radius: 5px;
-    cursor: pointer; font-size: 16px; color: #444;
-    transition: .12s; user-select: none;
+    gap: 8px;
+    padding: 0 18px;
+    background: #ffffff;
+    border: 2px solid #a0aec0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 17px;
+    font-weight: 700;
+    color: #2d3748;
+    transition: .12s;
+    user-select: none;
+    font-family: inherit;
   }
-  .explorer-nav-btn:hover:not(:disabled) { background: #eef1f6; border-color: #98a6b5; }
-  .explorer-nav-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .explorer-nav-btn:hover:not(:disabled) {
+    background: #e2e8f0;
+    border-color: #667eea;
+    color: #2b6cb0;
+  }
+  .explorer-nav-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .explorer-nav-btn .nav-icon { font-size: 20px; }
 
   .explorer-address {
-    flex: 1; min-width: 220px;
+    flex: 1; min-width: 260px;
     display: flex; align-items: center;
-    background: #ffffff; border: 1px solid #d0d7de; border-radius: 5px;
-    padding: 0 8px; height: 34px; overflow: hidden;
+    background: #ffffff; border: 2px solid #a0aec0; border-radius: 8px;
+    padding: 0 12px; height: 48px; overflow: hidden;
   }
   .explorer-address .addr-label {
-    font-size: 13px; color: #666; margin-right: 6px; white-space: nowrap;
+    font-size: 20px; margin-right: 8px; white-space: nowrap;
   }
   .explorer-address .addr-path {
-    display: flex; align-items: center; gap: 2px;
+    display: flex; align-items: center; gap: 4px;
     flex: 1; overflow: hidden; white-space: nowrap;
   }
   .explorer-address .addr-crumb {
-    padding: 3px 7px; border-radius: 3px;
-    cursor: pointer; color: #333; font-size: 13px;
+    padding: 5px 10px; border-radius: 5px;
+    cursor: pointer; color: #2d3748; font-size: 16px;
+    font-weight: 600;
     white-space: nowrap;
   }
-  .explorer-address .addr-crumb:hover { background: #eef1f6; }
-  .explorer-address .addr-crumb.current { font-weight: 700; color: #111; }
-  .explorer-address .addr-sep { color: #aaa; font-size: 12px; }
+  .explorer-address .addr-crumb:hover { background: #eef2f7; }
+  .explorer-address .addr-crumb.current { font-weight: 800; color: #1a202c; }
+  .explorer-address .addr-sep { color: #a0aec0; font-size: 16px; }
 
   .explorer-search {
-    width: 200px; height: 34px;
-    padding: 0 10px; border: 1px solid #d0d7de; border-radius: 5px;
-    font-size: 13px; font-family: inherit;
+    width: 240px; height: 48px;
+    padding: 0 14px; border: 2px solid #a0aec0; border-radius: 8px;
+    font-size: 16px; font-family: inherit;
   }
   .explorer-search:focus { outline: none; border-color: #667eea; }
 
+  /* ---- Barra de herramientas ---- */
   .explorer-toolbar {
-    display: flex; align-items: center; gap: 6px;
-    padding: 8px 10px;
-    background: #fafbfc;
-    border-bottom: 1px solid #e8e8e8;
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    background: #f7fafc;
+    border-bottom: 2px solid #e2e8f0;
     flex-wrap: wrap;
   }
   .explorer-action {
-    display: inline-flex; align-items: center; gap: 7px;
-    padding: 7px 12px;
-    background: transparent; border: 1px solid transparent; border-radius: 5px;
-    cursor: pointer; font-size: 13.5px; color: #24292f;
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 12px 20px;
+    background: #ffffff;
+    border: 2px solid #cbd5e0;
+    border-radius: 8px;
+    cursor: pointer; font-size: 16px; font-weight: 700; color: #2d3748;
     font-family: inherit; transition: .12s; white-space: nowrap;
   }
-  .explorer-action:hover:not(:disabled) { background: #eef1f6; border-color: #d0d7de; }
+  .explorer-action:hover:not(:disabled) {
+    background: #eef2f7;
+    border-color: #667eea;
+    color: #2b6cb0;
+  }
   .explorer-action:disabled { opacity: .4; cursor: not-allowed; }
-  .explorer-action .icon { font-size: 15px; }
+  .explorer-action .icon { font-size: 20px; }
   .explorer-action.primary {
     background: #2f6fce; color: #fff; border-color: #2f6fce;
   }
-  .explorer-action.primary:hover:not(:disabled) { background: #255bb0; border-color: #255bb0; }
+  .explorer-action.primary:hover:not(:disabled) {
+    background: #255bb0; border-color: #255bb0;
+  }
+  .explorer-action.danger {
+    color: #c53030; border-color: #feb2b2;
+  }
+  .explorer-action.danger:hover:not(:disabled) {
+    background: #fff5f5; border-color: #e53e3e;
+  }
   .explorer-toolbar .sep {
-    width: 1px; height: 22px; background: #e0e0e0; margin: 0 4px;
+    width: 2px; height: 30px; background: #e2e8f0; margin: 0 6px;
   }
 
+  /* ---- Cuerpo: árbol + contenido ---- */
   .explorer-body {
     flex: 1;
     display: grid;
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 300px 1fr;
     min-height: 0;
     background: #fff;
   }
 
   .explorer-side {
-    background: #fafbfc;
-    border-right: 1px solid #e8e8e8;
-    padding: 10px 6px;
+    background: #f7fafc;
+    border-right: 2px solid #e2e8f0;
+    padding: 12px 8px;
     overflow: auto;
   }
   .explorer-side .side-title {
-    font-size: 11px; text-transform: uppercase; letter-spacing: .6px;
-    color: #6b7280; padding: 4px 10px 8px 10px; font-weight: 700;
+    font-size: 13px; text-transform: uppercase; letter-spacing: .8px;
+    color: #4a5568; padding: 6px 12px 10px 12px; font-weight: 800;
   }
-  .tree-root {
-    list-style: none; padding-left: 0; margin: 0;
-  }
-  .tree-root ul { list-style: none; padding-left: 14px; margin: 0; }
+  .tree-root { list-style: none; padding-left: 0; margin: 0; }
+  .tree-root ul { list-style: none; padding-left: 16px; margin: 0; }
   .tree-root li { list-style: none; }
   .tree-item {
-    display: flex; align-items: center; gap: 6px;
-    padding: 5px 10px; border-radius: 5px;
-    cursor: pointer; font-size: 13.5px; color: #24292f;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 6px;
+    cursor: pointer; font-size: 16px; color: #2d3748;
     user-select: none; white-space: nowrap;
+    font-weight: 600;
   }
-  .tree-item:hover { background: #eef1f6; }
-  .tree-item.selected { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
+  .tree-item:hover { background: #e2e8f0; }
+  .tree-item.selected { background: #bee3f8; color: #1a365d; font-weight: 800; }
   .tree-item .ti-toggle {
     display:inline-flex; align-items:center; justify-content:center;
-    width: 14px; height: 14px; font-size: 10px; color: #57606a;
-    cursor: pointer; border-radius: 3px;
+    width: 22px; height: 22px; font-size: 14px; color: #4a5568;
+    cursor: pointer; border-radius: 4px;
+    background: #fff; border: 1px solid #cbd5e0;
   }
-  .tree-item .ti-toggle:hover { background: #d0d7de; }
+  .tree-item .ti-toggle:hover { background: #e2e8f0; }
   .tree-item .ti-toggle.empty { visibility: hidden; }
-  .tree-item .ti-icon { font-size: 15px; }
+  .tree-item .ti-icon { font-size: 20px; }
   .tree-item .ti-name {
     flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .tree-empty {
-    padding: 6px 14px; color: #8b949e; font-size: 12.5px; font-style: italic;
+    padding: 8px 18px; color: #718096; font-size: 14px; font-style: italic;
   }
 
   .explorer-main {
@@ -495,104 +528,132 @@
     background: #ffffff;
   }
 
+  /* ---- Vista de íconos grandes (default) ---- */
   .ex-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 6px; padding: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px; padding: 20px;
   }
   .ex-item {
     display: flex; flex-direction: column; align-items: center;
     text-align: center;
-    padding: 12px 8px 10px 8px;
-    border: 1px solid transparent; border-radius: 6px;
-    cursor: pointer; transition: .1s;
+    padding: 20px 14px 16px 14px;
+    border: 2px solid transparent; border-radius: 12px;
+    cursor: pointer; transition: .12s;
     user-select: none;
+    background: #f7fafc;
   }
-  .ex-item:hover { background: #eef4fd; border-color: #cfe1f7; }
-  .ex-item.selected { background: #dbeafe; border-color: #93c5fd; }
+  .ex-item:hover {
+    background: #ebf4ff;
+    border-color: #90cdf4;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(47,111,206,.18);
+  }
+  .ex-item.selected {
+    background: #dbeafe;
+    border-color: #2f6fce;
+    border-width: 3px;
+    box-shadow: 0 6px 16px rgba(47,111,206,.3);
+  }
   .ex-item .ex-thumb {
-    width: 80px; height: 80px; object-fit: cover;
-    border-radius: 5px; margin-bottom: 8px;
+    width: 130px; height: 130px; object-fit: cover;
+    border-radius: 10px; margin-bottom: 12px;
     background: #f0f2f5; display: block;
-    border: 1px solid #e5e7eb;
+    border: 2px solid #e2e8f0;
   }
   .ex-item .ex-icon-big {
-    width: 80px; height: 80px; display:flex; align-items:center; justify-content:center;
-    font-size: 52px; margin-bottom: 8px;
+    width: 130px; height: 130px; display:flex; align-items:center; justify-content:center;
+    font-size: 82px; margin-bottom: 12px;
     user-select: none;
   }
   .ex-item .ex-name {
-    font-size: 12.5px; color: #24292f; word-break: break-word;
-    line-height: 1.25;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-    overflow: hidden; max-width: 130px;
+    font-size: 16px; color: #1a202c; word-break: break-word;
+    line-height: 1.3; font-weight: 700;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden; max-width: 180px;
+    margin-bottom: 10px;
   }
+  .ex-item .ex-open-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px;
+    background: #2f6fce; color: #fff;
+    border: none; border-radius: 7px;
+    font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    transition: .12s;
+  }
+  .ex-item .ex-open-btn:hover { background: #255bb0; }
 
+  /* ---- Vista de detalles (tabla) ---- */
   .ex-list {
-    width: 100%; border-collapse: collapse; font-size: 13.5px;
+    width: 100%; border-collapse: collapse; font-size: 15px;
   }
   .ex-list thead th {
     position: sticky; top: 0; z-index: 2;
-    background: #f6f8fa; color: #24292f;
-    text-align: left; padding: 9px 12px;
-    font-size: 12.5px; font-weight: 700;
-    border-bottom: 1px solid #d0d7de;
+    background: #edf2f7; color: #1a202c;
+    text-align: left; padding: 12px 14px;
+    font-size: 14px; font-weight: 800;
+    border-bottom: 2px solid #cbd5e0;
     white-space: nowrap; cursor: pointer;
     user-select: none;
   }
-  .ex-list thead th:hover { background: #eef1f6; }
-  .ex-list thead th .sort-ind { color: #999; font-size: 11px; margin-left: 4px; }
+  .ex-list thead th:hover { background: #e2e8f0; }
+  .ex-list thead th .sort-ind { color: #718096; font-size: 12px; margin-left: 4px; }
   .ex-list tbody tr {
     cursor: pointer; transition: background .08s;
   }
-  .ex-list tbody tr:hover { background: #eef4fd; }
+  .ex-list tbody tr:hover { background: #ebf4ff; }
   .ex-list tbody tr.selected { background: #dbeafe; }
   .ex-list td {
-    padding: 7px 12px;
-    border-bottom: 1px solid #f0f2f5;
+    padding: 12px 14px;
+    border-bottom: 1px solid #edf2f7;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    max-width: 340px; color: #24292f;
+    max-width: 380px; color: #1a202c;
+    font-size: 15px;
   }
   .ex-list td .cell-name {
-    display: inline-flex; align-items: center; gap: 8px;
+    display: inline-flex; align-items: center; gap: 10px;
     max-width: 100%; overflow: hidden; text-overflow: ellipsis;
   }
-  .ex-list td .cell-name .ci { font-size: 17px; flex-shrink: 0; }
-  .ex-list td .cell-name .cn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ex-list td .cell-name .ci { font-size: 22px; flex-shrink: 0; }
+  .ex-list td .cell-name .cn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
   .ex-list td.col-size, .ex-list th.col-size { text-align: right; }
   .ex-list td.col-actions { text-align: right; white-space: nowrap; }
   .ex-list td.col-actions .mini-btn {
-    background: transparent; border: none; cursor: pointer;
-    font-size: 14px; padding: 3px 6px; border-radius: 4px;
-    color: #57606a;
+    background: #ffffff; border: 2px solid #cbd5e0; cursor: pointer;
+    font-size: 17px; padding: 7px 10px; border-radius: 6px;
+    color: #2d3748; margin-left: 4px;
   }
-  .ex-list td.col-actions .mini-btn:hover { background: #e5e7eb; color: #111; }
+  .ex-list td.col-actions .mini-btn:hover { background: #edf2f7; border-color: #667eea; }
 
+  /* ---- Barra de estado inferior ---- */
   .explorer-status {
-    padding: 6px 14px; background: #f6f8fa;
-    border-top: 1px solid #e8e8e8;
-    font-size: 12px; color: #57606a;
+    padding: 10px 16px; background: #edf2f7;
+    border-top: 2px solid #e2e8f0;
+    font-size: 14px; color: #4a5568; font-weight: 600;
     display: flex; justify-content: space-between; align-items: center;
   }
 
-  .explorer.drop-active { outline: 2px dashed #2f6fce; outline-offset: -4px; }
-  .explorer-content.dragover { background: #eef4fd; }
+  .explorer.drop-active { outline: 3px dashed #2f6fce; outline-offset: -6px; }
+  .explorer-content.dragover { background: #ebf4ff; }
 
+  /* ---- Estado vacío ---- */
   .ex-empty {
-    text-align: center; padding: 60px 20px; color: #8b949e;
+    text-align: center; padding: 70px 24px; color: #4a5568;
   }
-  .ex-empty .big-icon { font-size: 60px; margin-bottom: 12px; opacity: .55; }
-  .ex-empty .msg { font-size: 15px; }
+  .ex-empty .big-icon { font-size: 90px; margin-bottom: 18px; opacity: .7; }
+  .ex-empty .msg { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .ex-empty .sub-msg { font-size: 16px; color: #718096; margin-bottom: 20px; }
   .ex-empty .retry-btn {
-    margin-top: 14px; padding: 8px 16px;
-    background:#2f6fce; color:#fff; border:none; border-radius:5px;
-    cursor:pointer; font-size:14px; font-family:inherit;
+    margin-top: 10px; padding: 12px 24px;
+    background:#2f6fce; color:#fff; border:none; border-radius:8px;
+    cursor:pointer; font-size:16px; font-weight: 700; font-family:inherit;
   }
   .ex-empty .retry-btn:hover { background:#255bb0; }
 
-  /* Lightbox (reusado) */
+  /* ---- Lightbox ---- */
   .lightbox {
-    display:none; position:fixed; inset:0; background: rgba(0,0,0,.9);
+    display:none; position:fixed; inset:0; background: rgba(0,0,0,.92);
     z-index: 300; align-items:center; justify-content:center;
     padding: 30px;
   }
@@ -603,13 +664,13 @@
   }
   .lightbox .close-lb {
     position:absolute; top: 20px; right: 30px;
-    color:#fff; font-size: 38px; cursor:pointer; line-height:1;
+    color:#fff; font-size: 46px; cursor:pointer; line-height:1;
     font-weight: 300;
   }
   .lightbox .nav-lb {
     position: absolute; top:50%; transform: translateY(-50%);
-    color:#fff; font-size: 46px; cursor:pointer; user-select:none;
-    padding: 0 18px; opacity:.8;
+    color:#fff; font-size: 60px; cursor:pointer; user-select:none;
+    padding: 0 24px; opacity:.85;
   }
   .lightbox .nav-lb:hover { opacity:1; }
   .lightbox .nav-lb.prev { left: 10px; }
@@ -617,7 +678,7 @@
 
   @media (max-width: 900px) {
     .explorer-body { grid-template-columns: 1fr; }
-    .explorer-side { max-height: 200px; border-right: none; border-bottom: 1px solid #e8e8e8; }
+    .explorer-side { max-height: 220px; border-right: none; border-bottom: 2px solid #e2e8f0; }
     .explorer-search { width: 100%; }
   }
   @media (max-width: 720px) {
@@ -655,7 +716,7 @@
       <div class="module-card" onclick="openModule('evidencias')">
         <div class="module-icon">📸</div>
         <div class="module-title">Evidencias de Documentación</div>
-        <div class="module-desc">Carpetas y fotos en Google Drive</div>
+        <div class="module-desc">Carpetas y fotos de la flota</div>
       </div>
     </div>
   </div>
@@ -780,18 +841,25 @@
       <a onclick="goHome()">🏠 Inicio</a> / <span>Evidencias de Documentación</span>
     </div>
     <h1>📸 Evidencias de Documentación</h1>
-    <p class="subtitle">Creá carpetas y subí fotos (se guardan en Cloudinary)</p>
+    <p class="subtitle">Carpetas y fotos de la flota</p>
 
     <div id="ev-alert-container"></div>
 
     <div class="explorer" id="evExplorer">
+      <!-- Barra superior de navegación -->
       <div class="explorer-topbar">
-        <button class="explorer-nav-btn" id="evBtnBack" title="Atrás" onclick="evAtras()">←</button>
-        <button class="explorer-nav-btn" id="evBtnUp" title="Subir un nivel" onclick="evSubir()">↑</button>
-        <button class="explorer-nav-btn" id="evBtnRefresh" title="Actualizar" onclick="evRecargar()">⟳</button>
+        <button class="explorer-nav-btn" id="evBtnBack" onclick="evAtras()">
+          <span class="nav-icon">⬅</span> Volver
+        </button>
+        <button class="explorer-nav-btn" id="evBtnUp" onclick="evSubir()">
+          <span class="nav-icon">⬆</span> Subir
+        </button>
+        <button class="explorer-nav-btn" id="evBtnRefresh" onclick="evRecargar()">
+          <span class="nav-icon">🔄</span> Actualizar
+        </button>
 
         <div class="explorer-address">
-          <span class="addr-label">📍</span>
+          <span class="addr-label">📍 Estás en:</span>
           <div class="addr-path" id="evAddressPath"></div>
         </div>
 
@@ -799,22 +867,23 @@
                placeholder="🔍 Buscar en esta carpeta..." oninput="evAplicarFiltro()">
       </div>
 
+      <!-- Barra de acciones -->
       <div class="explorer-toolbar">
         <button class="explorer-action primary" onclick="evCrearCarpeta()">
           <span class="icon">📁</span> Nueva carpeta
         </button>
-        <button class="explorer-action" onclick="document.getElementById('evFileInput').click()">
+        <button class="explorer-action primary" onclick="document.getElementById('evFileInput').click()">
           <span class="icon">📤</span> Subir fotos
         </button>
         <div class="sep"></div>
         <button class="explorer-action" onclick="evToggleVista()">
-          <span class="icon" id="evVistaIcon">☰</span>
-          <span id="evVistaLabel">Vista: Detalles</span>
+          <span class="icon" id="evVistaIcon">▦</span>
+          <span id="evVistaLabel">Vista: Íconos</span>
         </button>
         <button class="explorer-action" onclick="evRenombrarSeleccionado()" id="evBtnRenombrar" disabled>
           <span class="icon">✏️</span> Renombrar
         </button>
-        <button class="explorer-action" onclick="evEliminarSeleccionado()" id="evBtnEliminar" disabled>
+        <button class="explorer-action danger" onclick="evEliminarSeleccionado()" id="evBtnEliminar" disabled>
           <span class="icon">🗑️</span> Eliminar
         </button>
         <input type="file" id="evFileInput" accept="image/*" multiple
@@ -1894,6 +1963,7 @@ function imprimirHistorial() {
 
 /* ============================================================
    EVIDENCIAS DE DOCUMENTACIÓN - EXPLORADOR
+   (Lógica intacta · interfaz más grande e intuitiva)
    ============================================================ */
 let evRootFolder = null;
 let evCurrentFolderId = null;
@@ -1902,7 +1972,7 @@ let evCarpetas = [];
 let evImagenes = [];
 let evItemsFiltrados = [];
 let evSeleccionado = null;
-let evVista = 'detalles';
+let evVista = 'iconos';   // ← vista por defecto ahora es íconos grandes
 let evOrden = { campo: 'name', dir: 'asc' };
 let evCurrentImagenesLightbox = [];
 let evLightboxIndex = 0;
@@ -1918,7 +1988,7 @@ function evShowAlert(msg, type='success') {
   div.className = 'alert alert-' + type;
   div.textContent = msg;
   c.appendChild(div);
-  setTimeout(() => div.remove(), 4500);
+  setTimeout(() => div.remove(), 5000);
 }
 
 function evFormatBytes(bytes) {
@@ -1957,17 +2027,15 @@ async function evFetch(url, opts={}, timeoutMs=20000) {
 /* ============ INIT ============ */
 async function evInit() {
   if (evInicializado) {
-    // Si ya está todo, sólo refrescamos por las dudas
     evRecargar();
     return;
   }
   evInicializado = true;
 
-  // Mostrar un loader inmediato para que no quede en blanco
   document.getElementById('evContent').innerHTML = `
     <div class="ex-empty">
       <div class="big-icon">⏳</div>
-      <div class="msg">Cargando carpeta raíz…</div>
+      <div class="msg">Cargando carpeta principal…</div>
     </div>`;
   document.getElementById('evTreeRoot').innerHTML = `<li class="tree-empty">Cargando…</li>`;
 
@@ -1978,8 +2046,8 @@ async function evInit() {
       document.getElementById('evContent').innerHTML = `
         <div class="ex-empty">
           <div class="big-icon">⚠️</div>
-          <div class="msg">No se pudo leer la carpeta raíz</div>
-          <div class="msg" style="font-size:13px; margin-top:6px;">${escapeHtml(data.error || '')}</div>
+          <div class="msg">No se pudo leer la carpeta principal</div>
+          <div class="sub-msg">${escapeHtml(data.error || '')}</div>
           <button class="retry-btn" onclick="evRecargar()">Reintentar</button>
         </div>`;
       document.getElementById('evTreeRoot').innerHTML = '';
@@ -1994,7 +2062,6 @@ async function evInit() {
     evTreeCache = {};
     evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
 
-    // Una sola carga: contenido + hijos quedan cacheados con esto
     await evCargarContenido(evRootFolder.id);
     evRenderTree();
   } catch (e) {
@@ -2004,7 +2071,7 @@ async function evInit() {
       <div class="ex-empty">
         <div class="big-icon">⚠️</div>
         <div class="msg">Error de conexión</div>
-        <div class="msg" style="font-size:13px; margin-top:6px;">${escapeHtml(e.message)}</div>
+        <div class="sub-msg">${escapeHtml(e.message)}</div>
         <button class="retry-btn" onclick="evRecargar()">Reintentar</button>
       </div>`;
     document.getElementById('evTreeRoot').innerHTML = '';
@@ -2016,7 +2083,6 @@ async function evCargarContenido(folderId) {
   if (evCargando) return;
   evCargando = true;
 
-  // Loader en el contenido si no es una recarga silenciosa
   const contEl = document.getElementById('evContent');
   if (contEl && evItemsFiltrados.length === 0) {
     contEl.innerHTML = `
@@ -2035,7 +2101,7 @@ async function evCargarContenido(folderId) {
           <div class="ex-empty">
             <div class="big-icon">⚠️</div>
             <div class="msg">No se pudo leer la carpeta</div>
-            <div class="msg" style="font-size:13px; margin-top:6px;">${escapeHtml(data.error || '')}</div>
+            <div class="sub-msg">${escapeHtml(data.error || '')}</div>
             <button class="retry-btn" onclick="evRecargar()">Reintentar</button>
           </div>`;
       }
@@ -2047,7 +2113,6 @@ async function evCargarContenido(folderId) {
     evImagenes = data.imagenes || [];
     evSeleccionado = null;
 
-    // Actualizar caché del árbol
     const node = evTreeCache[folderId] || { expanded: true, loaded: false, children: [] };
     node.children = evCarpetas.map(c => ({ id: c.id, name: c.name }));
     node.loaded = true;
@@ -2071,7 +2136,7 @@ async function evCargarContenido(folderId) {
         <div class="ex-empty">
           <div class="big-icon">⚠️</div>
           <div class="msg">Error al leer la carpeta</div>
-          <div class="msg" style="font-size:13px; margin-top:6px;">${escapeHtml(e.message)}</div>
+          <div class="sub-msg">${escapeHtml(e.message)}</div>
           <button class="retry-btn" onclick="evRecargar()">Reintentar</button>
         </div>`;
     }
@@ -2102,7 +2167,6 @@ async function evCargarHijosEnCache(folderId) {
 }
 
 async function evRecargar() {
-  // Reset del caché pero manteniendo la ruta actual
   evTreeCache = {};
   if (evRootFolder) {
     evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
@@ -2114,7 +2178,6 @@ async function evRecargar() {
     evPathStack = [{ id: evRootFolder.id, name: evRootFolder.name }];
   }
   await evCargarContenido(evCurrentFolderId);
-  // Reconstruir árbol expandiendo la ruta actual
   for (const p of evPathStack) {
     const c = evTreeCache[p.id] || { expanded: false, loaded: false, children: [] };
     c.expanded = true;
@@ -2141,7 +2204,7 @@ function evRenderTreeNode(node, level) {
   const showToggle = (cache.loaded ? hasChildren : true);
   const toggleIcon = isExpanded ? '▾' : '▸';
   const icon = node.isRoot ? '🏠' : '📁';
-  const indent = 8 + level * 14;
+  const indent = 8 + level * 16;
 
   let html = `<li>`;
   html += `<div class="tree-item ${isSelected ? 'selected' : ''}" data-folder-id="${escapeHtml(node.id)}" style="padding-left:${indent}px;">`;
@@ -2152,9 +2215,9 @@ function evRenderTreeNode(node, level) {
 
   if (isExpanded) {
     if (!cache.loaded) {
-      html += `<li class="tree-empty" style="padding-left:${indent + 28}px;">Cargando…</li>`;
+      html += `<li class="tree-empty" style="padding-left:${indent + 30}px;">Cargando…</li>`;
     } else if (cache.children.length === 0) {
-      html += `<li class="tree-empty" style="padding-left:${indent + 28}px;">(sin subcarpetas)</li>`;
+      html += `<li class="tree-empty" style="padding-left:${indent + 30}px;">(sin subcarpetas)</li>`;
     } else {
       html += `<ul>`;
       cache.children.forEach(ch => {
@@ -2197,7 +2260,6 @@ async function evEntrarCarpeta(folderId, folderName) {
   evHistory.push(evCurrentFolderId);
   evPathStack.push({ id: folderId, name: folderName });
   await evCargarContenido(folderId);
-  // Expandir el destino y su padre
   const c = evTreeCache[folderId] || { expanded: false, loaded: false, children: [] };
   c.expanded = true;
   evTreeCache[folderId] = c;
@@ -2345,7 +2407,7 @@ function evRenderContenido() {
       <div class="ex-empty">
         <div class="big-icon">📂</div>
         <div class="msg">Esta carpeta está vacía</div>
-        <div class="msg" style="font-size:13px; margin-top:6px;">Arrastrá archivos acá o usá "Subir fotos"</div>
+        <div class="sub-msg">Usá el botón "📤 Subir fotos" o arrastrá imágenes acá</div>
       </div>
     `;
     return;
@@ -2366,6 +2428,9 @@ function evRenderIconos(items) {
              onclick="evSeleccionar(${jsArg(it.id)})" ondblclick="evEntrarCarpeta(${jsArg(it.id)}, ${jsArg(it.name)})">
           <div class="ex-icon-big">📁</div>
           <div class="ex-name" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</div>
+          <button class="ex-open-btn" onclick="event.stopPropagation(); evEntrarCarpeta(${jsArg(it.id)}, ${jsArg(it.name)})">
+            📂 Abrir
+          </button>
         </div>
       `;
     } else {
@@ -2379,6 +2444,9 @@ function evRenderIconos(items) {
             ? `<img class="ex-thumb" src="${thumb}" alt="${escapeHtml(it.name)}" loading="lazy">`
             : `<div class="ex-icon-big">${iconBig}</div>`}
           <div class="ex-name" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</div>
+          ${isImg
+            ? `<button class="ex-open-btn" onclick="event.stopPropagation(); evAbrirArchivo(${jsArg(it.id)})">👁️ Ver foto</button>`
+            : ''}
         </div>
       `;
     }
@@ -2493,7 +2561,7 @@ function evAbrirArchivo(itemId) {
 
 /* ============ ACCIONES ============ */
 async function evCrearCarpeta() {
-  const nombre = prompt('Nombre de la nueva carpeta:');
+  const nombre = prompt('📁 Nombre de la nueva carpeta:');
   if (!nombre || !nombre.trim()) return;
   try {
     const data = await evFetch('/api/evidencias/carpeta', {
@@ -2519,7 +2587,7 @@ async function evSubirArchivos(files) {
   fd.append('parent_id', evCurrentFolderId);
   for (let i = 0; i < files.length; i++) fd.append('archivos', files[i]);
   try {
-    evShowAlert('⏳ Subiendo ' + files.length + ' archivo(s)...', 'info');
+    evShowAlert('⏳ Subiendo ' + files.length + ' archivo(s), aguarde por favor…', 'info');
     const res = await fetch('/api/evidencias/subir', { method: 'POST', body: fd });
     const data = await res.json();
     if (data.success) {
@@ -2538,7 +2606,7 @@ async function evSubirArchivos(files) {
 
 async function evEliminar(fileId, tipo) {
   const label = tipo === 'carpeta' ? 'la carpeta' : 'el archivo';
-  if (!confirm(`¿Eliminar ${label}? Esta acción no se puede deshacer.`)) return;
+  if (!confirm(`¿Seguro que querés eliminar ${label}?\n\nEsta acción NO se puede deshacer.`)) return;
   try {
     const data = await evFetch('/api/evidencias/eliminar', {
       method: 'POST',
@@ -2566,7 +2634,7 @@ async function evEliminar(fileId, tipo) {
 }
 
 async function evRenombrar(fileId, nombreActual, tipo = 'archivo') {
-  const nuevo = prompt('Nuevo nombre:', nombreActual);
+  const nuevo = prompt('✏️ Nuevo nombre:', nombreActual);
   if (!nuevo || !nuevo.trim() || nuevo.trim() === nombreActual) return;
   try {
     const data = await evFetch('/api/evidencias/renombrar', {
