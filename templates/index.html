@@ -171,7 +171,7 @@
     background: #f8f9fa;
   }
 
-  /* Variante para tablas de Control Documentario: solo PATENTE sticky */
+  /* Variante para tablas de Control Documentario */
   th.col-cd-patente {
     position: sticky; left: 0; z-index: 7;
     background: #667eea;
@@ -353,114 +353,94 @@
   }
 
   /* ================================================
-     EVIDENCIAS DE DOCUMENTACIÓN - EXPLORADOR
-     (Rediseñado para ser más grande y fácil de usar)
+     EVIDENCIAS DE DOCUMENTACIÓN - VERSIÓN SIMPLIFICADA
+     (sin sidebar, botones grandes, todo centrado)
      ================================================ */
   .explorer {
     border: 2px solid #cbd5e0;
-    border-radius: 10px;
+    border-radius: 12px;
     background: #ffffff;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    height: 80vh;
-    min-height: 620px;
+    min-height: 520px;
     font-size: 16px;
   }
 
-  /* ---- Barra superior de navegación ---- */
+  /* Barra superior: miga de pan + buscador */
   .explorer-topbar {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
+    gap: 12px;
+    padding: 14px 18px;
     background: #eef2f7;
     border-bottom: 2px solid #cbd5e0;
     flex-wrap: wrap;
   }
-  .explorer-nav-btn {
-    height: 48px;
-    display: inline-flex; align-items: center; justify-content: center;
-    gap: 8px;
-    padding: 0 18px;
-    background: #ffffff;
-    border: 2px solid #a0aec0;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 17px;
-    font-weight: 700;
-    color: #2d3748;
-    transition: .12s;
-    user-select: none;
-    font-family: inherit;
-  }
-  .explorer-nav-btn:hover:not(:disabled) {
-    background: #e2e8f0;
-    border-color: #667eea;
-    color: #2b6cb0;
-  }
-  .explorer-nav-btn:disabled { opacity: .4; cursor: not-allowed; }
-  .explorer-nav-btn .nav-icon { font-size: 20px; }
-
   .explorer-address {
     flex: 1; min-width: 260px;
-    display: flex; align-items: center;
-    background: #ffffff; border: 2px solid #a0aec0; border-radius: 8px;
-    padding: 0 12px; height: 48px; overflow: hidden;
+    display: flex; align-items: center; gap: 8px;
+    background: #ffffff; border: 2px solid #a0aec0; border-radius: 10px;
+    padding: 0 14px; height: 56px; overflow: hidden;
   }
   .explorer-address .addr-label {
-    font-size: 20px; margin-right: 8px; white-space: nowrap;
+    font-size: 18px; font-weight: 700; color: #4a5568; white-space: nowrap;
   }
   .explorer-address .addr-path {
     display: flex; align-items: center; gap: 4px;
     flex: 1; overflow: hidden; white-space: nowrap;
+    font-size: 19px;
   }
   .explorer-address .addr-crumb {
-    padding: 5px 10px; border-radius: 5px;
-    cursor: pointer; color: #2d3748; font-size: 16px;
-    font-weight: 600;
+    padding: 6px 12px; border-radius: 6px;
+    cursor: pointer; color: #1a202c; font-size: 19px;
+    font-weight: 800;
     white-space: nowrap;
   }
   .explorer-address .addr-crumb:hover { background: #eef2f7; }
-  .explorer-address .addr-crumb.current { font-weight: 800; color: #1a202c; }
-  .explorer-address .addr-sep { color: #a0aec0; font-size: 16px; }
+  .explorer-address .addr-crumb.current { color: #1a365d; }
+  .explorer-address .addr-sep { color: #a0aec0; font-size: 20px; }
 
   .explorer-search {
-    width: 240px; height: 48px;
-    padding: 0 14px; border: 2px solid #a0aec0; border-radius: 8px;
-    font-size: 16px; font-family: inherit;
+    width: 260px; height: 56px;
+    padding: 0 16px; border: 2px solid #a0aec0; border-radius: 10px;
+    font-size: 17px; font-family: inherit;
   }
   .explorer-search:focus { outline: none; border-color: #667eea; }
 
-  /* ---- Barra de herramientas ---- */
+  /* Toolbar principal con botones grandes */
   .explorer-toolbar {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 18px;
     background: #f7fafc;
     border-bottom: 2px solid #e2e8f0;
     flex-wrap: wrap;
   }
   .explorer-action {
-    display: inline-flex; align-items: center; gap: 9px;
-    padding: 12px 20px;
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 10px;
+    padding: 16px 24px;
     background: #ffffff;
     border: 2px solid #cbd5e0;
-    border-radius: 8px;
-    cursor: pointer; font-size: 16px; font-weight: 700; color: #2d3748;
+    border-radius: 10px;
+    cursor: pointer; font-size: 18px; font-weight: 800; color: #2d3748;
     font-family: inherit; transition: .12s; white-space: nowrap;
+    min-height: 60px;
   }
   .explorer-action:hover:not(:disabled) {
     background: #eef2f7;
     border-color: #667eea;
     color: #2b6cb0;
+    transform: translateY(-1px);
   }
-  .explorer-action:disabled { opacity: .4; cursor: not-allowed; }
-  .explorer-action .icon { font-size: 20px; }
+  .explorer-action:disabled { opacity: .35; cursor: not-allowed; }
+  .explorer-action .icon { font-size: 24px; }
   .explorer-action.primary {
     background: #2f6fce; color: #fff; border-color: #2f6fce;
   }
   .explorer-action.primary:hover:not(:disabled) {
     background: #255bb0; border-color: #255bb0;
+    color: #fff;
   }
   .explorer-action.danger {
     color: #c53030; border-color: #feb2b2;
@@ -468,77 +448,26 @@
   .explorer-action.danger:hover:not(:disabled) {
     background: #fff5f5; border-color: #e53e3e;
   }
-  .explorer-toolbar .sep {
-    width: 2px; height: 30px; background: #e2e8f0; margin: 0 6px;
-  }
 
-  /* ---- Cuerpo: árbol + contenido ---- */
-  .explorer-body {
+  /* Contenido */
+  .explorer-content {
     flex: 1;
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    min-height: 0;
-    background: #fff;
-  }
-
-  .explorer-side {
-    background: #f7fafc;
-    border-right: 2px solid #e2e8f0;
-    padding: 12px 8px;
+    min-height: 380px;
+    background: #ffffff;
     overflow: auto;
   }
-  .explorer-side .side-title {
-    font-size: 13px; text-transform: uppercase; letter-spacing: .8px;
-    color: #4a5568; padding: 6px 12px 10px 12px; font-weight: 800;
-  }
-  .tree-root { list-style: none; padding-left: 0; margin: 0; }
-  .tree-root ul { list-style: none; padding-left: 16px; margin: 0; }
-  .tree-root li { list-style: none; }
-  .tree-item {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 12px; border-radius: 6px;
-    cursor: pointer; font-size: 16px; color: #2d3748;
-    user-select: none; white-space: nowrap;
-    font-weight: 600;
-  }
-  .tree-item:hover { background: #e2e8f0; }
-  .tree-item.selected { background: #bee3f8; color: #1a365d; font-weight: 800; }
-  .tree-item .ti-toggle {
-    display:inline-flex; align-items:center; justify-content:center;
-    width: 22px; height: 22px; font-size: 14px; color: #4a5568;
-    cursor: pointer; border-radius: 4px;
-    background: #fff; border: 1px solid #cbd5e0;
-  }
-  .tree-item .ti-toggle:hover { background: #e2e8f0; }
-  .tree-item .ti-toggle.empty { visibility: hidden; }
-  .tree-item .ti-icon { font-size: 20px; }
-  .tree-item .ti-name {
-    flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .tree-empty {
-    padding: 8px 18px; color: #718096; font-size: 14px; font-style: italic;
-  }
 
-  .explorer-main {
-    display: flex; flex-direction: column;
-    min-width: 0; min-height: 0;
-  }
-  .explorer-content {
-    flex: 1; overflow: auto;
-    background: #ffffff;
-  }
-
-  /* ---- Vista de íconos grandes (default) ---- */
+  /* Grid de tarjetas grandes */
   .ex-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px; padding: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px; padding: 24px;
   }
   .ex-item {
     display: flex; flex-direction: column; align-items: center;
     text-align: center;
-    padding: 20px 14px 16px 14px;
-    border: 2px solid transparent; border-radius: 12px;
+    padding: 24px 16px 20px 16px;
+    border: 3px solid transparent; border-radius: 14px;
     cursor: pointer; transition: .12s;
     user-select: none;
     background: #f7fafc;
@@ -546,112 +475,71 @@
   .ex-item:hover {
     background: #ebf4ff;
     border-color: #90cdf4;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(47,111,206,.18);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(47,111,206,.2);
   }
   .ex-item.selected {
     background: #dbeafe;
     border-color: #2f6fce;
-    border-width: 3px;
-    box-shadow: 0 6px 16px rgba(47,111,206,.3);
+    box-shadow: 0 8px 20px rgba(47,111,206,.35);
   }
   .ex-item .ex-thumb {
-    width: 130px; height: 130px; object-fit: cover;
-    border-radius: 10px; margin-bottom: 12px;
+    width: 140px; height: 140px; object-fit: cover;
+    border-radius: 10px; margin-bottom: 14px;
     background: #f0f2f5; display: block;
     border: 2px solid #e2e8f0;
   }
   .ex-item .ex-icon-big {
-    width: 130px; height: 130px; display:flex; align-items:center; justify-content:center;
-    font-size: 82px; margin-bottom: 12px;
+    width: 140px; height: 140px; display:flex; align-items:center; justify-content:center;
+    font-size: 90px; margin-bottom: 14px;
     user-select: none;
   }
   .ex-item .ex-name {
-    font-size: 16px; color: #1a202c; word-break: break-word;
-    line-height: 1.3; font-weight: 700;
+    font-size: 18px; color: #1a202c; word-break: break-word;
+    line-height: 1.3; font-weight: 800;
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
-    overflow: hidden; max-width: 180px;
-    margin-bottom: 10px;
+    overflow: hidden; max-width: 200px;
+    margin-bottom: 14px;
   }
   .ex-item .ex-open-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 8px 16px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 22px;
     background: #2f6fce; color: #fff;
-    border: none; border-radius: 7px;
-    font-size: 15px; font-weight: 700;
+    border: none; border-radius: 8px;
+    font-size: 17px; font-weight: 800;
     cursor: pointer; font-family: inherit;
     transition: .12s;
+    min-height: 50px;
   }
   .ex-item .ex-open-btn:hover { background: #255bb0; }
 
-  /* ---- Vista de detalles (tabla) ---- */
-  .ex-list {
-    width: 100%; border-collapse: collapse; font-size: 15px;
-  }
-  .ex-list thead th {
-    position: sticky; top: 0; z-index: 2;
-    background: #edf2f7; color: #1a202c;
-    text-align: left; padding: 12px 14px;
-    font-size: 14px; font-weight: 800;
-    border-bottom: 2px solid #cbd5e0;
-    white-space: nowrap; cursor: pointer;
-    user-select: none;
-  }
-  .ex-list thead th:hover { background: #e2e8f0; }
-  .ex-list thead th .sort-ind { color: #718096; font-size: 12px; margin-left: 4px; }
-  .ex-list tbody tr {
-    cursor: pointer; transition: background .08s;
-  }
-  .ex-list tbody tr:hover { background: #ebf4ff; }
-  .ex-list tbody tr.selected { background: #dbeafe; }
-  .ex-list td {
-    padding: 12px 14px;
-    border-bottom: 1px solid #edf2f7;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    max-width: 380px; color: #1a202c;
-    font-size: 15px;
-  }
-  .ex-list td .cell-name {
-    display: inline-flex; align-items: center; gap: 10px;
-    max-width: 100%; overflow: hidden; text-overflow: ellipsis;
-  }
-  .ex-list td .cell-name .ci { font-size: 22px; flex-shrink: 0; }
-  .ex-list td .cell-name .cn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
-  .ex-list td.col-size, .ex-list th.col-size { text-align: right; }
-  .ex-list td.col-actions { text-align: right; white-space: nowrap; }
-  .ex-list td.col-actions .mini-btn {
-    background: #ffffff; border: 2px solid #cbd5e0; cursor: pointer;
-    font-size: 17px; padding: 7px 10px; border-radius: 6px;
-    color: #2d3748; margin-left: 4px;
-  }
-  .ex-list td.col-actions .mini-btn:hover { background: #edf2f7; border-color: #667eea; }
-
-  /* ---- Barra de estado inferior ---- */
+  /* Barra de estado inferior */
   .explorer-status {
-    padding: 10px 16px; background: #edf2f7;
+    padding: 12px 18px; background: #edf2f7;
     border-top: 2px solid #e2e8f0;
-    font-size: 14px; color: #4a5568; font-weight: 600;
+    font-size: 15px; color: #4a5568; font-weight: 700;
     display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 8px;
   }
 
   .explorer.drop-active { outline: 3px dashed #2f6fce; outline-offset: -6px; }
   .explorer-content.dragover { background: #ebf4ff; }
 
-  /* ---- Estado vacío ---- */
+  /* Estado vacío */
   .ex-empty {
-    text-align: center; padding: 70px 24px; color: #4a5568;
+    text-align: center; padding: 80px 24px; color: #4a5568;
   }
-  .ex-empty .big-icon { font-size: 90px; margin-bottom: 18px; opacity: .7; }
-  .ex-empty .msg { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-  .ex-empty .sub-msg { font-size: 16px; color: #718096; margin-bottom: 20px; }
+  .ex-empty .big-icon { font-size: 100px; margin-bottom: 20px; opacity: .7; }
+  .ex-empty .msg { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
+  .ex-empty .sub-msg { font-size: 17px; color: #718096; margin-bottom: 24px; }
   .ex-empty .retry-btn {
-    margin-top: 10px; padding: 12px 24px;
-    background:#2f6fce; color:#fff; border:none; border-radius:8px;
-    cursor:pointer; font-size:16px; font-weight: 700; font-family:inherit;
+    padding: 14px 28px;
+    background:#2f6fce; color:#fff; border:none; border-radius:10px;
+    cursor:pointer; font-size:18px; font-weight: 800; font-family:inherit;
   }
   .ex-empty .retry-btn:hover { background:#255bb0; }
 
-  /* ---- Lightbox ---- */
+  /* Lightbox */
   .lightbox {
     display:none; position:fixed; inset:0; background: rgba(0,0,0,.92);
     z-index: 300; align-items:center; justify-content:center;
@@ -676,16 +564,16 @@
   .lightbox .nav-lb.prev { left: 10px; }
   .lightbox .nav-lb.next { right: 10px; }
 
-  @media (max-width: 900px) {
-    .explorer-body { grid-template-columns: 1fr; }
-    .explorer-side { max-height: 220px; border-right: none; border-bottom: 2px solid #e2e8f0; }
-    .explorer-search { width: 100%; }
-  }
   @media (max-width: 720px) {
     .form-grid { grid-template-columns: 1fr; }
     td, th { font-size: 13px; }
     body { font-size: 15px; }
     .summary-card .value { font-size: 22px; }
+    .ex-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; padding: 14px; }
+    .ex-item .ex-thumb, .ex-item .ex-icon-big { width: 110px; height: 110px; font-size: 70px; }
+    .ex-item .ex-name { font-size: 16px; }
+    .explorer-search { width: 100%; }
+    .explorer-address { min-width: 100%; }
   }
 </style>
 </head>
@@ -835,7 +723,7 @@
     </div>
   </div>
 
-  <!-- ===================== VISTA MÓDULO EVIDENCIAS DE DOCUMENTACIÓN ===================== -->
+  <!-- ===================== VISTA MÓDULO EVIDENCIAS DE DOCUMENTACIÓN (SIMPLIFICADA) ===================== -->
   <div class="module-view" id="moduleViewEvidencias">
     <div class="breadcrumb">
       <a onclick="goHome()">🏠 Inicio</a> / <span>Evidencias de Documentación</span>
@@ -846,28 +734,17 @@
     <div id="ev-alert-container"></div>
 
     <div class="explorer" id="evExplorer">
-      <!-- Barra superior de navegación -->
+      <!-- Barra superior: miga de pan + buscador -->
       <div class="explorer-topbar">
-        <button class="explorer-nav-btn" id="evBtnBack" onclick="evAtras()">
-          <span class="nav-icon">⬅</span> Volver
-        </button>
-        <button class="explorer-nav-btn" id="evBtnUp" onclick="evSubir()">
-          <span class="nav-icon">⬆</span> Subir
-        </button>
-        <button class="explorer-nav-btn" id="evBtnRefresh" onclick="evRecargar()">
-          <span class="nav-icon">🔄</span> Actualizar
-        </button>
-
         <div class="explorer-address">
           <span class="addr-label">📍 Estás en:</span>
           <div class="addr-path" id="evAddressPath"></div>
         </div>
-
         <input type="text" class="explorer-search" id="evSearchInput"
-               placeholder="🔍 Buscar en esta carpeta..." oninput="evAplicarFiltro()">
+               placeholder="🔍 Buscar..." oninput="evAplicarFiltro()">
       </div>
 
-      <!-- Barra de acciones -->
+      <!-- Barra de acciones (simplificada) -->
       <div class="explorer-toolbar">
         <button class="explorer-action primary" onclick="evCrearCarpeta()">
           <span class="icon">📁</span> Nueva carpeta
@@ -875,34 +752,21 @@
         <button class="explorer-action primary" onclick="document.getElementById('evFileInput').click()">
           <span class="icon">📤</span> Subir fotos
         </button>
-        <div class="sep"></div>
-        <button class="explorer-action" onclick="evToggleVista()">
-          <span class="icon" id="evVistaIcon">▦</span>
-          <span id="evVistaLabel">Vista: Íconos</span>
-        </button>
-        <button class="explorer-action" onclick="evRenombrarSeleccionado()" id="evBtnRenombrar" disabled>
-          <span class="icon">✏️</span> Renombrar
-        </button>
         <button class="explorer-action danger" onclick="evEliminarSeleccionado()" id="evBtnEliminar" disabled>
           <span class="icon">🗑️</span> Eliminar
+        </button>
+        <button class="explorer-action" onclick="evRecargar()">
+          <span class="icon">🔄</span> Actualizar
         </button>
         <input type="file" id="evFileInput" accept="image/*" multiple
                style="display:none;" onchange="evSubirArchivos(this.files)">
       </div>
 
-      <div class="explorer-body">
-        <aside class="explorer-side">
-          <div class="side-title">📁 Carpetas</div>
-          <ul class="tree-root" id="evTreeRoot"></ul>
-        </aside>
+      <div class="explorer-content" id="evContent"></div>
 
-        <section class="explorer-main">
-          <div class="explorer-content" id="evContent"></div>
-          <div class="explorer-status">
-            <span id="evStatusLeft">0 elementos</span>
-            <span id="evStatusRight"></span>
-          </div>
-        </section>
+      <div class="explorer-status">
+        <span id="evStatusLeft">0 elementos</span>
+        <span id="evStatusRight"></span>
       </div>
     </div>
   </div>
@@ -1958,9 +1822,11 @@ function imprimirHistorial() {
 
 
 /* ============================================================
-   EVIDENCIAS DE DOCUMENTACIÓN - EXPLORADOR
-   (Lógica intacta · interfaz más grande e intuitiva)
+   EVIDENCIAS DE DOCUMENTACIÓN - VERSIÓN SIMPLIFICADA
+   (Sin sidebar · botones grandes · todo centrado)
    ============================================================ */
+
+/* ---------- Estado global ---------- */
 let evRootFolder = null;
 let evCurrentFolderId = null;
 let evPathStack = [];
@@ -1968,14 +1834,11 @@ let evCarpetas = [];
 let evImagenes = [];
 let evItemsFiltrados = [];
 let evSeleccionado = null;
-let evVista = 'iconos';   // ← vista por defecto ahora es íconos grandes
-let evOrden = { campo: 'name', dir: 'asc' };
 let evCurrentImagenesLightbox = [];
 let evLightboxIndex = 0;
-let evHistory = [];
-let evTreeCache = {};           // { folderId: {expanded, loaded, children:[{id,name}]} }
-let evCargando = false;         // evita doble carga
 let evInicializado = false;
+let evCargando = false;
+let evTreeCache = {};   // { folderId: { loaded, children: [{id,name}] } }
 
 function evShowAlert(msg, type='success') {
   const c = document.getElementById('ev-alert-container');
@@ -1987,29 +1850,7 @@ function evShowAlert(msg, type='success') {
   setTimeout(() => div.remove(), 5000);
 }
 
-function evFormatBytes(bytes) {
-  const b = Number(bytes) || 0;
-  if (b === 0) return '';
-  if (b < 1024) return b + ' B';
-  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
-  return (b/(1024*1024)).toFixed(2) + ' MB';
-}
-
-function evFormatFecha(iso) {
-  if (!iso) return '';
-  try {
-    const d = new Date(iso);
-    const dd = String(d.getDate()).padStart(2,'0');
-    const mm = String(d.getMonth()+1).padStart(2,'0');
-    const yy = d.getFullYear();
-    const hh = String(d.getHours()).padStart(2,'0');
-    const mi = String(d.getMinutes()).padStart(2,'0');
-    return `${dd}/${mm}/${yy} ${hh}:${mi}`;
-  } catch(e) { return ''; }
-}
-
-/* fetch con timeout para no colgar la UI */
-async function evFetch(url, opts={}, timeoutMs=20000) {
+async function evFetch(url, opts={}, timeoutMs=25000) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -2020,7 +1861,7 @@ async function evFetch(url, opts={}, timeoutMs=20000) {
   }
 }
 
-/* ============ INIT ============ */
+/* ---------- INIT ---------- */
 async function evInit() {
   if (evInicializado) {
     evRecargar();
@@ -2028,53 +1869,48 @@ async function evInit() {
   }
   evInicializado = true;
 
-  document.getElementById('evContent').innerHTML = `
+  const cont = document.getElementById('evContent');
+  cont.innerHTML = `
     <div class="ex-empty">
       <div class="big-icon">⏳</div>
       <div class="msg">Cargando carpeta principal…</div>
     </div>`;
-  document.getElementById('evTreeRoot').innerHTML = `<li class="tree-empty">Cargando…</li>`;
 
   try {
     const data = await evFetch('/api/evidencias/root');
     if (!data.success) {
       evShowAlert('Error: ' + (data.error || 'no se pudo leer la raíz'), 'error');
-      document.getElementById('evContent').innerHTML = `
+      cont.innerHTML = `
         <div class="ex-empty">
           <div class="big-icon">⚠️</div>
           <div class="msg">No se pudo leer la carpeta principal</div>
           <div class="sub-msg">${escapeHtml(data.error || '')}</div>
           <button class="retry-btn" onclick="evRecargar()">Reintentar</button>
         </div>`;
-      document.getElementById('evTreeRoot').innerHTML = '';
       return;
     }
 
     evRootFolder = data.root;
     evCurrentFolderId = evRootFolder.id;
     evPathStack = [{ id: evRootFolder.id, name: evRootFolder.name }];
-    evHistory = [];
     evSeleccionado = null;
     evTreeCache = {};
-    evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
 
     await evCargarContenido(evRootFolder.id);
-    evRenderTree();
   } catch (e) {
     console.error('evInit error:', e);
     evShowAlert('Error de conexión: ' + e.message, 'error');
-    document.getElementById('evContent').innerHTML = `
+    cont.innerHTML = `
       <div class="ex-empty">
         <div class="big-icon">⚠️</div>
         <div class="msg">Error de conexión</div>
         <div class="sub-msg">${escapeHtml(e.message)}</div>
         <button class="retry-btn" onclick="evRecargar()">Reintentar</button>
       </div>`;
-    document.getElementById('evTreeRoot').innerHTML = '';
   }
 }
 
-/* Carga contenido de una carpeta y deja el caché del árbol consistente */
+/* ---------- Cargar contenido de una carpeta ---------- */
 async function evCargarContenido(folderId) {
   if (evCargando) return;
   evCargando = true;
@@ -2109,21 +1945,16 @@ async function evCargarContenido(folderId) {
     evImagenes = data.imagenes || [];
     evSeleccionado = null;
 
-    const node = evTreeCache[folderId] || { expanded: true, loaded: false, children: [] };
-    node.children = evCarpetas.map(c => ({ id: c.id, name: c.name }));
-    node.loaded = true;
-    evTreeCache[folderId] = node;
-    node.children.forEach(ch => {
-      if (!evTreeCache[ch.id]) {
-        evTreeCache[ch.id] = { expanded: false, loaded: false, children: [] };
-      }
-    });
+    // Caché simple por carpeta
+    evTreeCache[folderId] = {
+      loaded: true,
+      children: evCarpetas.map(c => ({ id: c.id, name: c.name }))
+    };
 
     evRenderAddress();
     evRenderContenido();
     evActualizarBotones();
     evActualizarStatus();
-    evActualizarNavBtns();
   } catch (e) {
     console.error('evCargarContenido error:', e);
     evShowAlert('Error al leer la carpeta: ' + e.message, 'error');
@@ -2141,37 +1972,9 @@ async function evCargarContenido(folderId) {
   }
 }
 
-/* Carga hijos de un nodo en caché (solo si no están ya cargados) */
-async function evCargarHijosEnCache(folderId) {
-  const node = evTreeCache[folderId];
-  if (node && node.loaded) return;
-  try {
-    const data = await evFetch('/api/evidencias/listar?folder_id=' + encodeURIComponent(folderId));
-    if (!data.success) return;
-    const n = evTreeCache[folderId] || { expanded: false, loaded: false, children: [] };
-    n.children = (data.carpetas || []).map(c => ({ id: c.id, name: c.name }));
-    n.loaded = true;
-    evTreeCache[folderId] = n;
-    n.children.forEach(ch => {
-      if (!evTreeCache[ch.id]) {
-        evTreeCache[ch.id] = { expanded: false, loaded: false, children: [] };
-      }
-    });
-  } catch(e) {
-    console.warn('No se pudieron cargar hijos en caché:', e);
-  }
-}
-
-/* ============================================================
-   FIX: evRecargar con control de visitados para evitar
-   recursión infinita si Cloudinary devuelve una carpeta
-   como subcarpeta de sí misma.
-   ============================================================ */
+/* ---------- Recargar ---------- */
 async function evRecargar() {
   evTreeCache = {};
-  if (evRootFolder) {
-    evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
-  }
   if (!evCurrentFolderId && evRootFolder) {
     evCurrentFolderId = evRootFolder.id;
   }
@@ -2179,83 +1982,9 @@ async function evRecargar() {
     evPathStack = [{ id: evRootFolder.id, name: evRootFolder.name }];
   }
   await evCargarContenido(evCurrentFolderId);
-
-  const visitados = new Set();
-  for (const p of evPathStack) {
-    if (visitados.has(p.id)) continue;
-    visitados.add(p.id);
-    const c = evTreeCache[p.id] || { expanded: false, loaded: false, children: [] };
-    c.expanded = true;
-    evTreeCache[p.id] = c;
-    if (!c.loaded) await evCargarHijosEnCache(p.id);
-  }
-  evRenderTree();
 }
 
-/* ============ ÁRBOL SIDEBAR ============ */
-function evRenderTree() {
-  const cont = document.getElementById('evTreeRoot');
-  if (!evRootFolder) { cont.innerHTML = ''; return; }
-  let html = '';
-  html += evRenderTreeNode({ id: evRootFolder.id, name: evRootFolder.name, isRoot: true }, 0);
-  cont.innerHTML = html;
-}
-
-/* ============================================================
-   FIX: se usa JSON.stringify para los argumentos de los onclick.
-   Antes se usaba jsArg() que aplicaba escapeHtml y rompía el atributo
-   onclick, haciendo que la UI quedara colgada sin responder.
-   ============================================================ */
-function evRenderTreeNode(node, level) {
-  const cache = evTreeCache[node.id] || { expanded: false, loaded: false, children: [] };
-  const isSelected = (node.id === evCurrentFolderId);
-  const hasChildren = cache.children.length > 0;
-  const isExpanded = !!cache.expanded;
-  const showToggle = (cache.loaded ? hasChildren : true);
-  const toggleIcon = isExpanded ? '▾' : '▸';
-  const icon = node.isRoot ? '🏠' : '📁';
-  const indent = 8 + level * 16;
-
-  const idArg = JSON.stringify(String(node.id ?? ''));
-  const nameArg = JSON.stringify(String(node.name ?? ''));
-
-  let html = `<li>`;
-  html += `<div class="tree-item ${isSelected ? 'selected' : ''}" data-folder-id="${escapeHtml(node.id)}" style="padding-left:${indent}px;">`;
-  html += `<span class="ti-toggle ${showToggle ? '' : 'empty'}" onclick="event.stopPropagation(); evToggleNodo(${idArg})">${toggleIcon}</span>`;
-  html += `<span class="ti-icon">${icon}</span>`;
-  html += `<span class="ti-name" title="${escapeHtml(node.name)}" onclick="evNavegarA(${idArg})">${escapeHtml(node.name)}</span>`;
-  html += `</div>`;
-
-  if (isExpanded) {
-    if (!cache.loaded) {
-      html += `<li class="tree-empty" style="padding-left:${indent + 30}px;">Cargando…</li>`;
-    } else if (cache.children.length === 0) {
-      html += `<li class="tree-empty" style="padding-left:${indent + 30}px;">(sin subcarpetas)</li>`;
-    } else {
-      html += `<ul>`;
-      cache.children.forEach(ch => {
-        html += evRenderTreeNode({ id: ch.id, name: ch.name, isRoot: false }, level + 1);
-      });
-      html += `</ul>`;
-    }
-  }
-  html += `</li>`;
-  return html;
-}
-
-async function evToggleNodo(folderId) {
-  const cache = evTreeCache[folderId] || { expanded: false, loaded: false, children: [] };
-  cache.expanded = !cache.expanded;
-  evTreeCache[folderId] = cache;
-
-  if (cache.expanded && !cache.loaded) {
-    evRenderTree();
-    await evCargarHijosEnCache(folderId);
-  }
-  evRenderTree();
-}
-
-/* ============ ADDRESS BAR ============ */
+/* ---------- Miga de pan ---------- */
 function evRenderAddress() {
   const cont = document.getElementById('evAddressPath');
   let html = '';
@@ -2263,28 +1992,15 @@ function evRenderAddress() {
     if (i > 0) html += '<span class="addr-sep">›</span>';
     const isCurrent = (p.id === evCurrentFolderId);
     const icon = (i === 0) ? '🏠' : '📁';
-    const idArg = JSON.stringify(String(p.id ?? ''));
-    html += `<span class="addr-crumb ${isCurrent ? 'current' : ''}" onclick="evNavegarA(${idArg})">${icon} ${escapeHtml(p.name)}</span>`;
+    html += `<span class="addr-crumb ${isCurrent ? 'current' : ''}" onclick="evNavegarA(${JSON.stringify(String(p.id))})">${icon} ${escapeHtml(p.name)}</span>`;
   });
   cont.innerHTML = html;
 }
 
-/* ============ NAVEGACIÓN ============ */
+/* ---------- Navegación ---------- */
 async function evEntrarCarpeta(folderId, folderName) {
-  evHistory.push(evCurrentFolderId);
   evPathStack.push({ id: folderId, name: folderName });
   await evCargarContenido(folderId);
-  const c = evTreeCache[folderId] || { expanded: false, loaded: false, children: [] };
-  c.expanded = true;
-  evTreeCache[folderId] = c;
-  if (!c.loaded) await evCargarHijosEnCache(folderId);
-  if (evPathStack.length >= 2) {
-    const parentId = evPathStack[evPathStack.length - 2].id;
-    const cp = evTreeCache[parentId] || { expanded: false, loaded: false, children: [] };
-    cp.expanded = true;
-    evTreeCache[parentId] = cp;
-  }
-  evRenderTree();
 }
 
 async function evNavegarA(folderId) {
@@ -2293,77 +2009,11 @@ async function evNavegarA(folderId) {
     evPathStack = evPathStack.slice(0, idx + 1);
   } else if (evRootFolder && folderId === evRootFolder.id) {
     evPathStack = [{ id: evRootFolder.id, name: evRootFolder.name }];
-  } else {
-    const path = evConstruirPathHacia(folderId);
-    if (path) {
-      evPathStack = path;
-    } else {
-      evPathStack.push({ id: folderId, name: folderId });
-    }
   }
-
   await evCargarContenido(folderId);
-  const c = evTreeCache[folderId] || { expanded: false, loaded: false, children: [] };
-  c.expanded = true;
-  evTreeCache[folderId] = c;
-  if (!c.loaded) await evCargarHijosEnCache(folderId);
-  evRenderTree();
 }
 
-function evConstruirPathHacia(targetId) {
-  if (!evRootFolder) return null;
-  if (targetId === evRootFolder.id) {
-    return [{ id: evRootFolder.id, name: evRootFolder.name }];
-  }
-  const path = [];
-  const visited = new Set();
-
-  function dfs(folderId, acc) {
-    if (visited.has(folderId)) return false;
-    visited.add(folderId);
-    const node = evTreeCache[folderId];
-    if (!node) return false;
-    for (const ch of (node.children || [])) {
-      const newAcc = acc.concat([{ id: ch.id, name: ch.name }]);
-      if (ch.id === targetId) {
-        path.push(...newAcc);
-        return true;
-      }
-      if (dfs(ch.id, newAcc)) return true;
-    }
-    return false;
-  }
-
-  const start = [{ id: evRootFolder.id, name: evRootFolder.name }];
-  if (dfs(evRootFolder.id, start)) return path;
-  return null;
-}
-
-async function evAtras() {
-  if (evHistory.length === 0) return;
-  const prev = evHistory.pop();
-  const idx = evPathStack.findIndex(p => p.id === prev);
-  if (idx >= 0) evPathStack = evPathStack.slice(0, idx + 1);
-  await evCargarContenido(prev);
-  evActualizarNavBtns();
-}
-
-async function evSubir() {
-  if (evPathStack.length <= 1) return;
-  evPathStack = evPathStack.slice(0, evPathStack.length - 1);
-  const parent = evPathStack[evPathStack.length - 1];
-  await evCargarContenido(parent.id);
-  evActualizarNavBtns();
-}
-
-function evActualizarNavBtns() {
-  const btnBack = document.getElementById('evBtnBack');
-  const btnUp = document.getElementById('evBtnUp');
-  if (btnBack) btnBack.disabled = (evHistory.length === 0);
-  if (btnUp) btnUp.disabled = (evPathStack.length <= 1);
-}
-
-/* ============ RENDER CONTENIDO ============ */
+/* ---------- Render contenido ---------- */
 function evAplicarFiltro() {
   evRenderContenido();
   evActualizarStatus();
@@ -2395,15 +2045,10 @@ function evGetItemsVisibles() {
 
   if (q) items = items.filter(i => i.name.toLowerCase().includes(q));
 
-  const dir = evOrden.dir === 'asc' ? 1 : -1;
-  const campo = evOrden.campo;
-
+  // Carpetas primero, luego archivos; dentro de cada grupo por nombre
   items.sort((a, b) => {
     if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
-    let va = a[campo] || '', vb = b[campo] || '';
-    if (campo === 'size') { va = Number(va)||0; vb = Number(vb)||0; return (va - vb) * dir; }
-    if (campo === 'modifiedTime') { va = new Date(va||0); vb = new Date(vb||0); return (va - vb) * dir; }
-    return String(va).localeCompare(String(vb), 'es', { sensitivity:'base' }) * dir;
+    return String(a.name).localeCompare(String(b.name), 'es', { sensitivity:'base' });
   });
 
   return items;
@@ -2421,27 +2066,22 @@ function evRenderContenido() {
       <div class="ex-empty">
         <div class="big-icon">📂</div>
         <div class="msg">Esta carpeta está vacía</div>
-        <div class="sub-msg">Usá el botón "📤 Subir fotos" o arrastrá imágenes acá</div>
+        <div class="sub-msg">Usá el botón "📤 Subir fotos" para agregar imágenes</div>
       </div>
     `;
     return;
   }
 
-  if (evVista === 'iconos') evRenderIconos(items);
-  else evRenderDetalles(items);
-}
-
-function evRenderIconos(items) {
-  const cont = document.getElementById('evContent');
   let html = '<div class="ex-grid">';
   items.forEach(it => {
     const sel = (evSeleccionado && evSeleccionado.id === it.id) ? 'selected' : '';
     const idArg = JSON.stringify(String(it.id ?? ''));
     const nameArg = JSON.stringify(String(it.name ?? ''));
+
     if (it.type === 'folder') {
       html += `
         <div class="ex-item ${sel}" data-id="${escapeHtml(it.id)}"
-             onclick="evSeleccionar(${idArg})" ondblclick="evEntrarCarpeta(${idArg}, ${nameArg})">
+             onclick="evSeleccionar(${idArg})">
           <div class="ex-icon-big">📁</div>
           <div class="ex-name" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</div>
           <button class="ex-open-btn" onclick="event.stopPropagation(); evEntrarCarpeta(${idArg}, ${nameArg})">
@@ -2455,7 +2095,7 @@ function evRenderIconos(items) {
       const iconBig = isImg ? '' : '📄';
       html += `
         <div class="ex-item ${sel}" data-id="${escapeHtml(it.id)}"
-             onclick="evSeleccionar(${idArg})" ondblclick="evAbrirArchivo(${idArg})">
+             onclick="evSeleccionar(${idArg})">
           ${isImg
             ? `<img class="ex-thumb" src="${thumb}" alt="${escapeHtml(it.name)}" loading="lazy">`
             : `<div class="ex-icon-big">${iconBig}</div>`}
@@ -2471,82 +2111,12 @@ function evRenderIconos(items) {
   cont.innerHTML = html;
 }
 
-function evRenderDetalles(items) {
-  const cont = document.getElementById('evContent');
-  const ind = (campo) => {
-    if (evOrden.campo !== campo) return '';
-    return evOrden.dir === 'asc' ? ' ▲' : ' ▼';
-  };
-
-  let html = `
-    <table class="ex-list">
-      <thead>
-        <tr>
-          <th onclick="evOrdenarPor('name')">Nombre${ind('name')}</th>
-          <th onclick="evOrdenarPor('modifiedTime')">Modificado${ind('modifiedTime')}</th>
-          <th class="col-size" onclick="evOrdenarPor('size')">Tamaño${ind('size')}</th>
-          <th class="col-actions"></th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-  items.forEach(it => {
-    const sel = (evSeleccionado && evSeleccionado.id === it.id) ? 'selected' : '';
-    const isFolder = it.type === 'folder';
-    const icon = isFolder ? '📁' : ((it.mimeType || '').startsWith('image/') ? '🖼️' : '📄');
-    const sizeStr = isFolder ? '' : evFormatBytes(it.size);
-    const fechaStr = evFormatFecha(it.modifiedTime);
-    const idArg = JSON.stringify(String(it.id ?? ''));
-    const nameArg = JSON.stringify(String(it.name ?? ''));
-
-    html += `
-      <tr class="${sel}" data-id="${escapeHtml(it.id)}"
-          onclick="evSeleccionar(${idArg})"
-          ondblclick="${isFolder ? `evEntrarCarpeta(${idArg}, ${nameArg})` : `evAbrirArchivo(${idArg})`}">
-        <td>
-          <span class="cell-name">
-            <span class="ci">${icon}</span>
-            <span class="cn" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</span>
-          </span>
-        </td>
-        <td>${fechaStr}</td>
-        <td class="col-size">${sizeStr}</td>
-        <td class="col-actions">
-          <button class="mini-btn" title="Renombrar"
-                  onclick="event.stopPropagation(); evRenombrar(${idArg}, ${nameArg}, '${isFolder ? 'carpeta' : 'archivo'}')">✏️</button>
-          <button class="mini-btn" title="Eliminar"
-                  onclick="event.stopPropagation(); evEliminar(${idArg}, '${isFolder ? 'carpeta' : 'archivo'}')">🗑️</button>
-        </td>
-      </tr>
-    `;
-  });
-  html += `</tbody></table>`;
-  cont.innerHTML = html;
-}
-
-function evOrdenarPor(campo) {
-  if (evOrden.campo === campo) {
-    evOrden.dir = evOrden.dir === 'asc' ? 'desc' : 'asc';
-  } else {
-    evOrden.campo = campo;
-    evOrden.dir = 'asc';
-  }
-  evRenderContenido();
-}
-
-function evToggleVista() {
-  evVista = (evVista === 'detalles') ? 'iconos' : 'detalles';
-  document.getElementById('evVistaIcon').textContent = (evVista === 'detalles') ? '☰' : '▦';
-  document.getElementById('evVistaLabel').textContent = (evVista === 'detalles') ? 'Vista: Detalles' : 'Vista: Íconos';
-  evRenderContenido();
-}
-
-/* ============ SELECCIÓN ============ */
+/* ---------- Selección ---------- */
 function evSeleccionar(itemId) {
   const item = evItemsFiltrados.find(i => i.id === itemId);
   if (!item) return;
   evSeleccionado = item;
-  document.querySelectorAll('#evContent .ex-item, #evContent .ex-list tbody tr').forEach(el => {
+  document.querySelectorAll('#evContent .ex-item').forEach(el => {
     el.classList.toggle('selected', el.dataset.id === itemId);
   });
   evActualizarBotones();
@@ -2554,10 +2124,8 @@ function evSeleccionar(itemId) {
 }
 
 function evActualizarBotones() {
-  const btnRen = document.getElementById('evBtnRenombrar');
   const btnEli = document.getElementById('evBtnEliminar');
   const has = !!evSeleccionado;
-  if (btnRen) btnRen.disabled = !has;
   if (btnEli) btnEli.disabled = !has;
 }
 
@@ -2574,10 +2142,9 @@ function evActualizarStatus() {
 function evAbrirArchivo(itemId) {
   const idx = evCurrentImagenesLightbox.findIndex(i => i.id === itemId);
   if (idx >= 0) evAbrirLightbox(idx);
-  else window.open('https://drive.google.com/file/d/' + itemId + '/view', '_blank');
 }
 
-/* ============ ACCIONES ============ */
+/* ---------- Acciones ---------- */
 async function evCrearCarpeta() {
   const nombre = prompt('📁 Nombre de la nueva carpeta:');
   if (!nombre || !nombre.trim()) return;
@@ -2589,7 +2156,6 @@ async function evCrearCarpeta() {
     });
     if (data.success) {
       evShowAlert('✅ Carpeta creada: ' + nombre.trim());
-      delete evTreeCache[evCurrentFolderId];
       await evRecargar();
     } else {
       evShowAlert('❌ ' + data.error, 'error');
@@ -2622,30 +2188,22 @@ async function evSubirArchivos(files) {
   }
 }
 
-async function evEliminar(fileId, tipo) {
+async function evEliminarSeleccionado() {
+  if (!evSeleccionado) return;
+  const tipo = evSeleccionado.type === 'folder' ? 'carpeta' : 'archivo';
   const label = tipo === 'carpeta' ? 'la carpeta' : 'el archivo';
-  if (!confirm(`¿Seguro que querés eliminar ${label}?\n\nEsta acción NO se puede deshacer.`)) return;
+  if (!confirm(`¿Seguro que querés eliminar ${label} "${evSeleccionado.name}"?\n\nEsta acción NO se puede deshacer.`)) return;
   try {
     const data = await evFetch('/api/evidencias/eliminar', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ file_id: fileId, tipo: tipo })
+      body: JSON.stringify({ file_id: evSeleccionado.id, tipo: tipo })
     });
     if (data.success) {
       evShowAlert('✅ Eliminado');
-      evTreeCache = {};
-      if (evRootFolder) evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
-      await evCargarContenido(evCurrentFolderId);
-      const visitados = new Set();
-      for (const p of evPathStack) {
-        if (visitados.has(p.id)) continue;
-        visitados.add(p.id);
-        const c = evTreeCache[p.id] || { expanded: false, loaded: false, children: [] };
-        c.expanded = true;
-        evTreeCache[p.id] = c;
-        if (!c.loaded) await evCargarHijosEnCache(p.id);
-      }
-      evRenderTree();
+      evSeleccionado = null;
+      evActualizarBotones();
+      await evRecargar();
     } else {
       evShowAlert('❌ ' + data.error, 'error');
     }
@@ -2654,48 +2212,7 @@ async function evEliminar(fileId, tipo) {
   }
 }
 
-async function evRenombrar(fileId, nombreActual, tipo = 'archivo') {
-  const nuevo = prompt('✏️ Nuevo nombre:', nombreActual);
-  if (!nuevo || !nuevo.trim() || nuevo.trim() === nombreActual) return;
-  try {
-    const data = await evFetch('/api/evidencias/renombrar', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ file_id: fileId, nuevo_nombre: nuevo.trim(), tipo: tipo })
-    });
-    if (data.success) {
-      evShowAlert('✅ Renombrado');
-      evTreeCache = {};
-      if (evRootFolder) evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
-      await evCargarContenido(evCurrentFolderId);
-      const visitados = new Set();
-      for (const p of evPathStack) {
-        if (visitados.has(p.id)) continue;
-        visitados.add(p.id);
-        const c = evTreeCache[p.id] || { expanded: false, loaded: false, children: [] };
-        c.expanded = true;
-        evTreeCache[p.id] = c;
-        if (!c.loaded) await evCargarHijosEnCache(p.id);
-      }
-      evRenderTree();
-    } else {
-      evShowAlert('❌ ' + data.error, 'error');
-    }
-  } catch (e) {
-    evShowAlert('Error: ' + e.message, 'error');
-  }
-}
-
-function evRenombrarSeleccionado() {
-  if (!evSeleccionado) return;
-  evRenombrar(evSeleccionado.id, evSeleccionado.name, evSeleccionado.type === 'folder' ? 'carpeta' : 'archivo');
-}
-function evEliminarSeleccionado() {
-  if (!evSeleccionado) return;
-  evEliminar(evSeleccionado.id, evSeleccionado.type === 'folder' ? 'carpeta' : 'archivo');
-}
-
-/* ============ LIGHTBOX ============ */
+/* ---------- Lightbox ---------- */
 function evAbrirLightbox(index) {
   if (!evCurrentImagenesLightbox || evCurrentImagenesLightbox.length === 0) return;
   evLightboxIndex = index;
@@ -2728,7 +2245,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') evLightboxNext();
 });
 
-/* ============ DRAG & DROP ============ */
+/* ---------- Drag & Drop ---------- */
 (function() {
   const explorer = document.getElementById('evExplorer');
   const content = document.getElementById('evContent');
@@ -2754,29 +2271,6 @@ document.addEventListener('keydown', e => {
     if (files && files.length > 0) evSubirArchivos(files);
   });
 })();
-
-/* ============ ATAJOS DE TECLADO ============ */
-document.addEventListener('keydown', e => {
-  const mod = document.getElementById('moduleViewEvidencias');
-  if (!mod || !mod.classList.contains('active')) return;
-  if (e.target.matches('input, textarea, select')) return;
-
-  if (e.key === 'Delete' && evSeleccionado) {
-    evEliminarSeleccionado();
-  } else if (e.key === 'F2' && evSeleccionado) {
-    e.preventDefault();
-    evRenombrarSeleccionado();
-  } else if (e.key === 'Backspace') {
-    e.preventDefault();
-    evSubir();
-  } else if (e.key === 'Enter' && evSeleccionado) {
-    if (evSeleccionado.type === 'folder') {
-      evEntrarCarpeta(evSeleccionado.id, evSeleccionado.name);
-    } else {
-      evAbrirArchivo(evSeleccionado.id);
-    }
-  }
-});
 
 </script>
 </body>
