@@ -971,10 +971,6 @@ function escapeHtml(s) {
 function escapeAttr(s) {
   return escapeHtml(String(s ?? '').replace(/'/g, "&#39;"));
 }
-/* Convierte un texto en un argumento JS seguro para usar dentro de onclick="..." */
-function jsArg(s) {
-  return escapeHtml("'" + String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'");
-}
 
 /* ============ NAVEGACIÓN ============ */
 function openModule(moduleKey) {
@@ -2166,6 +2162,11 @@ async function evCargarHijosEnCache(folderId) {
   }
 }
 
+/* ============================================================
+   FIX: evRecargar con control de visitados para evitar
+   recursión infinita si Cloudinary devuelve una carpeta
+   como subcarpeta de sí misma.
+   ============================================================ */
 async function evRecargar() {
   evTreeCache = {};
   if (evRootFolder) {
@@ -2178,7 +2179,11 @@ async function evRecargar() {
     evPathStack = [{ id: evRootFolder.id, name: evRootFolder.name }];
   }
   await evCargarContenido(evCurrentFolderId);
+
+  const visitados = new Set();
   for (const p of evPathStack) {
+    if (visitados.has(p.id)) continue;
+    visitados.add(p.id);
     const c = evTreeCache[p.id] || { expanded: false, loaded: false, children: [] };
     c.expanded = true;
     evTreeCache[p.id] = c;
@@ -2196,6 +2201,11 @@ function evRenderTree() {
   cont.innerHTML = html;
 }
 
+/* ============================================================
+   FIX: se usa JSON.stringify para los argumentos de los onclick.
+   Antes se usaba jsArg() que aplicaba escapeHtml y rompía el atributo
+   onclick, haciendo que la UI quedara colgada sin responder.
+   ============================================================ */
 function evRenderTreeNode(node, level) {
   const cache = evTreeCache[node.id] || { expanded: false, loaded: false, children: [] };
   const isSelected = (node.id === evCurrentFolderId);
@@ -2206,11 +2216,14 @@ function evRenderTreeNode(node, level) {
   const icon = node.isRoot ? '🏠' : '📁';
   const indent = 8 + level * 16;
 
+  const idArg = JSON.stringify(String(node.id ?? ''));
+  const nameArg = JSON.stringify(String(node.name ?? ''));
+
   let html = `<li>`;
   html += `<div class="tree-item ${isSelected ? 'selected' : ''}" data-folder-id="${escapeHtml(node.id)}" style="padding-left:${indent}px;">`;
-  html += `<span class="ti-toggle ${showToggle ? '' : 'empty'}" onclick="event.stopPropagation(); evToggleNodo(${jsArg(node.id)})">${toggleIcon}</span>`;
+  html += `<span class="ti-toggle ${showToggle ? '' : 'empty'}" onclick="event.stopPropagation(); evToggleNodo(${idArg})">${toggleIcon}</span>`;
   html += `<span class="ti-icon">${icon}</span>`;
-  html += `<span class="ti-name" title="${escapeHtml(node.name)}" onclick="evNavegarA(${jsArg(node.id)})">${escapeHtml(node.name)}</span>`;
+  html += `<span class="ti-name" title="${escapeHtml(node.name)}" onclick="evNavegarA(${idArg})">${escapeHtml(node.name)}</span>`;
   html += `</div>`;
 
   if (isExpanded) {
@@ -2250,7 +2263,8 @@ function evRenderAddress() {
     if (i > 0) html += '<span class="addr-sep">›</span>';
     const isCurrent = (p.id === evCurrentFolderId);
     const icon = (i === 0) ? '🏠' : '📁';
-    html += `<span class="addr-crumb ${isCurrent ? 'current' : ''}" onclick="evNavegarA(${jsArg(p.id)})">${icon} ${escapeHtml(p.name)}</span>`;
+    const idArg = JSON.stringify(String(p.id ?? ''));
+    html += `<span class="addr-crumb ${isCurrent ? 'current' : ''}" onclick="evNavegarA(${idArg})">${icon} ${escapeHtml(p.name)}</span>`;
   });
   cont.innerHTML = html;
 }
@@ -2422,13 +2436,15 @@ function evRenderIconos(items) {
   let html = '<div class="ex-grid">';
   items.forEach(it => {
     const sel = (evSeleccionado && evSeleccionado.id === it.id) ? 'selected' : '';
+    const idArg = JSON.stringify(String(it.id ?? ''));
+    const nameArg = JSON.stringify(String(it.name ?? ''));
     if (it.type === 'folder') {
       html += `
         <div class="ex-item ${sel}" data-id="${escapeHtml(it.id)}"
-             onclick="evSeleccionar(${jsArg(it.id)})" ondblclick="evEntrarCarpeta(${jsArg(it.id)}, ${jsArg(it.name)})">
+             onclick="evSeleccionar(${idArg})" ondblclick="evEntrarCarpeta(${idArg}, ${nameArg})">
           <div class="ex-icon-big">📁</div>
           <div class="ex-name" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</div>
-          <button class="ex-open-btn" onclick="event.stopPropagation(); evEntrarCarpeta(${jsArg(it.id)}, ${jsArg(it.name)})">
+          <button class="ex-open-btn" onclick="event.stopPropagation(); evEntrarCarpeta(${idArg}, ${nameArg})">
             📂 Abrir
           </button>
         </div>
@@ -2439,13 +2455,13 @@ function evRenderIconos(items) {
       const iconBig = isImg ? '' : '📄';
       html += `
         <div class="ex-item ${sel}" data-id="${escapeHtml(it.id)}"
-             onclick="evSeleccionar(${jsArg(it.id)})" ondblclick="evAbrirArchivo(${jsArg(it.id)})">
+             onclick="evSeleccionar(${idArg})" ondblclick="evAbrirArchivo(${idArg})">
           ${isImg
             ? `<img class="ex-thumb" src="${thumb}" alt="${escapeHtml(it.name)}" loading="lazy">`
             : `<div class="ex-icon-big">${iconBig}</div>`}
           <div class="ex-name" title="${escapeHtml(it.name)}">${escapeHtml(it.name)}</div>
           ${isImg
-            ? `<button class="ex-open-btn" onclick="event.stopPropagation(); evAbrirArchivo(${jsArg(it.id)})">👁️ Ver foto</button>`
+            ? `<button class="ex-open-btn" onclick="event.stopPropagation(); evAbrirArchivo(${idArg})">👁️ Ver foto</button>`
             : ''}
         </div>
       `;
@@ -2480,11 +2496,13 @@ function evRenderDetalles(items) {
     const icon = isFolder ? '📁' : ((it.mimeType || '').startsWith('image/') ? '🖼️' : '📄');
     const sizeStr = isFolder ? '' : evFormatBytes(it.size);
     const fechaStr = evFormatFecha(it.modifiedTime);
+    const idArg = JSON.stringify(String(it.id ?? ''));
+    const nameArg = JSON.stringify(String(it.name ?? ''));
 
     html += `
       <tr class="${sel}" data-id="${escapeHtml(it.id)}"
-          onclick="evSeleccionar(${jsArg(it.id)})"
-          ondblclick="${isFolder ? `evEntrarCarpeta(${jsArg(it.id)}, ${jsArg(it.name)})` : `evAbrirArchivo(${jsArg(it.id)})`}">
+          onclick="evSeleccionar(${idArg})"
+          ondblclick="${isFolder ? `evEntrarCarpeta(${idArg}, ${nameArg})` : `evAbrirArchivo(${idArg})`}">
         <td>
           <span class="cell-name">
             <span class="ci">${icon}</span>
@@ -2495,9 +2513,9 @@ function evRenderDetalles(items) {
         <td class="col-size">${sizeStr}</td>
         <td class="col-actions">
           <button class="mini-btn" title="Renombrar"
-                  onclick="event.stopPropagation(); evRenombrar(${jsArg(it.id)}, ${jsArg(it.name)}, '${isFolder ? 'carpeta' : 'archivo'}')">✏️</button>
+                  onclick="event.stopPropagation(); evRenombrar(${idArg}, ${nameArg}, '${isFolder ? 'carpeta' : 'archivo'}')">✏️</button>
           <button class="mini-btn" title="Eliminar"
-                  onclick="event.stopPropagation(); evEliminar(${jsArg(it.id)}, '${isFolder ? 'carpeta' : 'archivo'}')">🗑️</button>
+                  onclick="event.stopPropagation(); evEliminar(${idArg}, '${isFolder ? 'carpeta' : 'archivo'}')">🗑️</button>
         </td>
       </tr>
     `;
@@ -2618,7 +2636,10 @@ async function evEliminar(fileId, tipo) {
       evTreeCache = {};
       if (evRootFolder) evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
       await evCargarContenido(evCurrentFolderId);
+      const visitados = new Set();
       for (const p of evPathStack) {
+        if (visitados.has(p.id)) continue;
+        visitados.add(p.id);
         const c = evTreeCache[p.id] || { expanded: false, loaded: false, children: [] };
         c.expanded = true;
         evTreeCache[p.id] = c;
@@ -2647,7 +2668,10 @@ async function evRenombrar(fileId, nombreActual, tipo = 'archivo') {
       evTreeCache = {};
       if (evRootFolder) evTreeCache[evRootFolder.id] = { expanded: true, loaded: false, children: [] };
       await evCargarContenido(evCurrentFolderId);
+      const visitados = new Set();
       for (const p of evPathStack) {
+        if (visitados.has(p.id)) continue;
+        visitados.add(p.id);
         const c = evTreeCache[p.id] || { expanded: false, loaded: false, children: [] };
         c.expanded = true;
         evTreeCache[p.id] = c;
