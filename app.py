@@ -404,17 +404,19 @@ def siguiente_numero_orden():
     return f"{numero_formateado}-{anio_actual}"
 
 # ============================================================
-# EVIDENCIAS DE DOCUMENTACIÓN (Cloudinary con Carpetas)
+# EVIDENCIAS DE DOCUMENTACIÓN (Cloudinary)
 # ============================================================
 
 def cloudinary_listar(folder_path=None):
-    """Lista subcarpetas e imágenes dentro de CARPETA_RAIZ."""
+    """Lista subcarpetas e imágenes relativas a CARPETA_RAIZ."""
     try:
-        # Limpiamos la ruta
         folder_path = folder_path.strip('/') if folder_path else ''
         
-        # Si la ruta está vacía, apuntamos a la raíz "evidencias_flota"
-        path_to_list = f"{CARPETA_RAIZ}/{folder_path}" if folder_path else CARPETA_RAIZ
+        # Construimos la ruta absoluta en Cloudinary
+        if not folder_path:
+            path_to_list = CARPETA_RAIZ
+        else:
+            path_to_list = f"{CARPETA_RAIZ}/{folder_path}"
 
         # 1. Buscamos las subcarpetas
         res_carpetas = cloudinary.api.sub_folders(path_to_list)
@@ -422,7 +424,7 @@ def cloudinary_listar(folder_path=None):
         carpetas = []
         for c in res_carpetas.get('folders', []):
             carpetas.append({
-                'id': c['name'], # Enviamos solo el nombre relativo (ej: "Camiones T2")
+                'id': c['name'], # ID relativo (ej. "Camiones T2")
                 'name': c['name'],
                 'modifiedTime': ''
             })
@@ -443,12 +445,13 @@ def cloudinary_listar(folder_path=None):
             if not public_id.startswith(prefix):
                 continue
             resto = public_id[len(prefix):]
+            # Ignoramos las imágenes que estén en subcarpetas más profundas
             if '/' in resto:
-                continue  # Está en una subcarpeta más profunda
+                continue 
 
             imagenes.append({
                 'id': public_id,
-                'name': resto, # Nombre limpio sin la ruta
+                'name': resto, # Nombre del archivo
                 'mimeType': 'image/' + r.get('format', 'jpeg'),
                 'size': str(r.get('bytes', '')),
                 'modifiedTime': r.get('created_at', ''),
@@ -460,38 +463,35 @@ def cloudinary_listar(folder_path=None):
 
         return carpetas, imagenes
     except Exception as e:
-        # Si la carpeta raíz no existe, la creamos automáticamente
+        # Si la carpeta raíz no existe, la creamos
         if "not found" in str(e).lower() or "does not exist" in str(e).lower():
             try:
                 cloudinary.api.create_folder(CARPETA_RAIZ)
-                return [], []
             except:
                 pass
         print(f"❌ Error listando Cloudinary: {e}")
         return [], []
 
 def cloudinary_crear_carpeta(nombre, parent_path):
-    """Crea una carpeta en Cloudinary relativa a CARPETA_RAIZ."""
+    """Crea una carpeta en Cloudinary."""
     try:
         parent_path = parent_path.strip('/') if parent_path else ''
         
-        # Armamos la ruta real en Cloudinary
         if parent_path:
             ruta_completa = f"{CARPETA_RAIZ}/{parent_path}/{nombre}"
         else:
             ruta_completa = f"{CARPETA_RAIZ}/{nombre}"
         
-        resultado = cloudinary.api.create_folder(ruta_completa)
+        cloudinary.api.create_folder(ruta_completa)
         return {'id': nombre, 'name': nombre}
     except Exception as e:
         print(f"❌ Error creando carpeta: {e}")
         raise
 
 def cloudinary_subir_imagen(file_stream, nombre_original, folder_path):
-    """Sube una imagen a una carpeta específica relativa a CARPETA_RAIZ."""
+    """Sube una imagen a Cloudinary."""
     try:
         folder_path = folder_path.strip('/') if folder_path else ''
-        
         ruta_completa = f"{CARPETA_RAIZ}/{folder_path}" if folder_path else CARPETA_RAIZ
 
         resultado = cloudinary.uploader.upload(
@@ -831,13 +831,17 @@ def api_generar_notificacion():
 
 @app.route('/api/evidencias/root', methods=['GET'])
 def api_evidencias_root():
-    # El root siempre será vacío, porque la app maneja la CARPETA_RAIZ por detrás
+    # El root siempre será vacío para que el frontend apunte a la CARPETA_RAIZ de Cloudinary
     return jsonify({'success': True, 'root': {'id': '', 'name': CARPETA_RAIZ}})
 
 @app.route('/api/evidencias/listar', methods=['GET'])
 def api_evidencias_listar():
     try:
         folder_path = request.args.get('folder_id', '').strip()
+        # Si el frontend envía 'cloudinary' por error, lo limpiamos
+        if folder_path == 'cloudinary':
+            folder_path = ''
+            
         carpetas, imagenes = cloudinary_listar(folder_path)
         return jsonify({
             'success': True,
@@ -855,6 +859,10 @@ def api_evidencias_crear_carpeta():
         body = request.get_json() or {}
         nombre = (body.get('nombre') or '').strip()
         parent_id = (body.get('parent_id') or '').strip()
+        
+        if parent_id == 'cloudinary':
+            parent_id = ''
+            
         if not nombre:
             return jsonify({'success': False, 'error': 'El nombre es obligatorio'}), 400
         
@@ -868,6 +876,9 @@ def api_evidencias_crear_carpeta():
 def api_evidencias_subir():
     try:
         parent_id = (request.form.get('parent_id') or '').strip()
+        if parent_id == 'cloudinary':
+            parent_id = ''
+            
         if 'archivos' not in request.files:
             return jsonify({'success': False, 'error': 'No se enviaron archivos'}), 400
         files = request.files.getlist('archivos')
